@@ -1,0 +1,52 @@
+#include "database.h"
+
+#define DB_ERR_CHECK(msg) if (rc != SQLITE_OK) {std::string err = sqlite3_errmsg(db.get()); throw database_exception(msg+err);}
+
+namespace
+{
+    struct statement_finalizer
+    {
+        void operator()(sqlite3_stmt* stm)
+        {
+            if(stm)
+            {
+                sqlite3_finalize(stm);
+            }
+        }
+    };
+}
+Database::Database():db(nullptr,connection_deleter())
+{
+    sqlite3* db_ptr;
+    int rc = sqlite3_open("rd.db",&db_ptr);
+    db.reset(db_ptr);
+    DB_ERR_CHECK("Cannot open database");
+    rc = sqlite3_exec(db.get(),"CREATE TABLE IF NOT EXISTS USER(USERNAME TEXT, PASSWORD TEXT, CLIENT_ID TEXT, SECRET TEXT, WEBSITE TEXT, APP_NAME TEXT)",nullptr,nullptr,nullptr);
+    DB_ERR_CHECK("Cannot create table USER");
+}
+
+std::optional<user> Database::getRegisteredUser() const
+{
+    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
+    sqlite3_stmt *stmt_ptr;
+    int rc = sqlite3_prepare_v2(db.get(),"SELECT USERNAME,PASSWORD,CLIENT_ID,SECRET,WEBSITE,APP_NAME FROM USER",-1,&stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot find users");
+    if(sqlite3_step(stmt.get()) != SQLITE_ROW)
+    {
+        return std::optional<user>();
+    }
+    std::string username(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(),0)),
+                         sqlite3_column_bytes(stmt.get(),0));
+    std::string password(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(),1)),
+                         sqlite3_column_bytes(stmt.get(),1));
+    std::string client_id(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(),2)),
+                         sqlite3_column_bytes(stmt.get(),2));
+    std::string secret(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(),3)),
+                         sqlite3_column_bytes(stmt.get(),3));
+    std::string website(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(),4)),
+                         sqlite3_column_bytes(stmt.get(),4));
+    std::string app_name(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(),5)),
+                         sqlite3_column_bytes(stmt.get(),5));
+    return std::make_optional<user>(username,password,client_id,secret,website,app_name);
+}
