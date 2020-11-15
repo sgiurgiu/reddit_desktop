@@ -7,6 +7,7 @@
 #include "subredditwindow.h"
 #include "database.h"
 #include "loginwindow.h"
+#include "redditclient.h"
 
 class RedditDesktop
 {
@@ -29,8 +30,11 @@ public:
 private:
     void showMainMenuBar();
     void showMenuFile();
-    void showOpenSubredditWindow();    
+    void showOpenSubredditWindow();
+    void showErrorDialog();
 private:
+    RedditClient client;
+    RedditClient::RedditLoginClientConnection loginConnection;
     std::vector<std::unique_ptr<SubredditWindow>> subredditWindows;
     bool shouldQuit = false;
     bool openSubredditWindow = false;
@@ -41,6 +45,10 @@ private:
     Database db;
     std::optional<user> current_user;
     LoginWindow loginWindow;
+    client_response<access_token> current_access_token;
+    bool showConnectionErrorDialog = false;
+    std::string connectionErrorMessage;
+
 };
 
 

@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(reddit_desktop LANGUAGES C CXX)
+project(reddit_desktop LANGUAGES C CXX
+    VERSION 0.0.1
+    DESCRIPTION "Reddit desktop"
+    )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
@@ -21,10 +24,14 @@ endif()
 if(MSVC)
     set(WIN32_APP_OPTIONS WIN32)
 endif()
+set(Boost_USE_STATIC_LIBS        ON)
+set(Boost_USE_MULTITHREADED      ON)
 set(OpenGL_GL_PREFERENCE GLVND)
 find_package(OpenGL COMPONENTS OpenGL REQUIRED)
 find_package(Threads REQUIRED)
 find_package(SDL2 REQUIRED)
+find_package(Boost 1.73 REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 if(UNIX AND NOT APPLE)
     set(LINUX TRUE) #wrong here, what if we're BSD?

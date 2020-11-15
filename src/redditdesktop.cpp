@@ -9,15 +9,41 @@
 namespace
 {
 constexpr auto OPENSUBREDDIT_WINDOW_POPUP_TITLE = "Open Subreddit";
-constexpr auto LOGIN_WINDOW_POPUP_TITLE = "Reddit Login";
+constexpr auto ERROR_WINDOW_POPUP_TITLE = "Error Occurred";
 }
 
-RedditDesktop::RedditDesktop()
+RedditDesktop::RedditDesktop():client("api.reddit.com","oauth.reddit.com",3),
+    loginConnection(client.makeLoginClientConnection()),loginWindow(&client)
 {
     current_user = db.getRegisteredUser();
     if(!current_user)
     {
         loginWindow.setShowLoginWindow(true);
+    }
+    else
+    {
+        loginConnection->connectLoginComplete([this](const boost::system::error_code& ec,const client_response<access_token>& token){
+            if(ec)
+            {
+                showConnectionErrorDialog = true;
+                connectionErrorMessage = ec.message();
+            }
+            else
+            {
+                current_access_token = token;
+                if(token.status >= 400)
+                {
+                    showConnectionErrorDialog = true;
+                    connectionErrorMessage = token.body;
+                }
+                else
+                {
+                    subredditWindows.push_back(std::make_unique<SubredditWindow>(windowsCount++,"",current_access_token.data,&client));
+                }
+            }
+        });
+        client.setUserAgent(make_user_agent(current_user.value()));
+        loginConnection->login(current_user.value());
     }
 }
 void RedditDesktop::showDesktop()
@@ -49,12 +75,41 @@ void RedditDesktop::showDesktop()
 
     if(loginWindow.showLoginWindow())
     {
-
+        auto user = loginWindow.getConfiguredUser();
+        auto token = loginWindow.getAccessToken();
+        db.setRegisteredUser(user);
+        client.setUserAgent(make_user_agent(user));
     }
+    showErrorDialog();
 
     ImGui::PopFont();
 }
 
+void RedditDesktop::showErrorDialog()
+{
+    if(showConnectionErrorDialog)
+    {
+        ImGui::OpenPopup(ERROR_WINDOW_POPUP_TITLE);
+        showConnectionErrorDialog = false;
+    }
+    if(ImGui::BeginPopupModal(ERROR_WINDOW_POPUP_TITLE,nullptr,ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        if(connectionErrorMessage.empty())
+        {
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f),"Unkown error occurred");
+        }
+        else
+        {
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f),"%s",connectionErrorMessage.c_str());
+        }
+
+        if (ImGui::Button("OK", ImVec2(120, 0)))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+}
 
 void RedditDesktop::showMainMenuBar()
 {
@@ -120,7 +175,7 @@ void RedditDesktop::showOpenSubredditWindow()
         if (ImGui::Button("OK", ImVec2(120, 0)) ||
                 ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)))
         {
-            subredditWindows.push_back(std::make_unique<SubredditWindow>(windowsCount++,std::string(selectedSubreddit)));
+            subredditWindows.push_back(std::make_unique<SubredditWindow>(windowsCount++,std::string(selectedSubreddit),current_access_token.data,&client));
             ImGui::CloseCurrentPopup();
         }
         if (okDisabled)

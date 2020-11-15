@@ -1,13 +1,26 @@
 #ifndef LOGINWINDOW_H
 #define LOGINWINDOW_H
 
+#include "redditclient.h"
 
 class LoginWindow
 {
 public:
-    LoginWindow();
+    LoginWindow(RedditClient* client);
     void setShowLoginWindow(bool flag);
     bool showLoginWindow();
+    user getConfiguredUser() const
+    {
+        return configuredUser;
+    }
+    client_response<access_token> getAccessToken() const
+    {
+        return token;
+    }
+    void setUser(const user& user)
+    {
+        configuredUser = user;
+    }
 private:
     bool showLoginInfoWindow = false;
     char username[255] = { 0 };
@@ -17,7 +30,12 @@ private:
     char website[255] = { 0 };
     char appName[255] = { 0 };
     bool tested = false;
-
+    bool testingInProgress = false;
+    RedditClient* client;
+    std::string testingErrorMessage;
+    user configuredUser;
+    client_response<access_token> token;
+    RedditClient::RedditLoginClientConnection loginConnection;
 };
 
 #endif // LOGINWINDOW_H

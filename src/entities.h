@@ -2,6 +2,7 @@
 #define ENTITIES_H
 
 #include <string>
+#include "json.hpp"
 
 struct user
 {
@@ -21,4 +22,26 @@ struct user
     std::string app_name;
 };
 
+std::string make_user_agent(const user& u);
+
+struct access_token
+{
+    std::string token;
+    std::string tokenType;
+    int expires;
+    std::string scope;
+};
+
+struct listing
+{
+    nlohmann::json json;
+};
+
+template <typename T>
+struct client_response
+{
+    T data;
+    int status;
+    std::string body;
+};
 #endif // ENTITIES_H

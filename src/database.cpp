@@ -1,6 +1,12 @@
 #include "database.h"
 
-#define DB_ERR_CHECK(msg) if (rc != SQLITE_OK) {std::string err = sqlite3_errmsg(db.get()); throw database_exception(msg+err);}
+#define DB_ERR_CHECK(msg) \
+    if (rc != SQLITE_OK && rc != SQLITE_DONE) \
+    {\
+        std::string err = sqlite3_errmsg(db.get());\
+        int code = sqlite3_errcode(db.get()); \
+        throw database_exception(std::string(msg)+":"+err+"("+std::to_string(code)+")");\
+    }
 
 namespace
 {
@@ -49,4 +55,28 @@ std::optional<user> Database::getRegisteredUser() const
     std::string app_name(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(),5)),
                          sqlite3_column_bytes(stmt.get(),5));
     return std::make_optional<user>(username,password,client_id,secret,website,app_name);
+}
+
+void Database::setRegisteredUser(const user& registeredUser)
+{
+    sqlite3_exec(db.get(),"DELETE FROM USER",nullptr,nullptr,nullptr);
+    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
+    sqlite3_stmt *stmt_ptr;
+    int rc = sqlite3_prepare_v2(db.get(),"INSERT INTO USER(USERNAME,PASSWORD,CLIENT_ID,SECRET,WEBSITE,APP_NAME) VALUES(?,?,?,?,?,?)",-1,&stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot insert user");
+    rc = sqlite3_bind_text(stmt.get(),1,registeredUser.username.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to user");
+    rc = sqlite3_bind_text(stmt.get(),2,registeredUser.password.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to user");
+    rc = sqlite3_bind_text(stmt.get(),3,registeredUser.client_id.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to user");
+    rc = sqlite3_bind_text(stmt.get(),4,registeredUser.secret.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to user");
+    rc = sqlite3_bind_text(stmt.get(),5,registeredUser.website.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to user");
+    rc = sqlite3_bind_text(stmt.get(),6,registeredUser.app_name.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to user");
+    rc = sqlite3_step(stmt.get());
+    DB_ERR_CHECK("Cannot insert user");
 }

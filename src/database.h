@@ -29,6 +29,7 @@ class Database
 public:
     Database();
     std::optional<user> getRegisteredUser() const;
+    void setRegisteredUser(const user& registeredUser);
 private:
     std::unique_ptr<sqlite3,connection_deleter> db;
 };

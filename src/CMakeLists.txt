@@ -24,6 +24,11 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         subredditwindow.cpp
         database.cpp
         loginwindow.cpp
+        redditclient.cpp
+        redditconnection.cpp
+        redditloginconnection.cpp
+        redditlistingconnection.cpp
+        entities.cpp
         )
 
 add_executable(${EXECUTABLE_NAME}
@@ -37,15 +42,16 @@ add_executable(${EXECUTABLE_NAME}
 
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE  OpenGL::GL SDL2::SDL2)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${CMAKE_DL_LIBS} Threads::Threads )
-
+target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL)
 
 target_include_directories(${EXECUTABLE_NAME} PRIVATE
     "imgui"
     "${CMAKE_CURRENT_SOURCE_DIR}"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/fmt/include/"
+    ${Boost_INCLUDE_DIRS}
     )
 
-target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "IMGUI_IMPL_OPENGL_LOADER_GLAD" "GLFW_USE_WAYLAND=OFF")
+target_compile_definitions(${EXECUTABLE_NAME} PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLAD BOOST_ASIO_NO_DEPRECATED)
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "$<$<CONFIG:Debug>:REDDIT_DESKTOP_DEBUG>")
 target_compile_options(${EXECUTABLE_NAME} PUBLIC $<$<CONFIG:Debug>:-Wall -pedantic -Wextra>)
 add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
@@ -54,6 +60,7 @@ target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "$<$<C_COMPILER_ID:MSVC>:_
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "$<$<C_COMPILER_ID:MSVC>:NOMINMAX>")
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "$<$<C_COMPILER_ID:MSVC>:_UNICODE>")
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "$<$<C_COMPILER_ID:MSVC>:UNICODE>")
+
 
 
 if(WIN32_APP_OPTIONS)

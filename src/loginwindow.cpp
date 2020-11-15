@@ -14,9 +14,22 @@ constexpr std::string_view LABEL_TEMPLATE = "XXXXXXXXXXX";
 constexpr std::string_view FIELD_TEMPLATE = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 }
 
-LoginWindow::LoginWindow()
+LoginWindow::LoginWindow(RedditClient* client):
+    client(client),loginConnection(client->makeLoginClientConnection())
 {
-
+    loginConnection->connectLoginComplete([this](const boost::system::error_code& ec,const client_response<access_token>& token){
+        tested = !ec;
+        testingInProgress = false;
+        if(ec)
+        {
+            testingErrorMessage = ec.message();
+        }
+        else
+        {
+            configuredUser = user(username,password,clientId,secret,website,appName);
+            this->token = token;
+        }
+    });
 }
 void LoginWindow::setShowLoginWindow(bool flag)
 {
@@ -77,13 +90,19 @@ bool LoginWindow::showLoginWindow()
         ImGui::PopItemWidth();
 
         ImGui::Spacing();
-        ImGui::SameLine(ImGui:: GetWindowContentRegionMax().x-100-(ImGui::GetTextLineHeight()*2.0));
+        int spacing = ImGui::GetWindowContentRegionMax().x - 100;
+        if(testingInProgress)
+        {
+            spacing -= (ImGui::GetTextLineHeight()*1.5);
+        }
+        ImGui::SameLine(spacing);
         bool testDisabled = std::string_view(username).empty() ||
                 std::string_view(password).empty() ||
                 std::string_view(clientId).empty() ||
                 std::string_view(secret).empty() ||
                 std::string_view(website).empty() ||
-                std::string_view(appName).empty();
+                std::string_view(appName).empty() ||
+                testingInProgress;
 
         if(testDisabled)
         {
@@ -91,17 +110,31 @@ bool LoginWindow::showLoginWindow()
             ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
         }
 
-        constexpr std::string_view id = "###spinner_test";
-        ImGui::Spinner(id.data(),ImGui::GetTextLineHeight()/2.0,1,ImGui::GetColorU32(ImGuiCol_ButtonActive));
-        ImGui::SameLine();
+        if(testingInProgress)
+        {
+            constexpr std::string_view id = "###spinner_test";
+            ImGui::Spinner(id.data(),ImGui::GetTextLineHeight()/2.0,1,ImGui::GetColorU32(ImGuiCol_ButtonActive));
+            ImGui::SameLine();
+        }
         if (ImGui::Button("Test", ImVec2(100, 0)))
         {
-            tested = true;
+            testingInProgress = true;
+            tested = false;
+            testingErrorMessage.clear();
+            loginConnection->login(user(username,password,clientId,secret,website,appName));
         }
         if (testDisabled)
         {
             ImGui::PopItemFlag();
             ImGui::PopStyleVar();
+        }
+        if(!testingErrorMessage.empty())
+        {
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f),"%s",testingErrorMessage.c_str());
+        }
+        if(tested && !testingInProgress)
+        {
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f),"OK");
         }
 
         ImGui::TextWrapped(
