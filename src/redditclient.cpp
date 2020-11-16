@@ -43,9 +43,11 @@ RedditClient::RedditClient(std::string_view authServer,std::string_view server, 
                                 | boost::asio::ssl::context::tlsv13_client);
     ssl_context.set_verify_mode(boost::asio::ssl::verify_peer);
     ssl_context.set_default_verify_paths();
+    using run_function = boost::asio::io_context::count_type(boost::asio::io_context::*)();
+    auto bound_run_fuction = std::bind(static_cast<run_function>(&boost::asio::io_context::run),std::ref(context));
     for (int i=0;i<clientThreadsCount;i++)
     {
-        clientThreads.emplace_back(std::bind(static_cast<run_function>(&boost::asio::io_context::run),std::ref(context)));
+        clientThreads.emplace_back(bound_run_fuction);
     }
 }
 RedditClient::~RedditClient()

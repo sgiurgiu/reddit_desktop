@@ -22,8 +22,7 @@ public:
     RedditLoginClientConnection makeLoginClientConnection();
     RedditListingClientConnection makeListingClientConnection();
     void setUserAgent(const std::string& userAgent);
-private:
-    using run_function = boost::asio::io_context::count_type(boost::asio::io_context::*)();
+
 private:
     static constexpr auto service = "https";
     std::string authServer;

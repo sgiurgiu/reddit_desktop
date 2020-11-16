@@ -8,14 +8,14 @@ class Utils
 public:
     enum class Fonts: int
     {
-        Roboto_Black = 1,
+        Roboto_Black = 0,
         Roboto_BlackItalic,
         Roboto_Bold,
         Roboto_BoldItalic,
         Roboto_Italic,
         Roboto_Light,
         Roboto_LightItalic,
-        Roboto_Medium = 0,
+        Roboto_Medium,
         Roboto_MediumItalic,
         Roboto_Regular,
         Roboto_Thin,

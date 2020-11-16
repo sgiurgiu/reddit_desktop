@@ -22,7 +22,7 @@ RedditDesktop::RedditDesktop():client("api.reddit.com","oauth.reddit.com",3),
     }
     else
     {
-        loginConnection->connectLoginComplete([this](const boost::system::error_code& ec,const client_response<access_token>& token){
+        loginConnection->connectionCompleteHandler([this](const boost::system::error_code& ec,const client_response<access_token>& token){
             if(ec)
             {
                 showConnectionErrorDialog = true;

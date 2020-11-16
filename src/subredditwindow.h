@@ -6,6 +6,7 @@
 #include "entities.h"
 #include "redditclient.h"
 #include "redditlistingconnection.h"
+#include <glad/glad.h>
 
 class SubredditWindow
 {
@@ -20,6 +21,18 @@ private:
     void showWindowMenu();
     void loadListings(const listing& listingResponse);
 private:
+    struct image_target
+    {
+        std::string url;
+        int width;
+        int height;
+    };
+    struct images_preview
+    {
+        image_target source;
+        std::vector<image_target> resolutions;
+    };
+
     struct post
     {
         std::string title;
@@ -27,7 +40,15 @@ private:
         int ups = 0;
         int downs = 0;
         bool isVideo = false;
-
+        bool isSelf = false;
+        std::string thumbnail;
+        uint64_t createdAt;
+        int commentsCount = 0;
+        std::string subreddit;
+        int score = 0;
+        std::string url;
+        std::vector<images_preview> previews;
+        GLuint thumbnailTextureId = 0;
     };
     int id;
     std::string subreddit;

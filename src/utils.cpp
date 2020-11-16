@@ -12,29 +12,29 @@ void Utils::AddFont(const unsigned int* fontData, const unsigned int fontDataSiz
 {
     ImFontConfig config;
     config.MergeMode = true;
-    config.GlyphMinAdvanceX = 16.0f; // Use if you want to make the icon monospaced
+    config.GlyphMinAdvanceX = fontSize; // Use if you want to make the icon monospaced
     static const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
 
     ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(fontData,fontDataSize, fontSize);
-    ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(FontAwesome_compressed_data, FontAwesome_compressed_size, 16.0f,
+    ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(FontAwesome_compressed_data, FontAwesome_compressed_size, fontSize,
                                                                &config, icon_ranges);
 
 }
 
 void Utils::LoadFonts()
 {
-    /*AddFont(Roboto_Black_ttf_compressed_data_base85,16.0f);
-    AddFont(Roboto_BlackItalic_ttf_compressed_data_base85,16.0f);
-    AddFont(Roboto_Bold_ttf_compressed_data_base85,16.0f);
-    AddFont(Roboto_BoldItalic_ttf_compressed_data_base85,16.0f);
-    AddFont(Roboto_Italic_ttf_compressed_data_base85,16.0f);
-    AddFont(Roboto_Light_ttf_compressed_data_base85,16.0f);
-    AddFont(Roboto_LightItalic_ttf_compressed_data_base85,16.0f);*/
+    AddFont(Roboto_Black_ttf_compressed_data,Roboto_Black_ttf_compressed_size,16.0f);
+    AddFont(Roboto_BlackItalic_ttf_compressed_data,Roboto_BlackItalic_ttf_compressed_size,16.0f);
+    AddFont(Roboto_Bold_ttf_compressed_data,Roboto_Bold_ttf_compressed_size,16.0f);
+    AddFont(Roboto_BoldItalic_ttf_compressed_data,Roboto_BoldItalic_ttf_compressed_size,16.0f);
+    AddFont(Roboto_Italic_ttf_compressed_data,Roboto_Italic_ttf_compressed_size,16.0f);
+    AddFont(Roboto_Light_ttf_compressed_data,Roboto_Light_ttf_compressed_size,16.0f);
+    AddFont(Roboto_LightItalic_ttf_compressed_data,Roboto_LightItalic_ttf_compressed_size,16.0f);
     AddFont(Roboto_Medium_ttf_compressed_data,Roboto_Medium_ttf_compressed_size, 16.0f);
     AddFont(Roboto_MediumItalic_ttf_compressed_data,Roboto_MediumItalic_ttf_compressed_size, 16.0f);
-    /*AddFont(Roboto_Regular_ttf_compressed_data_base85,16.0f);
-    AddFont(Roboto_Thin_ttf_compressed_data_base85,16.0f);
-    AddFont(Roboto_ThinItalic_ttf_compressed_data_base85,16.0f);*/
+    AddFont(Roboto_Regular_ttf_compressed_data,Roboto_Regular_ttf_compressed_size,16.0f);
+    AddFont(Roboto_Thin_ttf_compressed_data,Roboto_Thin_ttf_compressed_size,16.0f);
+    AddFont(Roboto_ThinItalic_ttf_compressed_data,Roboto_ThinItalic_ttf_compressed_size,16.0f);
 }
 
 int Utils::GetFontIndex(Fonts font)

@@ -25,7 +25,6 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         database.cpp
         loginwindow.cpp
         redditclient.cpp
-        redditconnection.cpp
         redditloginconnection.cpp
         redditlistingconnection.cpp
         entities.cpp
@@ -48,6 +47,7 @@ target_include_directories(${EXECUTABLE_NAME} PRIVATE
     "imgui"
     "${CMAKE_CURRENT_SOURCE_DIR}"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/fmt/include/"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../external/stb/"
     ${Boost_INCLUDE_DIRS}
     )
 

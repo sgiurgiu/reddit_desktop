@@ -12,7 +12,7 @@ SubredditWindow::SubredditWindow(int id, const std::string& subreddit,
     connection(client->makeListingClientConnection())
 {
 
-    connection->listingComplete([this](const boost::system::error_code& ec,
+    connection->connectionCompleteHandler([this](const boost::system::error_code& ec,
                                 const client_response<listing>& response){
            if(ec)
            {
@@ -73,6 +73,62 @@ void SubredditWindow::loadListings(const listing& listingResponse)
             {
                 p.isVideo = child["data"]["is_video"].get<bool>();
             }
+            if(child["data"]["is_self"].is_boolean())
+            {
+                p.isSelf = child["data"]["is_self"].get<bool>();
+            }
+            if(child["data"]["thumbnail"].is_string())
+            {
+                p.thumbnail = child["data"]["thumbnail"].get<std::string>();
+            }
+            if(child["data"]["created"].is_number())
+            {
+                p.createdAt = child["data"]["created"].get<uint64_t>();
+            }
+            if(child["data"]["num_comments"].is_number())
+            {
+                p.commentsCount = child["data"]["num_comments"].get<int>();
+            }
+            if(child["data"]["subreddit"].is_string())
+            {
+                p.subreddit = child["data"]["subreddit"].get<std::string>();
+            }
+            if(child["data"]["score"].is_number())
+            {
+                p.score = child["data"]["score"].get<int>();
+            }
+            if(child["data"]["url"].is_string())
+            {
+                p.url = child["data"]["url"].get<std::string>();
+            }
+            if(child["data"].contains("preview") &&
+                    child["data"]["preview"].is_object() &&
+                    child["data"]["preview"]["images"].is_array())
+            {
+                for(const auto& img : child["data"]["preview"]["images"])
+                {
+                    images_preview preview;
+                    if(img["source"].is_object())
+                    {
+                        preview.source.url = img["source"]["url"].get<std::string>();
+                        preview.source.width = img["source"]["width"].get<int>();
+                        preview.source.height = img["source"]["height"].get<int>();
+                    }
+                    if(img["resolutions"].is_array())
+                    {
+                        for(const auto& res : img["resolutions"]) {
+                            image_target img_target;
+                            img_target.url = res["url"].get<std::string>();
+                            img_target.width = res["width"].get<int>();
+                            img_target.height = res["height"].get<int>();
+                            preview.resolutions.push_back(img_target);
+                        }
+                    }
+
+                    p.previews.push_back(preview);
+                }
+            }
+
             posts.push_back(p);
         }
     }
@@ -106,7 +162,12 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
 
     for(const auto& p : posts)
     {
+        if(p.thumbnail != "self")
+        {
+            //ImGui::Image();
+        }
         ImGui::TextWrapped("%s",p.title.c_str());
+        ImGui::Separator();
     }
 
 

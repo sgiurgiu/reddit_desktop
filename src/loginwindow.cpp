@@ -17,7 +17,7 @@ constexpr std::string_view FIELD_TEMPLATE = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 LoginWindow::LoginWindow(RedditClient* client):
     client(client),loginConnection(client->makeLoginClientConnection())
 {
-    loginConnection->connectLoginComplete([this](const boost::system::error_code& ec,const client_response<access_token>& token){
+    loginConnection->connectionCompleteHandler([this](const boost::system::error_code& ec,const client_response<access_token>& token){
         tested = !ec;
         testingInProgress = false;
         if(ec)
