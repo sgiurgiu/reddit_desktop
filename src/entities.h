@@ -44,4 +44,6 @@ struct client_response
     int status;
     std::string body;
 };
+
+
 #endif // ENTITIES_H

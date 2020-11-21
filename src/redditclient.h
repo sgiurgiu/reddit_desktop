@@ -4,6 +4,7 @@
 #include "entities.h"
 #include "redditloginconnection.h"
 #include "redditlistingconnection.h"
+#include "redditresourceconnection.h"
 
 #include <boost/asio/io_context.hpp>
 #include <thread>
@@ -19,8 +20,10 @@ public:
     ~RedditClient();
     using RedditLoginClientConnection = std::shared_ptr<RedditLoginConnection>;
     using RedditListingClientConnection = std::shared_ptr<RedditListingConnection>;
+    using RedditResourceClientConnection = std::shared_ptr<RedditResourceConnection>;
     RedditLoginClientConnection makeLoginClientConnection();
     RedditListingClientConnection makeListingClientConnection();
+    RedditResourceClientConnection makeResourceClientConnection(const std::string& url);
     void setUserAgent(const std::string& userAgent);
 
 private:

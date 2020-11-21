@@ -16,6 +16,8 @@ SET(GLAD_SRCS glad/glad.c)
 
 SET(FMT_SRCS ../external/fmt/src/format.cc)
 
+set(BOOST_URL_SRC ../external/url/src/src.cpp)
+
 set(SQLITE_SRC sqlite/sqlite3.c)
 
 set(REDDIT_DESKTOP_SRCS main.cpp
@@ -28,6 +30,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         redditloginconnection.cpp
         redditlistingconnection.cpp
         entities.cpp
+        redditresourceconnection.cpp
         )
 
 add_executable(${EXECUTABLE_NAME}
@@ -37,6 +40,7 @@ add_executable(${EXECUTABLE_NAME}
     ${GLAD_SRCS}
     ${FMT_SRCS}
     ${SQLITE_SRC}
+    ${BOOST_URL_SRC}
     )
 
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE  OpenGL::GL SDL2::SDL2)
@@ -48,6 +52,7 @@ target_include_directories(${EXECUTABLE_NAME} PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/fmt/include/"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/stb/"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../external/url/include"
     ${Boost_INCLUDE_DIRS}
     )
 

@@ -8,7 +8,7 @@
 #include <iostream>
 #include <vector>
 #include <SDL.h>
-
+#include <boost/asio/io_context.hpp>
 
 #if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
 #include <GL/gl3w.h>    // Initialize with gl3wInit()
@@ -27,6 +27,8 @@ using namespace gl;
 
 #include "utils.h"
 #include "redditdesktop.h"
+
+void runMainLoop(SDL_Window* window,ImGuiIO& io);
 
 #if defined(WIN32_WINMAIN)
 int WINAPI WinMain(
@@ -116,18 +118,37 @@ int main(int /*argc*/, char** /*argv*/)
     // Load Fonts
     //io.Fonts->AddFontDefault();
     Utils::LoadFonts();
-    // Our state
+
+    runMainLoop(window,io);
+
+    // Cleanup
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
+
+    SDL_GL_DeleteContext(gl_context);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+
+}
+
+
+void runMainLoop(SDL_Window* window,ImGuiIO& io)
+{
 #ifdef REDDIT_DESKTOP_DEBUG
     bool show_demo_window = true;
 #endif
-
-    RedditDesktop desktop;
+    boost::asio::io_context uiContext;
+    RedditDesktop desktop(uiContext.get_executor());
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     // Main loop
     bool done = false;
     while (!done)
     {
+        //execute whatever work we have in the UI thread
+        uiContext.restart();
+        uiContext.run();
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
         // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
@@ -172,14 +193,4 @@ int main(int /*argc*/, char** /*argv*/)
             done = desktop.quitSelected();
         }
     }
-
-    // Cleanup
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplSDL2_Shutdown();
-    ImGui::DestroyContext();
-
-    SDL_GL_DeleteContext(gl_context);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
-
 }

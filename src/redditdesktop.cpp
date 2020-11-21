@@ -12,8 +12,9 @@ constexpr auto OPENSUBREDDIT_WINDOW_POPUP_TITLE = "Open Subreddit";
 constexpr auto ERROR_WINDOW_POPUP_TITLE = "Error Occurred";
 }
 
-RedditDesktop::RedditDesktop():client("api.reddit.com","oauth.reddit.com",3),
-    loginConnection(client.makeLoginClientConnection()),loginWindow(&client)
+RedditDesktop::RedditDesktop(const boost::asio::io_context::executor_type& executor):uiExecutor(executor),
+    client("api.reddit.com","oauth.reddit.com",3),
+    loginConnection(client.makeLoginClientConnection()),loginWindow(&client,uiExecutor)
 {
     current_user = db.getRegisteredUser();
     if(!current_user)
@@ -25,26 +26,34 @@ RedditDesktop::RedditDesktop():client("api.reddit.com","oauth.reddit.com",3),
         loginConnection->connectionCompleteHandler([this](const boost::system::error_code& ec,const client_response<access_token>& token){
             if(ec)
             {
-                showConnectionErrorDialog = true;
-                connectionErrorMessage = ec.message();
+                boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,this,ec.message(),token));
             }
             else
             {
-                current_access_token = token;
                 if(token.status >= 400)
                 {
-                    showConnectionErrorDialog = true;
-                    connectionErrorMessage = token.body;
+                    boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,this,token.body,token));
                 }
                 else
                 {
-                    subredditWindows.push_back(std::make_unique<SubredditWindow>(windowsCount++,"",current_access_token.data,&client));
+                    boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::addSubredditWindow,this,"",token));
                 }
             }
         });
         client.setUserAgent(make_user_agent(current_user.value()));
         loginConnection->login(current_user.value());
     }
+}
+void RedditDesktop::addSubredditWindow(std::string title, client_response<access_token> token)
+{
+    current_access_token = token;
+    subredditWindows.push_back(std::make_unique<SubredditWindow>(windowsCount++,title,current_access_token.data,&client,this->uiExecutor));
+}
+void RedditDesktop::setConnectionErrorMessage(std::string msg,client_response<access_token> token)
+{
+    current_access_token = token;
+    showConnectionErrorDialog = true;
+    connectionErrorMessage = msg;
 }
 void RedditDesktop::showDesktop()
 {
@@ -175,7 +184,7 @@ void RedditDesktop::showOpenSubredditWindow()
         if (ImGui::Button("OK", ImVec2(120, 0)) ||
                 ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)))
         {
-            subredditWindows.push_back(std::make_unique<SubredditWindow>(windowsCount++,std::string(selectedSubreddit),current_access_token.data,&client));
+            addSubredditWindow(selectedSubreddit,current_access_token);
             ImGui::CloseCurrentPopup();
         }
         if (okDisabled)

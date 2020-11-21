@@ -1,5 +1,5 @@
-#ifndef DIRSTAT_FONTS_H
-#define DIRSTAT_FONTS_H
+#ifndef REDDIT_DESKTOP_FONTS_H
+#define REDDIT_DESKTOP_FONTS_H
 #include "IconsFontAwesome4.h"
 #include "Roboto-Black.ttf.h"
 #include "Roboto-BlackItalic.ttf.h"

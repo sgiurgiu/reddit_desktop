@@ -14,22 +14,28 @@ constexpr std::string_view LABEL_TEMPLATE = "XXXXXXXXXXX";
 constexpr std::string_view FIELD_TEMPLATE = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 }
 
-LoginWindow::LoginWindow(RedditClient* client):
-    client(client),loginConnection(client->makeLoginClientConnection())
+LoginWindow::LoginWindow(RedditClient* client,
+                         const boost::asio::io_context::executor_type& executor):
+    client(client),loginConnection(client->makeLoginClientConnection()),uiExecutor(executor)
 {
     loginConnection->connectionCompleteHandler([this](const boost::system::error_code& ec,const client_response<access_token>& token){
-        tested = !ec;
-        testingInProgress = false;
-        if(ec)
-        {
-            testingErrorMessage = ec.message();
-        }
-        else
-        {
-            configuredUser = user(username,password,clientId,secret,website,appName);
-            this->token = token;
-        }
+        boost::asio::post(this->uiExecutor,std::bind(&LoginWindow::testingCompleted,this,ec,token));
     });
+}
+void LoginWindow::testingCompleted(const boost::system::error_code ec,
+                                   const client_response<access_token> token)
+{
+    tested = !ec;
+    testingInProgress = false;
+    if(ec)
+    {
+        testingErrorMessage = ec.message();
+    }
+    else
+    {
+        configuredUser = user(username,password,clientId,secret,website,appName);
+        this->token = token;
+    }
 }
 void LoginWindow::setShowLoginWindow(bool flag)
 {

@@ -35,6 +35,8 @@ void Utils::LoadFonts()
     AddFont(Roboto_Regular_ttf_compressed_data,Roboto_Regular_ttf_compressed_size,16.0f);
     AddFont(Roboto_Thin_ttf_compressed_data,Roboto_Thin_ttf_compressed_size,16.0f);
     AddFont(Roboto_ThinItalic_ttf_compressed_data,Roboto_ThinItalic_ttf_compressed_size,16.0f);
+    AddFont(Roboto_Medium_ttf_compressed_data,Roboto_Medium_ttf_compressed_size, 24.0f);
+    AddFont(Roboto_MediumItalic_ttf_compressed_data,Roboto_MediumItalic_ttf_compressed_size, 24.0f);
 }
 
 int Utils::GetFontIndex(Fonts font)
@@ -77,4 +79,48 @@ std::string Utils::encode64(const std::string &val)
     using It = base64_from_binary<transform_width<std::string::const_iterator, 6, 8>>;
     auto tmp = std::string(It(std::begin(val)), It(std::end(val)));
     return tmp.append((3 - val.size() % 3) % 3, '=');
+}
+
+std::unique_ptr<Utils::gl_image> Utils::LoadImage(unsigned char* data, int width, int height, int channels)
+{
+    if(!data) return std::unique_ptr<gl_image>();
+    auto image = std::make_unique<gl_image>();
+    //https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples
+    GLuint image_texture;
+    glGenTextures(1, &image_texture);
+    glBindTexture(GL_TEXTURE_2D, image_texture);
+
+    // Setup filtering parameters for display
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); // This is required on WebGL for non power-of-two textures
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); // Same
+
+    // Upload pixels into texture
+#if defined(GL_UNPACK_ROW_LENGTH) && !defined(__EMSCRIPTEN__)
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#endif
+    if(channels == 3)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height,
+                     0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    }
+    else if (channels == 4)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height,
+                     0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    }
+    image->width = width;
+    image->height = height;
+    image->channels = channels;
+    image->textureId = image_texture;
+    return image;
+}
+
+Utils::gl_image::~gl_image()
+{
+    if(textureId > 0)
+    {
+        glDeleteTextures(1,&textureId);
+    }
 }

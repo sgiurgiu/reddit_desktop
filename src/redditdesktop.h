@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <memory>
+#include <boost/asio/io_context.hpp>
 
 #include "subredditwindow.h"
 #include "database.h"
@@ -12,7 +13,7 @@
 class RedditDesktop
 {
 public:
-    RedditDesktop();
+    RedditDesktop(const boost::asio::io_context::executor_type& executor);
 
     void showDesktop();
     bool quitSelected() const
@@ -32,7 +33,10 @@ private:
     void showMenuFile();
     void showOpenSubredditWindow();
     void showErrorDialog();
+    void setConnectionErrorMessage(std::string msg,client_response<access_token> token);
+    void addSubredditWindow(std::string title, client_response<access_token> token);
 private:
+    const boost::asio::io_context::executor_type& uiExecutor;
     RedditClient client;
     RedditClient::RedditLoginClientConnection loginConnection;
     std::vector<std::unique_ptr<SubredditWindow>> subredditWindows;
@@ -48,7 +52,6 @@ private:
     client_response<access_token> current_access_token;
     bool showConnectionErrorDialog = false;
     std::string connectionErrorMessage;
-
 };
 
 

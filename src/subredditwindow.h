@@ -1,25 +1,26 @@
 #ifndef SUBREDDITWINDOW_H
 #define SUBREDDITWINDOW_H
 
+#include <boost/asio/io_context.hpp>
 #include <string>
 #include <memory>
+#include <mutex>
 #include "entities.h"
 #include "redditclient.h"
 #include "redditlistingconnection.h"
-#include <glad/glad.h>
+#include "utils.h"
+
 
 class SubredditWindow
 {
 public:
     SubredditWindow(int id, const std::string& subreddit,
                     const access_token& token,
-                    RedditClient* client);
+                    RedditClient* client,
+                    const boost::asio::io_context::executor_type& executor);
     bool isWindowOpen() {return true;}
     void showWindow(int appFrameWidth,int appFrameHeight);
 
-private:
-    void showWindowMenu();
-    void loadListings(const listing& listingResponse);
 private:
     struct image_target
     {
@@ -48,8 +49,16 @@ private:
         int score = 0;
         std::string url;
         std::vector<images_preview> previews;
-        GLuint thumbnailTextureId = 0;
+        std::unique_ptr<Utils::gl_image> thumbnail_picture;
     };
+    using posts_list = std::vector<std::shared_ptr<post>>;
+
+    void showWindowMenu();
+    void loadListingsFromConnection(const listing& listingResponse);
+    void setListings(posts_list receivedPosts);
+    void setErrorMessage(std::string errorMessage);
+    void setPostThumbnail(post* p,unsigned char* data, int width, int height, int channels);
+private:    
     int id;
     std::string subreddit;
     bool windowOpen = true;
@@ -58,9 +67,9 @@ private:
     std::string windowName;
     RedditClient::RedditListingClientConnection connection;
     std::string listingErrorMessage;
-    std::vector<post> posts;
+    posts_list posts;
     std::string target;
-
+    const boost::asio::io_context::executor_type& uiExecutor;
 };
 
 #endif // SUBREDDITWINDOW_H

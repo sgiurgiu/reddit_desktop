@@ -2,11 +2,12 @@
 #define LOGINWINDOW_H
 
 #include "redditclient.h"
+#include <boost/asio/io_context.hpp>
 
 class LoginWindow
 {
 public:
-    LoginWindow(RedditClient* client);
+    LoginWindow(RedditClient* client, const boost::asio::io_context::executor_type& executor);
     void setShowLoginWindow(bool flag);
     bool showLoginWindow();
     user getConfiguredUser() const
@@ -22,6 +23,8 @@ public:
         configuredUser = user;
     }
 private:
+    void testingCompleted(const boost::system::error_code ec,const client_response<access_token> token);
+private:
     bool showLoginInfoWindow = false;
     char username[255] = { 0 };
     char password[255] = { 0 };
@@ -36,6 +39,7 @@ private:
     user configuredUser;
     client_response<access_token> token;
     RedditClient::RedditLoginClientConnection loginConnection;
+    const boost::asio::io_context::executor_type& uiExecutor;
 };
 
 #endif // LOGINWINDOW_H

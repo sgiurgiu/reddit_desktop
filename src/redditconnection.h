@@ -27,7 +27,7 @@ public:
 
     void connectionCompleteHandler(const typename Signal::slot_type& slot)
     {
-        signal.connect(slot);
+        signal.connect(slot);        
     }
 private:
     void onConnect(const boost::system::error_code& ec,
