@@ -44,12 +44,16 @@ private:
         bool isSelf = false;
         std::string thumbnail;
         uint64_t createdAt;
+        std::string humanReadableTimeDifference;
         int commentsCount = 0;
         std::string subreddit;
         int score = 0;
+        std::string humanScore;
         std::string url;
         std::vector<images_preview> previews;
         std::unique_ptr<Utils::gl_image> thumbnail_picture;
+        std::string authorFullName;
+        std::string author;
     };
     using posts_list = std::vector<std::shared_ptr<post>>;
 

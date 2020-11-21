@@ -7,6 +7,7 @@
 #include <boost/archive/iterators/base64_from_binary.hpp>
 #include <boost/archive/iterators/transform_width.hpp>
 #include <boost/algorithm/string.hpp>
+#include <chrono>
 
 void Utils::AddFont(const unsigned int* fontData, const unsigned int fontDataSize, float fontSize)
 {
@@ -123,4 +124,60 @@ Utils::gl_image::~gl_image()
     {
         glDeleteTextures(1,&textureId);
     }
+}
+std::string Utils::getHumanReadableNumber(int number)
+{
+    std::string fmt_num;
+    if(number < 10000 )
+    {
+        fmt_num = fmt::format("{}",number);
+    }
+    else if(number < 100'000 )
+    {
+        fmt_num = fmt::format("{:.1f}k",number/1000.0);
+    }
+    else
+    {
+        fmt_num = fmt::format("{:.0f}k",number/1000.0);
+    }
+    return fmt_num;
+}
+std::string Utils::getHumanReadableTimeAgo(uint64_t time)
+{
+    auto diff_time = std::time(nullptr) - time;
+    std::chrono::seconds diff(diff_time);
+    typedef std::chrono::duration<int, std::ratio<86400*365>> years;
+    const auto y = std::chrono::duration_cast<years>(diff);
+    if(y.count() > 0)
+    {
+        if(y.count() == 1) return "a year ago";
+        return fmt::format("{} years ago", y.count());
+    }
+    typedef std::chrono::duration<int, std::ratio<86400>> days;
+    const auto d = std::chrono::duration_cast<days>(diff);
+    if(d.count() > 0)
+    {
+        if(d.count() == 1) return "yesterday";
+        return fmt::format("{} days ago", d.count());
+    }
+    const auto h = std::chrono::duration_cast<std::chrono::hours>(diff);
+    if(h.count() > 0)
+    {
+        if(h.count() == 1) return "1 hour ago";
+        return fmt::format("{} hours ago", h.count());
+    }
+    const auto m = std::chrono::duration_cast<std::chrono::minutes>(diff);
+    if(m.count() > 0)
+    {
+        if(m.count() == 1) return "1 minute ago";
+        return fmt::format("{} minutes ago", m.count());
+    }
+    const auto s = std::chrono::duration_cast<std::chrono::seconds>(diff);
+    if(s.count() > 0)
+    {
+        if(s.count() == 1) return "1 second ago";
+        return fmt::format("{} seconds ago", s.count());
+    }
+    const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(diff);
+    return fmt::format("{} miliseconds ago", ms.count());
 }

@@ -38,6 +38,8 @@ public:
     static std::string decode64(const std::string &val);
     static std::string encode64(const std::string &val);
     static std::unique_ptr<gl_image> LoadImage(unsigned char* data, int width, int height, int channels);
+    static std::string getHumanReadableTimeAgo(uint64_t time);
+    static std::string getHumanReadableNumber(int number);
 private:
     static void AddFont(const unsigned int* fontData, const unsigned int fontDataSize, float fontSize);
 

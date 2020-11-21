@@ -92,26 +92,37 @@ void SubredditWindow::loadListingsFromConnection(const listing& listingResponse)
             {
                 p->thumbnail = child["data"]["thumbnail"].get<std::string>();
             }
-            if(child["data"]["created"].is_number())
+            if(child["data"]["created_utc"].is_number())
             {
-                p->createdAt = child["data"]["created"].get<uint64_t>();
+                p->createdAt = child["data"]["created_utc"].get<uint64_t>();
+                p->humanReadableTimeDifference = Utils::getHumanReadableTimeAgo(p->createdAt);
             }
             if(child["data"]["num_comments"].is_number())
             {
                 p->commentsCount = child["data"]["num_comments"].get<int>();
             }
-            if(child["data"]["subreddit"].is_string())
+            if(child["data"]["subreddit_name_prefixed"].is_string())
             {
-                p->subreddit = child["data"]["subreddit"].get<std::string>();
+                p->subreddit = child["data"]["subreddit_name_prefixed"].get<std::string>();
             }
             if(child["data"]["score"].is_number())
             {
                 p->score = child["data"]["score"].get<int>();
+                p->humanScore = Utils::getHumanReadableNumber(p->score);
             }
             if(child["data"]["url"].is_string())
             {
                 p->url = child["data"]["url"].get<std::string>();
             }
+            if(child["data"]["author_fullname"].is_string())
+            {
+                p->authorFullName = child["data"]["author_fullname"].get<std::string>();
+            }
+            if(child["data"]["author"].is_string())
+            {
+                p->author = child["data"]["author"].get<std::string>();
+            }
+
             if(child["data"].contains("preview") &&
                     child["data"]["preview"].is_object() &&
                     child["data"]["preview"]["images"].is_array())
@@ -204,24 +215,34 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
     }
 
     for(auto&& p : posts)
-    {        
-
-        ImGui::Columns(3);
+    {
         ImGui::BeginGroup();
-        ImGui::Text("Upvotes: %d",p->ups);
-        ImGui::Text("%d",p->score);
-        ImGui::Text("Downvotes: %d",p->downs);
+        ImGui::Button(reinterpret_cast<const char*>(ICON_FA_ARROW_UP));
+        ImGui::Text("%s",p->humanScore.c_str());
+        ImGui::Button(reinterpret_cast<const char*>(ICON_FA_ARROW_DOWN));
         ImGui::EndGroup();
-        ImGui::NextColumn();
-        //ImGui::GetCursorPosX();
+
+        auto height = ImGui::GetCursorPosY();
+        ImGui::SameLine();
         if(p->thumbnail_picture)
         {
             ImGui::Image((void*)(intptr_t)p->thumbnail_picture->textureId,
                          ImVec2(p->thumbnail_picture->width,p->thumbnail_picture->height));
-        //    ImGui::SameLine();
+            height = std::max(height,ImGui::GetCursorPosY());
+            ImGui::SameLine();
         }
 
-        ImGui::NextColumn();
+        ImGui::BeginGroup();
+
+        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Bold)]);
+        ImGui::Text("%s",p->subreddit.c_str());
+        ImGui::PopFont();
+        ImGui::SameLine();
+        //ImGui::Spacing();ImGui::SameLine();
+        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Light)]);
+        ImGui::Text("Posted by %s %s",p->author.c_str(),p->humanReadableTimeDifference.c_str());
+        ImGui::PopFont();
+
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Medium_Big)]);
         if(!p->title.empty())
         {
@@ -233,9 +254,12 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         }
         ImGui::PopFont();        
         auto commentsText = fmt::format(reinterpret_cast<const char*>(ICON_FA_COMMENTS " {} comments"),p->commentsCount);
+        auto normalPositionY = ImGui::GetCursorPosY();
+        auto desiredPositionY = height - ImGui::GetFrameHeightWithSpacing();
+        if(normalPositionY < desiredPositionY) ImGui::SetCursorPosY(desiredPositionY);
         ImGui::Button(commentsText.c_str());
 
-        ImGui::Columns(1);
+        ImGui::EndGroup();
         ImGui::Separator();
     }
 
