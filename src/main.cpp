@@ -28,6 +28,11 @@ using namespace gl;
 #include "utils.h"
 #include "redditdesktop.h"
 
+#ifdef REDDIT_DESKTOP_DEBUG
+#include "markdownrenderer.h"
+    void ShowMarkdownWindow(bool *open);
+#endif
+
 void runMainLoop(SDL_Window* window,ImGuiIO& io);
 
 #if defined(WIN32_WINMAIN)
@@ -137,6 +142,7 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
 {
 #ifdef REDDIT_DESKTOP_DEBUG
     bool show_demo_window = true;
+    bool show_markdown_window = true;
 #endif
     boost::asio::io_context uiContext;
     RedditDesktop desktop(uiContext.get_executor());
@@ -173,13 +179,16 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
         if (show_demo_window)
             ImGui::ShowDemoWindow(&show_demo_window);
+        if(show_markdown_window)
+            ShowMarkdownWindow(&show_markdown_window);
 #endif
         int windowWidth;
         int windowHeight;
         SDL_GetWindowSize(window,&windowWidth,&windowHeight);
         desktop.setAppFrameHeight(windowHeight);
         desktop.setAppFrameWidth(windowWidth);
-        desktop.showDesktop();
+        if(!show_markdown_window)
+            desktop.showDesktop();
 
         // Rendering
         ImGui::Render();
@@ -194,3 +203,27 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
         }
     }
 }
+
+#ifdef REDDIT_DESKTOP_DEBUG
+#include <fstream>
+void ShowMarkdownWindow(bool *open)
+{
+    if(!ImGui::Begin("Markdown",open,ImGuiWindowFlags_None))
+    {
+        ImGui::End();
+        return;
+    }
+    std::string body;
+    {
+        std::ifstream f("spec.txt");
+        f.seekg(0, std::ios::end);
+        body.resize(f.tellg());
+        f.seekg(0, std::ios::beg);
+        f.read(&body[0], body.size());
+    }
+
+    MarkdownRenderer::RenderMarkdown("1",body);
+
+    ImGui::End();
+}
+#endif

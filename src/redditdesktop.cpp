@@ -47,7 +47,20 @@ RedditDesktop::RedditDesktop(const boost::asio::io_context::executor_type& execu
 void RedditDesktop::addSubredditWindow(std::string title, client_response<access_token> token)
 {
     current_access_token = token;
-    subredditWindows.push_back(std::make_unique<SubredditWindow>(windowsCount++,title,current_access_token.data,&client,this->uiExecutor));
+    subredditWindows.push_back(std::make_unique<SubredditWindow>(windowsCount++,title,current_access_token.data,&client,uiExecutor));
+    subredditWindows.back()->showCommentsListener([this](const std::string& postId){
+        auto it = std::find_if(commentsWindows.begin(),commentsWindows.end(),[&postId](const std::unique_ptr<CommentsWindow>& win){
+            return win->getPostId() == postId;
+        });
+        if(it == commentsWindows.end())
+        {
+            commentsWindows.push_back(std::make_unique<CommentsWindow>(postId,current_access_token.data,&client,uiExecutor));
+        }
+        else
+        {
+            (*it)->setFocused();
+        }
+    });
 }
 void RedditDesktop::setConnectionErrorMessage(std::string msg,client_response<access_token> token)
 {
@@ -75,10 +88,22 @@ void RedditDesktop::showDesktop()
         }
     }
 
-    auto startRemove = std::remove_if(subredditWindows.begin(),subredditWindows.end(),[](const auto& win) {
+    for(auto&& win : commentsWindows)
+    {
+        if(win->isWindowOpen())
+        {
+            win->showWindow(appFrameWidth,appFrameHeight);
+        }
+    }
+
+    auto startRemoveSubredditWindows = std::remove_if(subredditWindows.begin(),subredditWindows.end(),[](const auto& win) {
         return !win->isWindowOpen();
     });
-    subredditWindows.erase(startRemove,subredditWindows.end());
+    subredditWindows.erase(startRemoveSubredditWindows,subredditWindows.end());
+    auto startRemoveCommentsWindows = std::remove_if(commentsWindows.begin(),commentsWindows.end(),[](const auto& win) {
+        return !win->isWindowOpen();
+    });
+    commentsWindows.erase(startRemoveCommentsWindows,commentsWindows.end());
 
     showOpenSubredditWindow();
 

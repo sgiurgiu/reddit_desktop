@@ -17,7 +17,6 @@ SubredditWindow::SubredditWindow(int id, const std::string& subreddit,
     id(id),subreddit(subreddit),token(token),client(client),
     connection(client->makeListingClientConnection()),uiExecutor(executor)
 {
-
     connection->connectionCompleteHandler([this](const boost::system::error_code& ec,
                                 const client_response<listing>& response)
     {
@@ -66,92 +65,11 @@ void SubredditWindow::loadListingsFromConnection(const listing& listingResponse)
         auto kind = child["kind"].get<std::string>();
         if(kind == "t3")
         {
-            auto p = std::make_unique<post>();
-            p->title = child["data"]["title"].get<std::string>();
-            if(child["data"]["selftext"].is_string())
-            {
-                p->selfText = child["data"]["selftext"].get<std::string>();
-            }
-            if(child["data"]["ups"].is_number())
-            {
-                p->ups = child["data"]["ups"].get<int>();
-            }
-            if(child["data"]["downs"].is_number())
-            {
-                p->downs = child["data"]["downs"].get<int>();
-            }
-            if(child["data"]["is_video"].is_boolean())
-            {
-                p->isVideo = child["data"]["is_video"].get<bool>();
-            }
-            if(child["data"]["is_self"].is_boolean())
-            {
-                p->isSelf = child["data"]["is_self"].get<bool>();
-            }
-            if(child["data"]["thumbnail"].is_string())
-            {
-                p->thumbnail = child["data"]["thumbnail"].get<std::string>();
-            }
-            if(child["data"]["created_utc"].is_number())
-            {
-                p->createdAt = child["data"]["created_utc"].get<uint64_t>();
-                p->humanReadableTimeDifference = Utils::getHumanReadableTimeAgo(p->createdAt);
-            }
-            if(child["data"]["num_comments"].is_number())
-            {
-                p->commentsCount = child["data"]["num_comments"].get<int>();
-            }
-            if(child["data"]["subreddit_name_prefixed"].is_string())
-            {
-                p->subreddit = child["data"]["subreddit_name_prefixed"].get<std::string>();
-            }
-            if(child["data"]["score"].is_number())
-            {
-                p->score = child["data"]["score"].get<int>();
-                p->humanScore = Utils::getHumanReadableNumber(p->score);
-            }
-            if(child["data"]["url"].is_string())
-            {
-                p->url = child["data"]["url"].get<std::string>();
-            }
-            if(child["data"]["author_fullname"].is_string())
-            {
-                p->authorFullName = child["data"]["author_fullname"].get<std::string>();
-            }
-            if(child["data"]["author"].is_string())
-            {
-                p->author = child["data"]["author"].get<std::string>();
-            }
-
-            if(child["data"].contains("preview") &&
-                    child["data"]["preview"].is_object() &&
-                    child["data"]["preview"]["images"].is_array())
-            {
-                for(const auto& img : child["data"]["preview"]["images"])
-                {
-                    images_preview preview;
-                    if(img["source"].is_object())
-                    {
-                        preview.source.url = img["source"]["url"].get<std::string>();
-                        preview.source.width = img["source"]["width"].get<int>();
-                        preview.source.height = img["source"]["height"].get<int>();
-                    }
-                    if(img["resolutions"].is_array())
-                    {
-                        for(const auto& res : img["resolutions"]) {
-                            image_target img_target;
-                            img_target.url = res["url"].get<std::string>();
-                            img_target.width = res["width"].get<int>();
-                            img_target.height = res["height"].get<int>();
-                            preview.resolutions.push_back(img_target);
-                        }
-                    }
-
-                    p->previews.push_back(preview);
-                }
-            }
-            //p.thumbnail_picture.textureId = 1;
-            tmpPosts.push_back(std::move(p));
+            tmpPosts.emplace_back(std::make_unique<post>(child["data"]));
+        }
+        else
+        {
+            int a = 1;
         }
     }
     boost::asio::post(this->uiExecutor,std::bind(&SubredditWindow::setListings,this,std::move(tmpPosts)));
@@ -164,7 +82,8 @@ void SubredditWindow::setListings(posts_list receivedPosts)
     std::move(receivedPosts.begin(), receivedPosts.end(), std::back_inserter(posts));
     for(auto&& p : posts)
     {
-        if(!p->thumbnail.empty() && p->thumbnail != "self")
+        auto thumbnail = p->thumbnail;
+        if(!p->thumbnail.empty() && p->thumbnail != "self" && p->thumbnail != "default")
         {
             auto resourceConnection = client->makeResourceClientConnection(p->thumbnail);
             resourceConnection->connectionCompleteHandler(
@@ -180,6 +99,10 @@ void SubredditWindow::setListings(posts_list receivedPosts)
             });
             resourceConnection->getResource(token);
         }
+        else
+        {
+            int b = 1;
+        }
     }
 }
 void SubredditWindow::setPostThumbnail(post* p,unsigned char* data, int width, int height, int channels)
@@ -190,7 +113,6 @@ void SubredditWindow::setPostThumbnail(post* p,unsigned char* data, int width, i
 }
 void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
 {
-
     ImGui::SetNextWindowSize(ImVec2(appFrameWidth*0.6,appFrameHeight*0.8),ImGuiCond_FirstUseEver);
     if(!windowOpen) return;
     if(!ImGui::Begin(windowName.c_str(),&windowOpen,ImGuiWindowFlags_MenuBar))
@@ -198,7 +120,12 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::End();
         return;
     }
-    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_W)) && ImGui::GetIO().KeyCtrl)
+    if(willBeFocused)
+    {
+        ImGui::SetWindowFocus();
+        willBeFocused = false;
+    }
+    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_W)) && ImGui::GetIO().KeyCtrl && ImGui::IsWindowFocused())
     {
         windowOpen = false;
     }
@@ -214,12 +141,29 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "%s",listingErrorMessage.c_str());
     }
 
-    for(auto&& p : posts)
+    if(maxScoreWidth == 0.f)
     {
+        maxScoreWidth = ImGui::CalcTextSize("99.9k").x  - (ImGui::GetStyle().FramePadding.x*2.f);
+    }
+    if(upvotesButtonsIdent == 0.f)
+    {
+        auto upvotesButtonsWidth = ImGui::CalcTextSize(reinterpret_cast<const char*>(ICON_FA_ARROW_UP)).x  + (ImGui::GetStyle().FramePadding.x);
+        upvotesButtonsIdent = (maxScoreWidth - upvotesButtonsWidth) / 2.f - (ImGui::GetStyle().FramePadding.x);
+    }
+
+    for(auto&& p : posts)
+    {                
         ImGui::BeginGroup();
+        ImGui::PushStyleColor(ImGuiCol_Button,ImVec4(1.0f,1.0f,1.0f,0.0f));
+        ImGui::Dummy(ImVec2(upvotesButtonsIdent/2.f,0.f));ImGui::SameLine();
         ImGui::Button(reinterpret_cast<const char*>(ICON_FA_ARROW_UP));
+        auto scoreIdent = (maxScoreWidth - ImGui::CalcTextSize(p->humanScore.c_str()).x)/2.f;
+        ImGui::Dummy(ImVec2(scoreIdent,0.f));ImGui::SameLine();
         ImGui::Text("%s",p->humanScore.c_str());
-        ImGui::Button(reinterpret_cast<const char*>(ICON_FA_ARROW_DOWN));
+        if(ImGui::GetItemRectSize().x > maxScoreWidth) maxScoreWidth = ImGui::GetItemRectSize().x;
+        ImGui::Dummy(ImVec2(upvotesButtonsIdent/2.f,0.f));ImGui::SameLine();
+        ImGui::Button(reinterpret_cast<const char*>(ICON_FA_ARROW_DOWN));        
+        ImGui::PopStyleColor(1);
         ImGui::EndGroup();
 
         auto height = ImGui::GetCursorPosY();
@@ -237,8 +181,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Bold)]);
         ImGui::Text("%s",p->subreddit.c_str());
         ImGui::PopFont();
-        ImGui::SameLine();
-        //ImGui::Spacing();ImGui::SameLine();
+        ImGui::SameLine();        
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Light)]);
         ImGui::Text("Posted by %s %s",p->author.c_str(),p->humanReadableTimeDifference.c_str());
         ImGui::PopFont();
@@ -257,16 +200,16 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         auto normalPositionY = ImGui::GetCursorPosY();
         auto desiredPositionY = height - ImGui::GetFrameHeightWithSpacing();
         if(normalPositionY < desiredPositionY) ImGui::SetCursorPosY(desiredPositionY);
-        ImGui::Button(commentsText.c_str());
-
+        if(ImGui::Button(commentsText.c_str()))
+        {
+            commentsSignal(p->id);
+        }
         ImGui::EndGroup();
         ImGui::Separator();
     }
 
     ImGui::End();
 }
-
-
 
 void SubredditWindow::showWindowMenu()
 {
@@ -296,4 +239,13 @@ void SubredditWindow::showWindowMenu()
 
         ImGui::EndMenuBar();
     }
+}
+
+void SubredditWindow::showCommentsListener(const typename CommentsSignal::slot_type& slot)
+{
+    commentsSignal.connect(slot);
+}
+void SubredditWindow::setFocused()
+{
+    willBeFocused = true;
 }

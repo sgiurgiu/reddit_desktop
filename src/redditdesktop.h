@@ -9,6 +9,7 @@
 #include "database.h"
 #include "loginwindow.h"
 #include "redditclient.h"
+#include "commentswindow.h"
 
 class RedditDesktop
 {
@@ -40,6 +41,7 @@ private:
     RedditClient client;
     RedditClient::RedditLoginClientConnection loginConnection;
     std::vector<std::unique_ptr<SubredditWindow>> subredditWindows;
+    std::vector<std::unique_ptr<CommentsWindow>> commentsWindows;
     bool shouldQuit = false;
     bool openSubredditWindow = false;
     char selectedSubreddit[100] = { 0 };

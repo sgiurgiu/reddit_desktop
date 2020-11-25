@@ -31,6 +31,8 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         redditlistingconnection.cpp
         entities.cpp
         redditresourceconnection.cpp
+        commentswindow.cpp
+        markdownrenderer.cpp
         )
 
 add_executable(${EXECUTABLE_NAME}
@@ -46,7 +48,7 @@ add_executable(${EXECUTABLE_NAME}
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE  OpenGL::GL SDL2::SDL2)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${CMAKE_DL_LIBS} Threads::Threads )
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL)
-
+target_link_libraries(${EXECUTABLE_NAME} PRIVATE libcmark-gfm-extensions_static libcmark-gfm_static)
 target_include_directories(${EXECUTABLE_NAME} PRIVATE
     "imgui"
     "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -54,6 +56,10 @@ target_include_directories(${EXECUTABLE_NAME} PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/stb/"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/url/include"
     ${Boost_INCLUDE_DIRS}
+    "${CMAKE_CURRENT_SOURCE_DIR}/../external/cmark-gfm/src"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../external/cmark-gfm/extensions"
+    "${CMAKE_BINARY_DIR}/external/cmark-gfm/src"
+    "${CMAKE_BINARY_DIR}/external/cmark-gfm/extensions"
     )
 
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLAD BOOST_ASIO_NO_DEPRECATED)
@@ -66,6 +72,7 @@ target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "$<$<C_COMPILER_ID:MSVC>:N
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "$<$<C_COMPILER_ID:MSVC>:_UNICODE>")
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "$<$<C_COMPILER_ID:MSVC>:UNICODE>")
 
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../test/spec.txt" "${CMAKE_CURRENT_BINARY_DIR}/spec.txt" COPYONLY)
 
 
 if(WIN32_APP_OPTIONS)

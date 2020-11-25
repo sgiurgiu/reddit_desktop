@@ -4,7 +4,7 @@
 #include <boost/asio/io_context.hpp>
 #include <string>
 #include <memory>
-#include <mutex>
+#include <boost/signals2.hpp>
 #include "entities.h"
 #include "redditclient.h"
 #include "redditlistingconnection.h"
@@ -18,44 +18,12 @@ public:
                     const access_token& token,
                     RedditClient* client,
                     const boost::asio::io_context::executor_type& executor);
-    bool isWindowOpen() {return true;}
+    bool isWindowOpen() const {return windowOpen;}
     void showWindow(int appFrameWidth,int appFrameHeight);
-
+    using CommentsSignal = boost::signals2::signal<void(const std::string& id)>;
+    void showCommentsListener(const typename CommentsSignal::slot_type& slot);
+    void setFocused();
 private:
-    struct image_target
-    {
-        std::string url;
-        int width;
-        int height;
-    };
-    struct images_preview
-    {
-        image_target source;
-        std::vector<image_target> resolutions;
-    };
-
-    struct post
-    {
-        std::string title;
-        std::string selfText;
-        int ups = 0;
-        int downs = 0;
-        bool isVideo = false;
-        bool isSelf = false;
-        std::string thumbnail;
-        uint64_t createdAt;
-        std::string humanReadableTimeDifference;
-        int commentsCount = 0;
-        std::string subreddit;
-        int score = 0;
-        std::string humanScore;
-        std::string url;
-        std::vector<images_preview> previews;
-        std::unique_ptr<Utils::gl_image> thumbnail_picture;
-        std::string authorFullName;
-        std::string author;
-    };
-    using posts_list = std::vector<std::shared_ptr<post>>;
 
     void showWindowMenu();
     void loadListingsFromConnection(const listing& listingResponse);
@@ -74,6 +42,10 @@ private:
     posts_list posts;
     std::string target;
     const boost::asio::io_context::executor_type& uiExecutor;
+    float maxScoreWidth = 0.f;
+    float upvotesButtonsIdent = 0.f;
+    CommentsSignal commentsSignal;
+    bool willBeFocused = false;
 };
 
 #endif // SUBREDDITWINDOW_H

@@ -2,8 +2,9 @@
 #define UTILS_H
 
 #include <string>
-#include <glad/glad.h>
 #include <memory>
+#include "entities.h"
+
 class Utils
 {
 public:
@@ -23,14 +24,9 @@ public:
         Roboto_ThinItalic,
         Roboto_Medium_Big,
         Roboto_MediumItalic_Big,
-    };
-    struct gl_image
-    {
-        GLuint textureId = 0;
-        int width = 0;
-        int height = 0;
-        int channels = 0;
-        ~gl_image();
+        RobotoMono_Regular,
+        RobotoMono_Medium,
+        RobotoMono_Bold
     };
     static int GetFontIndex(Fonts font);
     static void LoadFonts();

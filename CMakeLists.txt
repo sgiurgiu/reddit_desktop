@@ -55,6 +55,10 @@ endif()
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
+set(CMARK_STATIC ON)
+set(CMARK_SHARED OFF)
+set(CMARK_TESTS OFF)
+add_subdirectory(external/cmark-gfm)
 
 set(EXECUTABLE_NAME reddit_desktop)
 

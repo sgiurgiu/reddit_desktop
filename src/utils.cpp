@@ -38,6 +38,9 @@ void Utils::LoadFonts()
     AddFont(Roboto_ThinItalic_ttf_compressed_data,Roboto_ThinItalic_ttf_compressed_size,16.0f);
     AddFont(Roboto_Medium_ttf_compressed_data,Roboto_Medium_ttf_compressed_size, 24.0f);
     AddFont(Roboto_MediumItalic_ttf_compressed_data,Roboto_MediumItalic_ttf_compressed_size, 24.0f);
+    AddFont(RobotoMono_Regular_ttf_compressed_data,RobotoMono_Regular_ttf_compressed_size, 16.0f);
+    AddFont(RobotoMono_Medium_ttf_compressed_data,RobotoMono_Medium_ttf_compressed_size, 16.0f);
+    AddFont(RobotoMono_Bold_ttf_compressed_data,RobotoMono_Bold_ttf_compressed_size, 16.0f);
 }
 
 int Utils::GetFontIndex(Fonts font)
@@ -82,7 +85,7 @@ std::string Utils::encode64(const std::string &val)
     return tmp.append((3 - val.size() % 3) % 3, '=');
 }
 
-std::unique_ptr<Utils::gl_image> Utils::LoadImage(unsigned char* data, int width, int height, int channels)
+std::unique_ptr<gl_image> Utils::LoadImage(unsigned char* data, int width, int height, int channels)
 {
     if(!data) return std::unique_ptr<gl_image>();
     auto image = std::make_unique<gl_image>();
@@ -118,13 +121,6 @@ std::unique_ptr<Utils::gl_image> Utils::LoadImage(unsigned char* data, int width
     return image;
 }
 
-Utils::gl_image::~gl_image()
-{
-    if(textureId > 0)
-    {
-        glDeleteTextures(1,&textureId);
-    }
-}
 std::string Utils::getHumanReadableNumber(int number)
 {
     std::string fmt_num;

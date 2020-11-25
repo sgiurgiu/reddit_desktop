@@ -7,3 +7,6 @@
 [submodule "external/url"]
 	path = external/url
 	url = https://github.com/vinniefalco/url.git
+[submodule "external/cmark-gfm"]
+	path = external/cmark-gfm
+	url = https://github.com/github/cmark-gfm
