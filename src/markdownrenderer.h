@@ -2,11 +2,14 @@
 #define MARKDOWNRENDERER_H
 
 #include <string>
+#include <imgui.h>
 
 class MarkdownRenderer
 {
 public:
-    static void RenderMarkdown(const char* id, const std::string& text);
+    static void InitEngine();
+    static void ReleaseEngine();
+    static void RenderMarkdown(const std::string& text);
 private:
     MarkdownRenderer();
 };

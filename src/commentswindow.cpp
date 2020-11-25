@@ -126,12 +126,10 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
     {
         ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "%s",listingErrorMessage.c_str());
     }
-    int i = 0;
     for(const auto& c : comments)
     {
-        MarkdownRenderer::RenderMarkdown(std::to_string(i).c_str(),c->body);
+        MarkdownRenderer::RenderMarkdown(c->body);
         ImGui::Separator();
-        i++;
     }
 
     ImGui::End();

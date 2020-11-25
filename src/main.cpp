@@ -146,7 +146,7 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
 #endif
     boost::asio::io_context uiContext;
     RedditDesktop desktop(uiContext.get_executor());
-
+    MarkdownRenderer::InitEngine();
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     // Main loop
     bool done = false;
@@ -187,8 +187,7 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
         SDL_GetWindowSize(window,&windowWidth,&windowHeight);
         desktop.setAppFrameHeight(windowHeight);
         desktop.setAppFrameWidth(windowWidth);
-        if(!show_markdown_window)
-            desktop.showDesktop();
+        desktop.showDesktop();
 
         // Rendering
         ImGui::Render();
@@ -202,6 +201,7 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
             done = desktop.quitSelected();
         }
     }
+    MarkdownRenderer::ReleaseEngine();
 }
 
 #ifdef REDDIT_DESKTOP_DEBUG
@@ -222,7 +222,9 @@ void ShowMarkdownWindow(bool *open)
         f.read(&body[0], body.size());
     }
 
-    MarkdownRenderer::RenderMarkdown("1",body);
+    ImGui::SetWindowFocus();
+
+    MarkdownRenderer::RenderMarkdown(body);
 
     ImGui::End();
 }

@@ -3,8 +3,11 @@
 #include <cmark-gfm.h>
 #include <cmark-gfm-extension_api.h>
 #include <cmark-gfm-core-extensions.h>
+#include <syntax_extension.h>
 #include <parser.h>
 #include <registry.h>
+#include <strikethrough.h>
+#include <table.h>
 
 #include <imgui.h>
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -36,9 +39,6 @@ namespace
         ImGuiContext& g = *GImGui;
         const ImGuiStyle& style = g.Style;
         const float line_height = 0.0f;//ImMax(ImMin(window->DC.CurrLineSize.y, g.FontSize + g.Style.FramePadding.y * 2), g.FontSize);
-        auto size = ImGui::CalcTextSize(text);
-        auto size_standard = ImGui::CalcTextSize(".");
-        size -= size_standard;
         const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + ImVec2(g.FontSize, line_height));
         ImGui::ItemSize(bb);
         if (!ImGui::ItemAdd(bb, 0))
@@ -47,6 +47,10 @@ namespace
             return;
         }
 
+        auto size = ImGui::CalcTextSize(text);
+
+        size -= ImVec2(g.FontSize/2.f,g.FontSize);
+        //size.y -= g.FontSize;
         // Render and stay on same line
         ImU32 text_col = ImGui::GetColorU32(ImGuiCol_Text);
         window->DrawList->AddText(bb.Min + ImVec2(style.FramePadding.x + g.FontSize * 0.5f, line_height * 0.5f) - size , text_col, text);
@@ -71,8 +75,8 @@ namespace
 
     cmark_parser *create_parser()
     {
-        int options = CMARK_OPT_DEFAULT | CMARK_OPT_UNSAFE | CMARK_OPT_FOOTNOTES;
-        auto parser = cmark_parser_new_with_mem(options, cmark_get_arena_mem_allocator());
+        int options = CMARK_OPT_DEFAULT | CMARK_OPT_UNSAFE | CMARK_OPT_FOOTNOTES | CMARK_OPT_STRIKETHROUGH_DOUBLE_TILDE;
+        auto parser = cmark_parser_new(options);
         {
             auto footnotes = cmark_find_syntax_extension("footnotes");
             auto table = cmark_find_syntax_extension("table");
@@ -111,6 +115,52 @@ namespace
     void render_node(cmark_node *node,cmark_event_type ev_type)
     {
         bool entering = (ev_type == CMARK_EVENT_ENTER);
+        if(node->extension)
+        {
+            auto type = node->type;
+            if(type == CMARK_NODE_STRIKETHROUGH)
+            {
+                if(!entering)
+                {
+                    auto rectMax = ImGui::GetItemRectMax();
+                    auto rectMin = ImGui::GetItemRectMin();
+                    rectMin.y += std::abs(rectMax.y-rectMin.y) / 2.f;
+                    rectMax.y = rectMin.y;
+                    ImGuiWindow* window = ImGui::GetCurrentWindow();
+                    window->DrawList->AddLine(rectMin,rectMax, ImGui::GetColorU32(ImGuiCol_Text));
+                }
+            }
+            else if(type == CMARK_NODE_TABLE)
+            {
+                if(entering)
+                {
+                    ImGui::Columns(cmark_gfm_extensions_get_table_columns(node), nullptr, true);
+                    ImGui::Separator();
+                }
+                else
+                {
+                    //ImGui::Separator();
+                    ImGui::Columns(1);
+                }
+            }
+            else if(type == CMARK_NODE_TABLE_CELL)
+            {
+                //cmark_gfm_extensions_get_table_row_is_header(node);
+                if(!entering)
+                {
+                    //ImGui::NewLine();
+                    ImGui::NextColumn();
+                }
+            }
+            else if(type == CMARK_NODE_TABLE_ROW)
+            {
+                if(!entering)
+                {
+                   ImGui::Separator();
+                }
+            }
+            return;
+        }
         switch (node->type)
         {
         case CMARK_NODE_DOCUMENT:
@@ -128,6 +178,19 @@ namespace
             }
         break;
         case CMARK_NODE_LIST:
+        {
+            if(node->parent && node->parent->type == CMARK_NODE_ITEM)
+            {
+                if(entering)
+                {
+                    ImGui::Indent();
+                }
+                else
+                {
+                    ImGui::Unindent();
+                }
+            }
+        }
         break;
         case CMARK_NODE_ITEM:
         {
@@ -204,21 +267,68 @@ namespace
             }
         break;
         case CMARK_NODE_TEXT:
-            if(node->parent)
+        {
+            std::string text((const char*)node->as.literal.data,node->as.literal.len);
+            text.erase(std::remove(text.begin(),text.end(),'\n'),text.end());
+            if(node->parent && node->parent->type == CMARK_NODE_LINK)
             {
-                std::string text((const char*)node->as.literal.data,node->as.literal.len);
-                text.erase(std::remove(text.begin(),text.end(),'\n'),text.end());
-                if(node->parent->type == CMARK_NODE_LINK)
+                cmark_node_set_user_data(node->parent,new std::string(text));
+                cmark_node_set_user_data_free_func(node->parent,cmark_string_deleter);
+            }
+            else
+            {
+                float widthLeft = ImGui::GetContentRegionAvail().x;
+                const char* text_start = text.c_str();
+                const char* text_end = text.c_str()+text.size();
+                float fontScale = 1.f;
+                const char* nextWordFinish = text_start;
+                while(nextWordFinish < text_end)
                 {
-                    cmark_node_set_user_data(node->parent,new std::string(text));
-                    cmark_node_set_user_data_free_func(node->parent,cmark_string_deleter);
+                    if((*nextWordFinish >= 48 && *nextWordFinish < 58) ||
+                       (*nextWordFinish >= 65 && *nextWordFinish < 91) ||
+                       (*nextWordFinish >= 97 && *nextWordFinish < 123))
+                    {
+                        //while the current character is a number (0-9), or a letter (A-Z, a-z)
+                        //consider it part of the word. Otherwise is a different thing
+                        nextWordFinish++;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                const char* endPrevLine = ImGui::GetFont()->CalcWordWrapPositionA( fontScale, text_start, text_end, widthLeft );
+                if(nextWordFinish > endPrevLine)
+                {
+                    //if, for whatever reason, this would break in the middle of a word (what we consider a word)
+                    //just don't, make a new line and move on.
+                    endPrevLine = nextWordFinish;
+                    ImGui::NewLine();
+                    ImGui::TextUnformatted( text_start, endPrevLine );
+                    ImGui::SameLine(0.f,0.f);
                 }
                 else
                 {
-                    ImGui::Text("%s",text.c_str());ImGui::SameLine();
+                    ImGui::TextUnformatted( text_start, endPrevLine );
+                }
+
+
+                widthLeft = ImGui::GetContentRegionAvail().x;
+                while( endPrevLine < text_end )
+                {
+                   const char* text = endPrevLine;
+                   if( *text == ' ' ) { ++text; } // skip a space at start of line
+                   endPrevLine = ImGui::GetFont()->CalcWordWrapPositionA( fontScale, text, text_end, widthLeft );
+                   ImGui::TextUnformatted( text, endPrevLine );
+                }
+
+                if(!(node->parent && node->parent->type == CMARK_NODE_TABLE_CELL))
+                {
+                    ImGui::SameLine();
                 }
             }
-           // ImGui::SameLine();
+        }
         break;
         case CMARK_NODE_LINEBREAK:
             ImGui::Dummy(ImVec2(0.f,0.f));
@@ -250,8 +360,7 @@ namespace
             }
             else
             {
-                ImGui::PopFont();
-
+               ImGui::PopFont();
             }
         break;
         case CMARK_NODE_EMPH:
@@ -276,6 +385,8 @@ namespace
                     {
                         //return the URL????
                     }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
                     ImGui::SameLine();
                 }
             }
@@ -287,13 +398,14 @@ namespace
         break;
         case CMARK_NODE_FOOTNOTE_REFERENCE:
         break;
+        default:
+            assert(false);
+            break;
         }
     }
 }
-void MarkdownRenderer::RenderMarkdown(const char* id, const std::string& text)
+void MarkdownRenderer::RenderMarkdown(const std::string& text)
 {
-    cmark_gfm_core_extensions_ensure_registered();
-
     auto parser = create_parser();
 
     cmark_parser_feed(parser, text.c_str(), text.size());
@@ -302,27 +414,35 @@ void MarkdownRenderer::RenderMarkdown(const char* id, const std::string& text)
     if(document)
     {
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Regular)]);//Roboto medium
-        ImGuiWindowFlags window_flags = ImGuiWindowFlags_HorizontalScrollbar;
-        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
-        ImGui::BeginChild(id, ImVec2(0.0f, 0.0f), true, window_flags);
-
         cmark_event_type ev_type;
         cmark_node *cur;
         cmark_iter *iter = cmark_iter_new(document);
-        while ((ev_type = cmark_iter_next(iter)) != CMARK_EVENT_DONE) {
+        while ((ev_type = cmark_iter_next(iter)) != CMARK_EVENT_DONE)
+        {
            cur = cmark_iter_get_node(iter);
            render_node(cur, ev_type);
-         }        
+        }
         cmark_iter_free(iter);
-
-        ImGui::EndChild();
-        ImGui::PopStyleVar();
         ImGui::PopFont();
+        cmark_node_free(document);
     }
     else
     {
         ImGui::TextWrapped("%s",text.c_str());
     }
-    cmark_arena_reset();
+
+    if (parser)
+        cmark_parser_free(parser);
+
+
+    //cmark_arena_reset();
+
+}
+void MarkdownRenderer::InitEngine()
+{
+    cmark_gfm_core_extensions_ensure_registered();
+}
+void MarkdownRenderer::ReleaseEngine()
+{
     cmark_release_plugins();
 }
