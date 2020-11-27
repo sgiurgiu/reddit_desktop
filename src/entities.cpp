@@ -91,7 +91,14 @@ post::post(const nlohmann::json& json)
     {
         author = json["author"].get<std::string>();
     }
-
+    if(json.contains("domain") && json["domain"].is_string())
+    {
+        domain = json["domain"].get<std::string>();
+    }
+    if(json.contains("post_hint") && json["post_hint"].is_string())
+    {
+        postHint = json["post_hint"].get<std::string>();
+    }
     if(json.contains("preview") &&
             json["preview"].is_object() &&
             json["preview"]["images"].is_array())
@@ -123,8 +130,65 @@ post::post(const nlohmann::json& json)
 
 comment::comment(const nlohmann::json& json)
 {
+    if(json.contains("id") && json["id"].is_string())
+    {
+        id =json["id"].get<std::string>();
+    }
     if(json.contains("body") && json["body"].is_string())
     {
         body =json["body"].get<std::string>();
+    }
+    if(json.contains("created_utc") && json["created_utc"].is_number())
+    {
+        createdAt = json["created_utc"].get<uint64_t>();
+        humanReadableTimeDifference = Utils::getHumanReadableTimeAgo(createdAt);
+    }
+    if(json["score"].is_number())
+    {
+        score = json["score"].get<int>();
+        humanScore = Utils::getHumanReadableNumber(score);
+    }
+    if(json.contains("author_fullname") && json["author_fullname"].is_string())
+    {
+        authorFullName = json["author_fullname"].get<std::string>();
+    }
+    if(json["author"].is_string())
+    {
+        author = json["author"].get<std::string>();
+    }
+    if(json["ups"].is_number())
+    {
+        ups = json["ups"].get<int>();
+    }
+    if(json["downs"].is_number())
+    {
+        downs = json["downs"].get<int>();
+    }
+
+    if(json.contains("replies") && json["replies"].is_object())
+    {
+        const auto& replies_json = json["replies"];
+        if(!replies_json.contains("kind") || replies_json["kind"].get<std::string>() != "Listing")
+        {
+            return;
+        }
+        if(!replies_json.contains("data") || !replies_json["data"].contains("children"))
+        {
+            return;
+        }
+        const auto& children = replies_json["data"]["children"];
+        if(!children.is_array()) return;
+        for(const auto& child: children)
+        {
+            if(child.contains("kind") && child["kind"].get<std::string>() == "more")
+            {
+                hasMoreReplies = true;
+            }
+            else if(child.contains("kind") && child["kind"].get<std::string>() == "t1" &&
+                    child.contains("data") && child["data"].is_object())
+            {
+                replies.emplace_back(std::make_shared<comment>(child["data"]));
+            }
+        }
     }
 }

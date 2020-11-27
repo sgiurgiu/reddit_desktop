@@ -28,7 +28,7 @@ void RedditResourceConnection::getResource(const access_token& token)
     request.set(boost::beast::http::field::host, host);
     request.set(boost::beast::http::field::accept, "*/*");
     request.set(boost::beast::http::field::user_agent, userAgent);
-    request.set(boost::beast::http::field::authorization,fmt::format("Bearer {}",token.token));
+    //request.set(boost::beast::http::field::authorization,fmt::format("Bearer {}",token.token));
     request.prepare_payload();
 
     resolveHost();

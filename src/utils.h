@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include "entities.h"
+#include <stb_image.h>
 
 class Utils
 {
@@ -36,6 +37,7 @@ public:
     static std::unique_ptr<gl_image> LoadImage(unsigned char* data, int width, int height, int channels);
     static std::string getHumanReadableTimeAgo(uint64_t time);
     static std::string getHumanReadableNumber(int number);
+    static stbi_uc * DecodeImageData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file, int desired_channels);
 private:
     static void AddFont(const unsigned int* fontData, const unsigned int fontDataSize, float fontSize);
 

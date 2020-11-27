@@ -8,6 +8,8 @@
 #include <boost/archive/iterators/transform_width.hpp>
 #include <boost/algorithm/string.hpp>
 #include <chrono>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 void Utils::AddFont(const unsigned int* fontData, const unsigned int fontDataSize, float fontSize)
 {
@@ -85,6 +87,11 @@ std::string Utils::encode64(const std::string &val)
     return tmp.append((3 - val.size() % 3) % 3, '=');
 }
 
+stbi_uc * Utils::DecodeImageData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file, int desired_channels)
+{
+    return stbi_load_from_memory(buffer,len,x,y,channels_in_file,STBI_rgb_alpha);
+}
+
 std::unique_ptr<gl_image> Utils::LoadImage(unsigned char* data, int width, int height, int channels)
 {
     if(!data) return std::unique_ptr<gl_image>();
@@ -104,7 +111,9 @@ std::unique_ptr<gl_image> Utils::LoadImage(unsigned char* data, int width, int h
 #if defined(GL_UNPACK_ROW_LENGTH) && !defined(__EMSCRIPTEN__)
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 #endif
-    if(channels == 3)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height,
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    /*if(channels == 3)
     {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height,
                      0, GL_RGB, GL_UNSIGNED_BYTE, data);
@@ -113,7 +122,7 @@ std::unique_ptr<gl_image> Utils::LoadImage(unsigned char* data, int width, int h
     {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height,
                      0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    }
+    }*/
     image->width = width;
     image->height = height;
     image->channels = channels;

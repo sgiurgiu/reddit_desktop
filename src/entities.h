@@ -96,18 +96,32 @@ struct post
     std::unique_ptr<gl_image> thumbnail_picture;
     std::string authorFullName;
     std::string author;
-
+    std::string domain;
+    std::string postHint;
+    std::unique_ptr<gl_image> post_picture;
 };
 using post_ptr = std::shared_ptr<post>;
 using posts_list = std::vector<post_ptr>;
+struct comment;
+using comment_ptr = std::shared_ptr<comment>;
+using comments_list = std::vector<comment_ptr>;
 struct comment
 {
     comment(){}
     comment(const nlohmann::json& json);
+    std::string id;
     std::string body;
+    bool hasMoreReplies = false;
+    int ups = 0;
+    int downs = 0;
+    int score = 0;
+    std::string humanScore;
+    std::string authorFullName;
+    std::string author;
+    uint64_t createdAt;
+    std::string humanReadableTimeDifference;
+    comments_list replies;
 };
-using comment_ptr = std::shared_ptr<comment>;
-using comments_list = std::vector<comment_ptr>;
 
 
 #endif // ENTITIES_H

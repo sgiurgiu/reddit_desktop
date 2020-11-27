@@ -8,6 +8,7 @@
 #include <registry.h>
 #include <strikethrough.h>
 #include <table.h>
+#include <fmt/format.h>
 
 #include <imgui.h>
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -381,12 +382,35 @@ namespace
                 auto text = static_cast<std::string*>(cmark_node_get_user_data(node));
                 if(text)
                 {
-                    if(ImGui::SmallButton(text->c_str()))
+                    float widthLeft = ImGui::GetContentRegionAvail().x;
+                    float fontScale = 1.f;
+                    const char* text_start = text->c_str();
+                    const char* text_end = text->c_str()+text->size();
+                    const char* endPrevLine = ImGui::GetFont()->CalcWordWrapPositionA( fontScale, text_start, text_end, widthLeft );
+                    if(endPrevLine < text_end) ImGui::NewLine();
+                    ImVec4 color(0.5f,0.5f,1.f,1.f);
+                    ImGui::TextColored(color,"%s",text->c_str());
+                    //Underline it
                     {
-                        //return the URL????
+                        auto rectMax = ImGui::GetItemRectMax();
+                        auto rectMin = ImGui::GetItemRectMin();
+                        rectMin.y = rectMax.y;
+                        ImGuiWindow* window = ImGui::GetCurrentWindow();
+                        window->DrawList->AddLine(rectMin,rectMax, ImGui::GetColorU32(color));
                     }
                     if (ImGui::IsItemHovered())
+                    {
                         ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+                    }
+                    if(ImGui::IsItemClicked(ImGuiMouseButton_Left))
+                    {
+#ifdef RD_LINUX
+                        std::string url((const char*)node->as.link.url.data,node->as.link.url.len);
+                        system(fmt::format("xdg-open {}",url).c_str());
+#elif defined(RD_WINDOWS)
+                        //ShellExecuteA(NULL, "open", search_URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
+#endif
+                    }
                     ImGui::SameLine();
                 }
             }

@@ -1,6 +1,7 @@
 #ifndef COMMENTSWINDOW_H
 #define COMMENTSWINDOW_H
 
+#include <SDL_video.h>
 #include <boost/asio/io_context.hpp>
 #include <string>
 #include <memory>
@@ -14,6 +15,7 @@ class CommentsWindow
 {
 public:
     CommentsWindow(const std::string& postId,
+                   const std::string& title,
                    const access_token& token,
                    RedditClient* client,
                    const boost::asio::io_context::executor_type& executor);
@@ -30,6 +32,8 @@ private:
     void loadListingChildren(const nlohmann::json& children);
     void setComments(comments_list receivedComments);
     void setParentPost(post_ptr receivedParentPost);
+    void showComment(comment_ptr c);
+    void setPostImage(unsigned char* data, int width, int height, int channels);
 private:
 
     std::string postId;
@@ -43,6 +47,7 @@ private:
     bool willBeFocused = false;
     comments_list comments;
     post_ptr parent_post;
+    SDL_DisplayMode displayMode;
 };
 
 #endif // COMMENTSWINDOW_H

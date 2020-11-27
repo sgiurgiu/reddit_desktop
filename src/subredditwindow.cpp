@@ -5,8 +5,6 @@
 #include "fonts/IconsFontAwesome4.h"
 #include "utils.h"
 #include "spinner/spinner.h"
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
 
 #include <boost/asio/post.hpp>
 
@@ -65,11 +63,7 @@ void SubredditWindow::loadListingsFromConnection(const listing& listingResponse)
         auto kind = child["kind"].get<std::string>();
         if(kind == "t3")
         {
-            tmpPosts.emplace_back(std::make_unique<post>(child["data"]));
-        }
-        else
-        {
-            int a = 1;
+            tmpPosts.emplace_back(std::make_shared<post>(child["data"]));
         }
     }
     boost::asio::post(this->uiExecutor,std::bind(&SubredditWindow::setListings,this,std::move(tmpPosts)));
@@ -93,15 +87,11 @@ void SubredditWindow::setListings(posts_list receivedPosts)
                 if(response.status == 200)
                 {
                     int width, height, channels;
-                    auto data = stbi_load_from_memory(response.data.data(),response.data.size(),&width,&height,&channels,3);
+                    auto data = Utils::DecodeImageData(response.data.data(),response.data.size(),&width,&height,&channels,3);
                     boost::asio::post(this->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,this,post,data,width,height,channels));
                 }
             });
             resourceConnection->getResource(token);
-        }
-        else
-        {
-            int b = 1;
         }
     }
 }
@@ -202,7 +192,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         if(normalPositionY < desiredPositionY) ImGui::SetCursorPosY(desiredPositionY);
         if(ImGui::Button(commentsText.c_str()))
         {
-            commentsSignal(p->id);
+            commentsSignal(p->id,p->title);
         }
         ImGui::EndGroup();
         ImGui::Separator();

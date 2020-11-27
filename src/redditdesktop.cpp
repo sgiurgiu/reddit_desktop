@@ -48,13 +48,13 @@ void RedditDesktop::addSubredditWindow(std::string title, client_response<access
 {
     current_access_token = token;
     subredditWindows.push_back(std::make_unique<SubredditWindow>(windowsCount++,title,current_access_token.data,&client,uiExecutor));
-    subredditWindows.back()->showCommentsListener([this](const std::string& postId){
+    subredditWindows.back()->showCommentsListener([this](const std::string& postId,const std::string& title){
         auto it = std::find_if(commentsWindows.begin(),commentsWindows.end(),[&postId](const std::unique_ptr<CommentsWindow>& win){
             return win->getPostId() == postId;
         });
         if(it == commentsWindows.end())
         {
-            commentsWindows.push_back(std::make_unique<CommentsWindow>(postId,current_access_token.data,&client,uiExecutor));
+            commentsWindows.push_back(std::make_unique<CommentsWindow>(postId,title,current_access_token.data,&client,uiExecutor));
         }
         else
         {

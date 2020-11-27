@@ -20,7 +20,7 @@ public:
                     const boost::asio::io_context::executor_type& executor);
     bool isWindowOpen() const {return windowOpen;}
     void showWindow(int appFrameWidth,int appFrameHeight);
-    using CommentsSignal = boost::signals2::signal<void(const std::string& id)>;
+    using CommentsSignal = boost::signals2::signal<void(const std::string& id,const std::string& title)>;
     void showCommentsListener(const typename CommentsSignal::slot_type& slot);
     void setFocused();
 private:
