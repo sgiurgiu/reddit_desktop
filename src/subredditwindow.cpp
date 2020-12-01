@@ -43,7 +43,7 @@ SubredditWindow::SubredditWindow(int id, const std::string& subreddit,
     }
     else
     {
-        windowName = fmt::format("{}##",subreddit,id);
+        windowName = fmt::format("{}##{}",subreddit,id);
         if(!target.starts_with("r/") && !target.starts_with("/r/")) target = "/r/" + target;
     }
 
@@ -58,6 +58,8 @@ void SubredditWindow::setErrorMessage(std::string errorMessage)
 void SubredditWindow::loadListingsFromConnection(const listing& listingResponse)
 {
     posts_list tmpPosts;
+
+
     for(auto& child:listingResponse.json["data"]["children"])
     {
         auto kind = child["kind"].get<std::string>();
@@ -66,14 +68,27 @@ void SubredditWindow::loadListingsFromConnection(const listing& listingResponse)
             tmpPosts.emplace_back(std::make_shared<post>(child["data"]));
         }
     }
-    boost::asio::post(this->uiExecutor,std::bind(&SubredditWindow::setListings,this,std::move(tmpPosts)));
+    boost::asio::post(this->uiExecutor,std::bind(&SubredditWindow::setListings,this,std::move(tmpPosts),
+                                                 std::move(listingResponse.json["data"]["before"]),
+                                                 std::move(listingResponse.json["data"]["after"])));
 }
-void SubredditWindow::setListings(posts_list receivedPosts)
+void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json beforeJson,nlohmann::json afterJson)
 {
+    before.reset();
+    after.reset();
+    if(!beforeJson.is_null() && beforeJson.is_string())
+    {
+        before = beforeJson.get<std::string>();
+    }
+    if(!afterJson.is_null() && afterJson.is_string())
+    {
+        after = afterJson.get<std::string>();
+    }
     listingErrorMessage.clear();    
     posts.clear();
     posts.reserve(receivedPosts.size());
     std::move(receivedPosts.begin(), receivedPosts.end(), std::back_inserter(posts));
+    scrollToTop = true;
     for(auto&& p : posts)
     {
         auto thumbnail = p->thumbnail;
@@ -91,7 +106,7 @@ void SubredditWindow::setListings(posts_list receivedPosts)
                     boost::asio::post(this->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,this,post,data,width,height,channels));
                 }
             });
-            resourceConnection->getResource(token);
+            resourceConnection->getResource();
         }
     }
 }
@@ -118,6 +133,11 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_W)) && ImGui::GetIO().KeyCtrl && ImGui::IsWindowFocused())
     {
         windowOpen = false;
+    }
+    if(scrollToTop)
+    {
+        ImGui::SetScrollHereY(0.0f);
+        scrollToTop = false;
     }
 
     showWindowMenu();
@@ -185,7 +205,10 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         {
             ImGui::TextWrapped("<No Title>");
         }
-        ImGui::PopFont();        
+        ImGui::PopFont();
+        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Light)]);
+        ImGui::Text("(%s)",p->domain.c_str());
+        ImGui::PopFont();
         auto commentsText = fmt::format(reinterpret_cast<const char*>(ICON_FA_COMMENTS " {} comments"),p->commentsCount);
         auto normalPositionY = ImGui::GetCursorPosY();
         auto desiredPositionY = height - ImGui::GetFrameHeightWithSpacing();
@@ -196,8 +219,52 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         }
         ImGui::EndGroup();
         ImGui::Separator();
-    }
+    }   
 
+    if(!posts.empty())
+    {
+        bool previousEnabled = before.has_value();
+        bool nextEnabled = after.has_value();
+        if(!previousEnabled)
+        {
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+            ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+        }
+        if(ImGui::Button(reinterpret_cast<const char*>(ICON_FA_ARROW_LEFT " Previous")) && previousEnabled)
+        {
+            connection->list(target+"?before="+before.value()+"&count="+std::to_string(currentCount),token);
+            currentCount-=posts.size();
+            before.reset();
+        }
+        if(!previousEnabled)
+        {
+            ImGui::PopStyleColor(3);
+            ImGui::PopStyleVar();
+        }
+        auto width = ImGui::GetWindowContentRegionMax().x;
+        auto previousSize = ImGui::GetItemRectSize();
+        ImGui::SameLine(width - previousSize.x);
+        if(!nextEnabled)
+        {
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+            ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+        }
+        if(ImGui::Button(reinterpret_cast<const char*>("Next " ICON_FA_ARROW_RIGHT),previousSize) && nextEnabled)
+        {
+            currentCount+=posts.size();
+            connection->list(target+"?after="+after.value()+"&count="+std::to_string(currentCount),token);
+            after.reset();
+        }
+        if(!nextEnabled)
+        {
+            ImGui::PopStyleColor(3);
+            ImGui::PopStyleVar();
+        }
+    }
     ImGui::End();
 }
 

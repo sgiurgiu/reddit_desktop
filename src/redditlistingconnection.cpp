@@ -1,7 +1,7 @@
 #include "redditlistingconnection.h"
 #include <boost/beast/core.hpp>
 #include <boost/system/error_code.hpp>
-
+#include <charconv>
 #include <fmt/format.h>
 #include "json.hpp"
 
@@ -34,7 +34,7 @@ void RedditListingConnection::list(const std::string& target, const access_token
     request.set(boost::beast::http::field::accept, "*/*");
     request.set(boost::beast::http::field::user_agent, userAgent);
     request.set(boost::beast::http::field::authorization,fmt::format("Bearer {}",token.token));
-    request.prepare_payload();    
+    request.prepare_payload();
     if(connected)
     {
         sendRequest();
@@ -45,7 +45,6 @@ void RedditListingConnection::list(const std::string& target, const access_token
     }
 }
 
-
 void RedditListingConnection::sendRequest()
 {
     connected = true;
@@ -54,18 +53,29 @@ void RedditListingConnection::sendRequest()
 
 void RedditListingConnection::responseReceivedComplete()
 {
-
     auto status = response.result_int();
     auto body = response.body();
-    client_response<listing> response;
-    response.status = status;
+    client_response<listing> resp;
+    for(const auto& h : response)
+    {
+        if(h.name() == boost::beast::http::field::content_length)
+        {
+            auto val = h.value();
+            std::from_chars(val.data(),val.data()+val.size(),resp.contentLength);
+        }
+        else if(h.name() == boost::beast::http::field::content_type)
+        {
+            resp.contentType = h.value().to_string();
+        }
+    }
+    resp.status = status;
     if(status == 200)
     {
-        response.data.json = nlohmann::json::parse(body);
+        resp.data.json = nlohmann::json::parse(body);
     }
     else
     {
-        response.body = body;
+        resp.body = body;
     }
-    signal({},response);
+    signal({},resp);
 }

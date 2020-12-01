@@ -27,7 +27,7 @@ private:
 
     void showWindowMenu();
     void loadListingsFromConnection(const listing& listingResponse);
-    void setListings(posts_list receivedPosts);
+    void setListings(posts_list receivedPosts, nlohmann::json beforeJson,nlohmann::json afterJson);
     void setErrorMessage(std::string errorMessage);
     void setPostThumbnail(post* p,unsigned char* data, int width, int height, int channels);
 private:    
@@ -46,6 +46,10 @@ private:
     float upvotesButtonsIdent = 0.f;
     CommentsSignal commentsSignal;
     bool willBeFocused = false;
+    std::optional<std::string> after;
+    std::optional<std::string> before;
+    int currentCount = 0;
+    bool scrollToTop = false;
 };
 
 #endif // SUBREDDITWINDOW_H

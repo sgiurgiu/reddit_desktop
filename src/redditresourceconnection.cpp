@@ -1,6 +1,7 @@
 #include "redditresourceconnection.h"
 #include <boost/url.hpp>
 #include <fmt/format.h>
+#include <charconv>
 
 RedditResourceConnection::RedditResourceConnection(boost::asio::io_context& context,
                                                    boost::asio::ssl::context& ssl_context,
@@ -19,7 +20,7 @@ RedditResourceConnection::RedditResourceConnection(boost::asio::io_context& cont
     }
 }
 
-void RedditResourceConnection::getResource(const access_token& token)
+void RedditResourceConnection::getResource()
 {
     request.version(11);
     request.method(boost::beast::http::verb::get);
@@ -30,6 +31,8 @@ void RedditResourceConnection::getResource(const access_token& token)
     request.set(boost::beast::http::field::user_agent, userAgent);
     //request.set(boost::beast::http::field::authorization,fmt::format("Bearer {}",token.token));
     request.prepare_payload();
+    response.body().clear();
+    response.clear();
 
     resolveHost();
 }
@@ -51,5 +54,17 @@ void RedditResourceConnection::onShutdown(const boost::system::error_code&)
     resource_response resp;
     resp.status = status;
     resp.data = response.body();
+    for(const auto& h : response)
+    {
+        if(h.name() == boost::beast::http::field::content_length)
+        {
+            auto val = h.value();
+            std::from_chars(val.data(),val.data()+val.size(),resp.contentLength);
+        }
+        else if(h.name() == boost::beast::http::field::content_type)
+        {
+            resp.contentType = h.value().to_string();
+        }
+    }
     signal({},resp);
 }

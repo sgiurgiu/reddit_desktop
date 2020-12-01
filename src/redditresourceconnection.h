@@ -23,7 +23,7 @@ public:
                              boost::asio::ssl::context& ssl_context,
                              const std::string& url,
                              const std::string& userAgent);
-    void getResource(const access_token& token);
+    void getResource();
 protected:
     virtual void responseReceivedComplete();
 private:

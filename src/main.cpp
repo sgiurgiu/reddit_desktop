@@ -142,7 +142,7 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
 {
 #ifdef REDDIT_DESKTOP_DEBUG
     bool show_demo_window = true;
-    bool show_markdown_window = true;
+    bool show_markdown_window = false;
 #endif
     boost::asio::io_context uiContext;
     RedditDesktop desktop(uiContext.get_executor());
@@ -208,12 +208,8 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
 #include <fstream>
 void ShowMarkdownWindow(bool *open)
 {
-    if(!ImGui::Begin("Markdown",open,ImGuiWindowFlags_None))
-    {
-        ImGui::End();
-        return;
-    }
-    std::string body;
+    static std::string body;
+    if(body.empty())
     {
         std::ifstream f("spec.txt");
         f.seekg(0, std::ios::end);
@@ -222,6 +218,13 @@ void ShowMarkdownWindow(bool *open)
         f.read(&body[0], body.size());
     }
 
+    if(body.empty()) return;
+
+    if(!ImGui::Begin("Markdown",open,ImGuiWindowFlags_None))
+    {
+        ImGui::End();
+        return;
+    }
     ImGui::SetWindowFocus();
 
     MarkdownRenderer::RenderMarkdown(body);

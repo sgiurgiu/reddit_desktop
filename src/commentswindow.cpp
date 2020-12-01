@@ -110,9 +110,14 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
     {
         auto resourceConnection = client->makeResourceClientConnection(parent_post->url);
         resourceConnection->connectionCompleteHandler(
-                    [this](const boost::system::error_code&,
+                    [this](const boost::system::error_code& ec,
                          const resource_response& response)
         {
+            if(ec)
+            {
+                boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,this,ec.message()));
+                return;
+            }
             if(response.status == 200)
             {
                 int width, height, channels;
@@ -120,9 +125,13 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
                 boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setPostImage,this,data,width,height,channels));
             }
         });
-        resourceConnection->getResource(token);
+        resourceConnection->getResource();
     }
-
+    else
+    {
+        //https://stackoverflow.com/questions/10715170/receiving-rtsp-stream-using-ffmpeg-library
+        //https://stackoverflow.com/questions/6495523/ffmpeg-video-to-opengl-texture
+    }
 }
 void CommentsWindow::setPostImage(unsigned char* data, int width, int height, int channels)
 {
@@ -188,25 +197,46 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::NewLine();
         if(parent_post->post_picture)
         {
-            auto width = (float)parent_post->post_picture->width;
-            auto height = (float)parent_post->post_picture->height;
-            auto availableWidth = ImGui::GetContentRegionAvail().x * 0.9f;
-            if(availableWidth > 100 && width > availableWidth)
+            if(post_picture_width == 0.f && post_picture_height == 0.f)
             {
-                //scale the picture
-                float scale = availableWidth / width;
-                width = availableWidth;
-                height = scale * height;
+                auto width = (float)parent_post->post_picture->width;
+                auto height = (float)parent_post->post_picture->height;
+                auto availableWidth = ImGui::GetContentRegionAvail().x * 0.9f;
+                if(availableWidth > 100 && width > availableWidth)
+                {
+                    //scale the picture
+                    float scale = availableWidth / width;
+                    width = availableWidth;
+                    height = scale * height;
+                }
+                float maxPictureHeight = displayMode.h * 0.5f;
+                if(maxPictureHeight > 100 && height > maxPictureHeight)
+                {
+                    float scale = maxPictureHeight / height;
+                    height = maxPictureHeight;
+                    width = scale * width;
+                }
+                width = std::max(100.f,width);
+                height = std::max(100.f,height);
+                post_picture_width = width;
+                post_picture_height = height;
+                post_picture_ratio = post_picture_width / post_picture_height;
             }
-            float maxPictureHeight = displayMode.h * 0.5f;
-            if(maxPictureHeight > 100 && height > maxPictureHeight)
+            ImGui::ImageButton((void*)(intptr_t)parent_post->post_picture->textureId,
+                               ImVec2(post_picture_width,post_picture_height),ImVec2(0, 0),ImVec2(1,1),0);
+            if(ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left))
             {
-                float scale = maxPictureHeight / height;
-                height = maxPictureHeight;
-                width = scale * width;
+                //keep same aspect ratio
+                auto x = ImGui::GetIO().MouseDelta.x;
+                auto y = ImGui::GetIO().MouseDelta.y;
+                auto new_width = post_picture_width + x;
+                auto new_height = post_picture_height + y;
+                auto new_area = new_width * new_height;
+                new_width = std::sqrt(post_picture_ratio * new_area);
+                new_height = new_area / new_width;
+                post_picture_width = std::max(100.f,new_width);
+                post_picture_height = std::max(100.f,new_height);
             }
-
-            ImGui::Image((void*)(intptr_t)parent_post->post_picture->textureId, ImVec2(width,height));
         }
 
         if(!parent_post->selfText.empty())

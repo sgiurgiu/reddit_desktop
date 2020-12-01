@@ -30,16 +30,20 @@ public:
         appFrameHeight = height;
     }
 private:
+    void showSubredditsWindow();
     void showMainMenuBar();
     void showMenuFile();
     void showOpenSubredditWindow();
     void showErrorDialog();
-    void setConnectionErrorMessage(std::string msg,client_response<access_token> token);
-    void addSubredditWindow(std::string title, client_response<access_token> token);
+    void setConnectionErrorMessage(std::string msg);
+    void addSubredditWindow(std::string title);
+    void loginSuccessful(client_response<access_token> token);
+    void loadUserInformation(user_info_ptr info);
+    void loadSubscribedSubreddits(subreddit_list srs,
+                                  RedditClient::RedditListingClientConnection connection);
 private:
     const boost::asio::io_context::executor_type& uiExecutor;
     RedditClient client;
-    RedditClient::RedditLoginClientConnection loginConnection;
     std::vector<std::unique_ptr<SubredditWindow>> subredditWindows;
     std::vector<std::unique_ptr<CommentsWindow>> commentsWindows;
     bool shouldQuit = false;
@@ -50,10 +54,13 @@ private:
     int appFrameWidth = 0;
     Database db;
     std::optional<user> current_user;
+    user_info_ptr info_user;
     LoginWindow loginWindow;
     client_response<access_token> current_access_token;
     bool showConnectionErrorDialog = false;
     std::string connectionErrorMessage;
+    subreddit_list subscribedSubreddits;
+    float topPosAfterMenuBar = 0.0f;
 };
 
 

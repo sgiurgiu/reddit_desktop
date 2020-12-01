@@ -48,6 +48,9 @@ private:
     comments_list comments;
     post_ptr parent_post;
     SDL_DisplayMode displayMode;
+    float post_picture_width = 0.f;
+    float post_picture_height = 0.f;
+    float post_picture_ratio = 0.f;
 };
 
 #endif // COMMENTSWINDOW_H

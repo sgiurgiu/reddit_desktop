@@ -8,12 +8,12 @@
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/asio/strand.hpp>
-
+#include <boost/beast/http/parser.hpp>
 #include <string>
 #include <memory>
 
-template<typename Request,typename Response, typename Signal>
-class RedditConnection : public std::enable_shared_from_this<RedditConnection<Request,Response,Signal>>
+template<typename Request,typename Response, typename Signal, bool isStreaming = false>
+class RedditConnection : public std::enable_shared_from_this<RedditConnection<Request,Response,Signal,isStreaming>>
 {
 public:
     RedditConnection(boost::asio::io_context& context,
@@ -22,7 +22,9 @@ public:
         resolver(boost::asio::make_strand(context)),
         stream(boost::asio::make_strand(context), ssl_context),
         host(host),service(service)
-    {}
+    {
+        responseParser.body_limit((std::numeric_limits<std::uint64_t>::max)());
+    }
     virtual ~RedditConnection() = default;
 
     void connectionCompleteHandler(const typename Signal::slot_type& slot)
@@ -88,10 +90,19 @@ private:
             onError(ec);
             return;
         }
+        response.body().clear();
+        response.clear();
 
         using namespace std::placeholders;
         auto readMethod = std::bind(&RedditConnection::onRead,this->shared_from_this(),_1,_2);
-        boost::beast::http::async_read(stream, buffer, response, readMethod);
+        if constexpr (isStreaming)
+        {
+            boost::beast::http::async_read(stream, buffer, responseParser, readMethod);
+        }
+        else
+        {
+            boost::beast::http::async_read(stream, buffer, response, readMethod);
+        }
     }
 
     void onRead(const boost::system::error_code& ec,std::size_t bytesTransferred)
@@ -145,6 +156,8 @@ protected:
     Request request;
     Response response;
     Signal signal;
+    using parser_t = boost::beast::http::response_parser<typename Response::body_type>;
+    parser_t responseParser;
 };
 
 #endif // REDDITCONNECTION_H

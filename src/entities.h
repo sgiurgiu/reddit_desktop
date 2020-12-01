@@ -45,6 +45,8 @@ struct client_response
 {
     T data;
     int status;
+    int64_t contentLength;
+    std::string contentType;
     std::string body;
 };
 
@@ -72,6 +74,7 @@ struct post
 {
     post(){}
     post(const nlohmann::json& json);
+    std::string name;
     std::string id;
     std::string title;
     std::string selfText;
@@ -123,5 +126,50 @@ struct comment
     comments_list replies;
 };
 
-
+struct user_info
+{
+    user_info(){}
+    user_info(const nlohmann::json& json);
+    std::string name;
+    std::string id;
+    std::string oauthClientId;
+    uint64_t createdAt;
+    std::string humanReadableTimeDifference;
+    int inboxCount = 0;
+    int64_t commentKarma = 0;
+    int64_t totalKarma = 0;
+    int64_t linkKarma = 0;
+    std::string humanCommentKarma;
+    std::string humanTotalKarma;
+    std::string humanLinkKarma;
+    bool hasMail = false;
+    bool hasModMail = false;
+    int64_t goldCreddits = 0;
+    bool isSuspended = false;
+    bool isMod = false;
+    bool isGold = false;
+    int64_t coins = 0;
+};
+using user_info_ptr = std::shared_ptr<user_info>;
+struct subreddit
+{
+    subreddit(){}
+    subreddit(const nlohmann::json& json);
+    std::string name;
+    std::string id;
+    uint64_t createdAt;
+    std::string humanReadableTimeDifference;
+    std::string description;
+    std::string displayName;
+    std::string displayNamePrefixed;
+    bool over18 = false;
+    int64_t subscribers = 0;
+    std::string title;
+    bool userIsBanned = false;
+    bool userIsModerator = false;
+    bool userIsSubscriber = false;
+    bool userIsMuted = false;
+};
+using subreddit_ptr = std::shared_ptr<subreddit>;
+using subreddit_list = std::vector<subreddit_ptr>;
 #endif // ENTITIES_H

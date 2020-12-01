@@ -3,18 +3,18 @@
 #include "fonts/IconsFontAwesome4.h"
 #include "utils.h"
 #include "imgui_internal.h"
-
+#include <fmt/format.h>
 #include <algorithm>
 
 namespace
 {
 constexpr auto OPENSUBREDDIT_WINDOW_POPUP_TITLE = "Open Subreddit";
 constexpr auto ERROR_WINDOW_POPUP_TITLE = "Error Occurred";
+constexpr auto SUBREDDITS_WINDOW_TITLE = "My Subreddits";
 }
 
 RedditDesktop::RedditDesktop(const boost::asio::io_context::executor_type& executor):uiExecutor(executor),
-    client("api.reddit.com","oauth.reddit.com",3),
-    loginConnection(client.makeLoginClientConnection()),loginWindow(&client,uiExecutor)
+    client("api.reddit.com","oauth.reddit.com",3),loginWindow(&client,uiExecutor)
 {
     current_user = db.getRegisteredUser();
     if(!current_user)
@@ -23,20 +23,21 @@ RedditDesktop::RedditDesktop(const boost::asio::io_context::executor_type& execu
     }
     else
     {
+        auto loginConnection = client.makeLoginClientConnection();
         loginConnection->connectionCompleteHandler([this](const boost::system::error_code& ec,const client_response<access_token>& token){
             if(ec)
             {
-                boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,this,ec.message(),token));
+                boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,this,ec.message()));
             }
             else
             {
                 if(token.status >= 400)
                 {
-                    boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,this,token.body,token));
+                    boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,this,token.body));
                 }
                 else
                 {
-                    boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::addSubredditWindow,this,"",token));
+                    boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::loginSuccessful,this,token));
                 }
             }
         });
@@ -44,9 +45,80 @@ RedditDesktop::RedditDesktop(const boost::asio::io_context::executor_type& execu
         loginConnection->login(current_user.value());
     }
 }
-void RedditDesktop::addSubredditWindow(std::string title, client_response<access_token> token)
+void RedditDesktop::loginSuccessful(client_response<access_token> token)
 {
     current_access_token = token;
+    auto listingconnection = client.makeListingClientConnection();
+    listingconnection->connectionCompleteHandler([this](const boost::system::error_code& ec,
+                                                 const client_response<listing>& response)
+     {
+        if(ec)
+        {
+            boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,this,ec.message()));
+        }
+        else
+        {
+            if(response.status >= 400)
+            {
+                boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,this,response.body));
+            }
+            else
+            {
+                auto info = std::make_shared<user_info>(response.data.json);
+                boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::loadUserInformation,this,info));
+            }
+        }
+     });
+    listingconnection->list("/api/v1/me",current_access_token.data);
+
+    //add front page window
+    addSubredditWindow("");
+}
+void RedditDesktop::loadUserInformation(user_info_ptr info)
+{
+    info_user = info;
+    auto listingconnection = client.makeListingClientConnection();
+    listingconnection->connectionCompleteHandler([this,listingconnection](const boost::system::error_code& ec,
+                                                 const client_response<listing>& response)
+     {
+        if(ec)
+        {
+            boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,this,ec.message()));
+        }
+        else
+        {
+            if(response.status >= 400)
+            {
+                boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,this,response.body));
+            }
+            else
+            {
+                auto listingChildren = response.data.json["data"]["children"];
+                subreddit_list srs;
+                for(const auto& child: listingChildren)
+                {
+                    srs.emplace_back(std::make_shared<subreddit>(child["data"]));
+                }
+                boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::loadSubscribedSubreddits,this,std::move(srs),listingconnection));
+            }
+        }
+     });
+    listingconnection->list("/subreddits/mine/subscriber?show=all&limit=100",current_access_token.data);
+}
+void RedditDesktop::loadSubscribedSubreddits(subreddit_list srs,RedditClient::RedditListingClientConnection connection)
+{
+    if(!srs.empty())
+    {
+        auto url = fmt::format("/subreddits/mine/subscriber?show=all&limit=100&after={}&count={}",srs.back()->name,srs.size());
+        connection->list(url,current_access_token.data);
+    }
+    std::move(srs.begin(), srs.end(), std::back_inserter(subscribedSubreddits));
+    std::stable_sort(subscribedSubreddits.begin(),subscribedSubreddits.end(),[](const auto& lhs,const auto& rhs){
+        return lhs->displayName < rhs->displayName;
+    });
+}
+void RedditDesktop::addSubredditWindow(std::string title)
+{    
     subredditWindows.push_back(std::make_unique<SubredditWindow>(windowsCount++,title,current_access_token.data,&client,uiExecutor));
     subredditWindows.back()->showCommentsListener([this](const std::string& postId,const std::string& title){
         auto it = std::find_if(commentsWindows.begin(),commentsWindows.end(),[&postId](const std::unique_ptr<CommentsWindow>& win){
@@ -62,9 +134,8 @@ void RedditDesktop::addSubredditWindow(std::string title, client_response<access
         }
     });
 }
-void RedditDesktop::setConnectionErrorMessage(std::string msg,client_response<access_token> token)
+void RedditDesktop::setConnectionErrorMessage(std::string msg)
 {
-    current_access_token = token;
     showConnectionErrorDialog = true;
     connectionErrorMessage = msg;
 }
@@ -80,6 +151,7 @@ void RedditDesktop::showDesktop()
         openSubredditWindow = true;
     }
     showMainMenuBar();
+    showSubredditsWindow();
     for(auto&& win : subredditWindows)
     {
         if(win->isWindowOpen())
@@ -118,6 +190,36 @@ void RedditDesktop::showDesktop()
 
     ImGui::PopFont();
 }
+void RedditDesktop::showSubredditsWindow()
+{
+    ImGui::SetNextWindowSize(ImVec2(appFrameWidth*0.2f,appFrameHeight*0.6f),ImGuiCond_FirstUseEver);
+
+    ImGui::SetNextWindowPos(ImVec2(0,topPosAfterMenuBar));
+    if(!ImGui::Begin(SUBREDDITS_WINDOW_TITLE,nullptr,ImGuiWindowFlags_NoMove))
+    {
+        ImGui::End();
+        return;
+    }
+
+    if(ImGui::Selectable("Front Page"))
+    {
+        addSubredditWindow("");
+    }
+    if(ImGui::Selectable("All"))
+    {
+        addSubredditWindow("r/all");
+    }
+    for(const auto& sr : subscribedSubreddits)
+    {
+        if(ImGui::Selectable(sr->displayName.c_str()))
+        {
+            addSubredditWindow(sr->displayNamePrefixed);
+        }
+    }
+
+
+    ImGui::End();
+}
 
 void RedditDesktop::showErrorDialog()
 {
@@ -149,10 +251,24 @@ void RedditDesktop::showMainMenuBar()
 {
     if (ImGui::BeginMainMenuBar())
     {
+        topPosAfterMenuBar = ImGui::GetWindowSize().y;
         if (ImGui::BeginMenu("File"))
         {
             showMenuFile();
             ImGui::EndMenu();
+        }
+        if(info_user)
+        {
+            const float itemSpacing = ImGui::GetStyle().ItemSpacing.x;
+            static float infoButtonWidth = 0.0f;
+            float pos = infoButtonWidth + itemSpacing;
+            auto displayed_info = fmt::format("{} ({}-{})",info_user->name,info_user->humanLinkKarma,info_user->humanCommentKarma);
+            ImGui::SameLine(ImGui::GetWindowWidth()-pos);
+            if(ImGui::Button(displayed_info.c_str()))
+            {
+
+            }
+            infoButtonWidth = ImGui::GetItemRectSize().x;
         }
         ImGui::EndMainMenuBar();
     }
@@ -187,7 +303,7 @@ void RedditDesktop::showOpenSubredditWindow()
     //ImGui::SetNextWindowSizeConstraints(ImVec2(0, -1),    ImVec2(FLT_MAX, -1));//horizontal
     if (ImGui::BeginPopupModal(OPENSUBREDDIT_WINDOW_POPUP_TITLE,nullptr,ImGuiWindowFlags_AlwaysAutoResize))
     {
-        ImGui::Text("Enter new directory to scan\n");
+        ImGui::Text("Enter subreddit name to open");
         char dummy_text[50] = { 0 };
         memset(dummy_text,'X',sizeof(dummy_text)-1);
         if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::IsAnyItemActive()
@@ -209,7 +325,7 @@ void RedditDesktop::showOpenSubredditWindow()
         if (ImGui::Button("OK", ImVec2(120, 0)) ||
                 ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)))
         {
-            addSubredditWindow(selectedSubreddit,current_access_token);
+            addSubredditWindow(selectedSubreddit);
             ImGui::CloseCurrentPopup();
         }
         if (okDisabled)

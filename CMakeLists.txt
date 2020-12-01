@@ -32,6 +32,8 @@ find_package(Threads REQUIRED)
 find_package(SDL2 REQUIRED)
 find_package(Boost 1.73 REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET libavcodec libavutil libswscale libavformat )
 
 if(UNIX AND NOT APPLE)
     set(LINUX TRUE) #wrong here, what if we're BSD?
