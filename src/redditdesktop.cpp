@@ -13,10 +13,12 @@ constexpr auto ERROR_WINDOW_POPUP_TITLE = "Error Occurred";
 constexpr auto SUBREDDITS_WINDOW_TITLE = "My Subreddits";
 }
 
-RedditDesktop::RedditDesktop(const boost::asio::io_context::executor_type& executor):uiExecutor(executor),
-    client("api.reddit.com","oauth.reddit.com",3),loginWindow(&client,uiExecutor)
+RedditDesktop::RedditDesktop(const boost::asio::io_context::executor_type& executor,
+                             Database* const db):uiExecutor(executor),
+    client("api.reddit.com","oauth.reddit.com",3),db(db),loginWindow(&client,uiExecutor)
 {
-    current_user = db.getRegisteredUser();
+    assert(db != nullptr);
+    current_user = db->getRegisteredUser();
     if(!current_user)
     {
         loginWindow.setShowLoginWindow(true);
@@ -183,7 +185,7 @@ void RedditDesktop::showDesktop()
     {
         auto user = loginWindow.getConfiguredUser();
         auto token = loginWindow.getAccessToken();
-        db.setRegisteredUser(user);
+        db->setRegisteredUser(user);
         client.setUserAgent(make_user_agent(user));
     }
     showErrorDialog();

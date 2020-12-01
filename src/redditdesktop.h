@@ -14,7 +14,8 @@
 class RedditDesktop
 {
 public:
-    RedditDesktop(const boost::asio::io_context::executor_type& executor);
+    RedditDesktop(const boost::asio::io_context::executor_type& executor,
+                  Database* const db);
 
     void showDesktop();
     bool quitSelected() const
@@ -52,7 +53,7 @@ private:
     int windowsCount = 0;
     int appFrameHeight = 0;
     int appFrameWidth = 0;
-    Database db;
+    Database* db;
     std::optional<user> current_user;
     user_info_ptr info_user;
     LoginWindow loginWindow;

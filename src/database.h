@@ -30,6 +30,8 @@ public:
     Database();
     std::optional<user> getRegisteredUser() const;
     void setRegisteredUser(const user& registeredUser);
+    void getMainWindowDimensions(int *x, int *y, int *width,int *height);
+    void setMainWindowDimensions(int x, int y, int width,int height);
 private:
     std::unique_ptr<sqlite3,connection_deleter> db;
 };

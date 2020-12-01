@@ -26,6 +26,7 @@ using namespace gl;
 #endif
 
 #include "utils.h"
+#include "database.h"
 #include "redditdesktop.h"
 
 #ifdef REDDIT_DESKTOP_DEBUG
@@ -33,7 +34,7 @@ using namespace gl;
     void ShowMarkdownWindow(bool *open);
 #endif
 
-void runMainLoop(SDL_Window* window,ImGuiIO& io);
+void runMainLoop(SDL_Window* window,ImGuiIO& io,Database* const db);
 
 #if defined(WIN32_WINMAIN)
 int WINAPI WinMain(
@@ -81,6 +82,14 @@ int main(int /*argc*/, char** /*argv*/)
     SDL_GL_MakeCurrent(window, gl_context);
     SDL_GL_SetSwapInterval(1); // Enable vsync
 
+    Database db;
+    {
+        int x,y,w,h;
+        db.getMainWindowDimensions(&x,&y,&w,&h);
+        SDL_SetWindowPosition(window,x,y);
+        SDL_SetWindowSize(window,w,h);
+    }
+
     // Initialize OpenGL loader
     // Initialize OpenGL loader
 #if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
@@ -124,7 +133,14 @@ int main(int /*argc*/, char** /*argv*/)
     //io.Fonts->AddFontDefault();
     Utils::LoadFonts();
 
-    runMainLoop(window,io);
+    runMainLoop(window,io,&db);
+
+    {
+        int x,y,w,h;
+        SDL_GetWindowPosition(window,&x,&y);
+        SDL_GetWindowSize(window,&w,&h);
+        db.setMainWindowDimensions(x,y,w,h);
+    }
 
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
@@ -138,14 +154,14 @@ int main(int /*argc*/, char** /*argv*/)
 }
 
 
-void runMainLoop(SDL_Window* window,ImGuiIO& io)
+void runMainLoop(SDL_Window* window,ImGuiIO& io,Database* const db)
 {
 #ifdef REDDIT_DESKTOP_DEBUG
     bool show_demo_window = true;
     bool show_markdown_window = false;
 #endif
     boost::asio::io_context uiContext;
-    RedditDesktop desktop(uiContext.get_executor());
+    RedditDesktop desktop(uiContext.get_executor(),db);
     MarkdownRenderer::InitEngine();
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     // Main loop
