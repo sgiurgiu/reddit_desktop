@@ -35,6 +35,7 @@ void RedditListingConnection::list(const std::string& target, const access_token
     request.set(boost::beast::http::field::user_agent, userAgent);
     request.set(boost::beast::http::field::authorization,fmt::format("Bearer {}",token.token));
     request.prepare_payload();
+    response.body().clear();
     if(connected)
     {
         sendRequest();
@@ -71,7 +72,15 @@ void RedditListingConnection::responseReceivedComplete()
     resp.status = status;
     if(status == 200)
     {
-        resp.data.json = nlohmann::json::parse(body);
+        try
+        {
+            resp.data.json = nlohmann::json::parse(body);
+        }
+        catch(const std::exception& ex)
+        {
+            resp.body = ex.what();
+            if(status < 500) resp.status = 500;
+        }
     }
     else
     {

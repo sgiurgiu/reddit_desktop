@@ -2,6 +2,7 @@
 #include <fmt/format.h>
 #include "utils.h"
 #include <iostream>
+#include "fonts/IconsFontAwesome4.h"
 
 std::string make_user_agent(const user& u)
 {
@@ -14,6 +15,119 @@ gl_image::~gl_image()
         glDeleteTextures(1,&textureId);
     }
 }
+
+namespace {
+    std::unique_ptr<reddit_video> makeRedditMediaObject(const nlohmann::json& json)
+    {
+        auto redditMedia = std::make_unique<reddit_video>();
+        if(json.contains("bitrate_kbps") && json["bitrate_kbps"].is_number())
+        {
+            redditMedia->bitrate = json["bitrate_kbps"].get<int>();
+        }
+        if(json.contains("height") && json["height"].is_number())
+        {
+            redditMedia->height = json["height"].get<int>();
+        }
+        if(json.contains("width") && json["width"].is_number())
+        {
+            redditMedia->width = json["width"].get<int>();
+        }
+        if(json.contains("duration") && json["duration"].is_number())
+        {
+            redditMedia->duration = json["duration"].get<int64_t>();
+        }
+        if(json.contains("fallback_url") && json["fallback_url"].is_string())
+        {
+            redditMedia->fallbackUrl = json["fallback_url"].get<std::string>();
+        }
+        if(json.contains("scrubber_media_url") && json["scrubber_media_url"].is_string())
+        {
+            redditMedia->scrubberMediaUrl = json["scrubber_media_url"].get<std::string>();
+        }
+        if(json.contains("dash_url") && json["dash_url"].is_string())
+        {
+            redditMedia->dashUrl = json["dash_url"].get<std::string>();
+        }
+        if(json.contains("hls_url") && json["hls_url"].is_string())
+        {
+            redditMedia->hlsUrl = json["hls_url"].get<std::string>();
+        }
+        if(json.contains("transcoding_status") && json["transcoding_status"].is_string())
+        {
+            redditMedia->transcodingStatus = json["transcoding_status"].get<std::string>();
+        }
+        if(json.contains("is_gif") && json["is_gif"].is_boolean())
+        {
+            redditMedia->isGif = json["is_gif"].get<bool>();
+        }
+        return redditMedia;
+    }
+    std::unique_ptr<oembed> makeOemEmbedObject(const nlohmann::json& json)
+    {
+        auto embed = std::make_unique<oembed>();
+        if(json.contains("height") && json["height"].is_number())
+        {
+            embed->height = json["height"].get<int>();
+        }
+        if(json.contains("width") && json["width"].is_number())
+        {
+            embed->width = json["width"].get<int>();
+        }
+        if(json.contains("thumbnail_height") && json["thumbnail_height"].is_number())
+        {
+            embed->thumbnailHeight = json["thumbnail_height"].get<int>();
+        }
+        if(json.contains("thumbnail_width") && json["thumbnail_width"].is_number())
+        {
+            embed->thumbnailWidth = json["thumbnail_width"].get<int>();
+        }
+        if(json.contains("provider_url") && json["provider_url"].is_string())
+        {
+            embed->providerUrl = json["provider_url"].get<std::string>();
+        }
+        if(json.contains("html") && json["html"].is_string())
+        {
+            embed->html = json["html"].get<std::string>();
+        }
+        if(json.contains("thumbnail_url") && json["thumbnail_url"].is_string())
+        {
+            embed->thumbnailUrl = json["thumbnail_url"].get<std::string>();
+        }
+        if(json.contains("title") && json["title"].is_string())
+        {
+            embed->title = json["title"].get<std::string>();
+        }
+        if(json.contains("provider_name") && json["provider_name"].is_string())
+        {
+            embed->providerName = json["provider_name"].get<std::string>();
+        }
+        if(json.contains("type") && json["type"].is_string())
+        {
+            embed->type = json["type"].get<std::string>();
+        }
+
+        return embed;
+    }
+    std::unique_ptr<media> makeMediaObject(const nlohmann::json& json)
+    {
+        if(json.is_null() || !json.is_object()) return std::unique_ptr<media>();
+        auto m = std::make_unique<media>();
+        if(json.contains("reddit_video"))
+        {
+            m->redditVideo = makeRedditMediaObject(json["reddit_video"]);
+        }
+        if(json.contains("oembed"))
+        {
+            m->oemEmbed = makeOemEmbedObject(json["oembed"]);
+        }
+        if(json.contains("type") && json["type"].is_string())
+        {
+            m->type = json["type"].get<std::string>();
+        }
+        return m;
+    }
+}
+
 post::post(const nlohmann::json& json)
 {
     title = json["title"].get<std::string>();
@@ -67,6 +181,7 @@ post::post(const nlohmann::json& json)
     if(json["num_comments"].is_number())
     {
         commentsCount = json["num_comments"].get<int>();
+        commentsText = fmt::format(reinterpret_cast<const char*>(ICON_FA_COMMENTS " {} comments##{}"),commentsCount,id);
     }
     if(json["subreddit_name_prefixed"].is_string())
     {
@@ -129,7 +244,19 @@ post::post(const nlohmann::json& json)
         }
     }
 
-    std::cout << title <<", is_video:"<<isVideo<<", hint:"<<postHint<<std::endl;
+    if(json.contains("media"))
+    {
+        postMedia = makeMediaObject(json["media"]);
+    }
+    if(json.contains("secure_media"))
+    {
+        postMedia = makeMediaObject(json["secure_media"]);
+    }
+
+    if(isVideo || (postHint != "self" && postHint!="link" && !postHint.empty()))
+    {
+        std::cout << title <<", is_video:"<<isVideo<<", hint:"<<postHint<<", url:"<<url<<std::endl;
+    }
 }
 
 comment::comment(const nlohmann::json& json)

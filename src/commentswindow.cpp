@@ -110,7 +110,7 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
     {
         auto resourceConnection = client->makeResourceClientConnection(parent_post->url);
         resourceConnection->connectionCompleteHandler(
-                    [this](const boost::system::error_code& ec,
+                    [this,url=parent_post->url](const boost::system::error_code& ec,
                          const resource_response& response)
         {
             if(ec)
@@ -120,9 +120,21 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
             }
             if(response.status == 200)
             {
+                int* delays = nullptr;
+                int count;
                 int width, height, channels;
-                auto data = Utils::DecodeImageData(response.data.data(),response.data.size(),&width,&height,&channels,3);
-                boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setPostImage,this,data,width,height,channels));
+                if(url.ends_with(".gif"))
+                {
+                    auto data = Utils::decodeGifData(response.data.data(),response.data.size(),
+                                                       &width,&height,&channels,&count,&delays);
+                    boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setPostGif,this,
+                                                                 data,width,height,channels,count,delays));
+                }
+                else
+                {
+                    auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
+                    boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setPostImage,this,data,width,height,channels));
+                }
             }
         });
         resourceConnection->getResource();
@@ -133,9 +145,28 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
         //https://stackoverflow.com/questions/6495523/ffmpeg-video-to-opengl-texture
     }
 }
+void CommentsWindow::setPostGif(unsigned char* data, int width, int height, int channels,
+                int count, int* delays)
+{
+    auto gif = std::make_unique<post_gif>();
+
+    std::vector<std::unique_ptr<gl_image>> images;
+    int stride_bytes = width * channels;
+    for (int i=0; i<count; ++i)
+    {
+        gif->images.emplace_back(std::make_unique<gif_image>(
+                                     Utils::loadImage(data+stride_bytes * height * i, width, height, channels),
+                                     delays[i]));
+    }
+
+    free(delays);
+    stbi_image_free(data);
+    parent_post->gif = std::move(gif);
+}
+
 void CommentsWindow::setPostImage(unsigned char* data, int width, int height, int channels)
 {
-    auto image = Utils::LoadImage(data,width,height,channels);
+    auto image = Utils::loadImage(data,width,height,channels);
     stbi_image_free(data);
     parent_post->post_picture = std::move(image);
 }
@@ -195,12 +226,47 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::Text("Posted by %s %s",parent_post->author.c_str(),parent_post->humanReadableTimeDifference.c_str());
         ImGui::PopFont();
         ImGui::NewLine();
-        if(parent_post->post_picture)
+
+        gl_image_ptr display_image = parent_post->post_picture;
+
+        if(parent_post->gif)
+        {
+            if(parent_post->gif->images[parent_post->gif->currentImage]->displayed)
+            {
+                auto lastDisplay = parent_post->gif->images[parent_post->gif->currentImage]->lastDisplay;
+                auto diffSinceLastDisplay = std::chrono::steady_clock::now() - lastDisplay;
+                const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(diffSinceLastDisplay);
+                const auto delay = std::chrono::duration<int,std::milli>(parent_post->gif->images[parent_post->gif->currentImage]->delay);
+                if(ms > delay)
+                {
+                    parent_post->gif->currentImage++;
+                    if(parent_post->gif->currentImage >= (int)parent_post->gif->images.size())
+                    {
+                        parent_post->gif->currentImage = 0;
+                        for(auto&& img:parent_post->gif->images)
+                        {
+                            img->displayed = false;
+                            img->lastDisplay = std::chrono::steady_clock::time_point::min();
+                        }
+                    }
+                    parent_post->gif->images[parent_post->gif->currentImage]->lastDisplay = std::chrono::steady_clock::now();
+                    parent_post->gif->images[parent_post->gif->currentImage]->displayed = true;
+                }
+            }
+            else
+            {
+                parent_post->gif->images[parent_post->gif->currentImage]->displayed = true;
+                parent_post->gif->images[parent_post->gif->currentImage]->lastDisplay = std::chrono::steady_clock::now();
+            }
+            display_image = parent_post->gif->images[parent_post->gif->currentImage]->img;
+        }
+
+        if(display_image)
         {
             if(post_picture_width == 0.f && post_picture_height == 0.f)
             {
-                auto width = (float)parent_post->post_picture->width;
-                auto height = (float)parent_post->post_picture->height;
+                auto width = (float)display_image->width;
+                auto height = (float)display_image->height;
                 auto availableWidth = ImGui::GetContentRegionAvail().x * 0.9f;
                 if(availableWidth > 100 && width > availableWidth)
                 {
@@ -222,9 +288,12 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
                 post_picture_height = height;
                 post_picture_ratio = post_picture_width / post_picture_height;
             }
-            ImGui::ImageButton((void*)(intptr_t)parent_post->post_picture->textureId,
+
+            ImGui::ImageButton((void*)(intptr_t)display_image->textureId,
                                ImVec2(post_picture_width,post_picture_height),ImVec2(0, 0),ImVec2(1,1),0);
-            if(ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+
+            if(ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(),ImGui::GetItemRectMax()) &&
+                    ImGui::IsMouseDragging(ImGuiMouseButton_Left))
             {
                 //keep same aspect ratio
                 auto x = ImGui::GetIO().MouseDelta.x;
@@ -238,6 +307,7 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
                 post_picture_height = std::max(100.f,new_height);
             }
         }
+
 
         if(!parent_post->selfText.empty())
         {

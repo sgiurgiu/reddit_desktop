@@ -102,7 +102,7 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
                 if(response.status == 200)
                 {
                     int width, height, channels;
-                    auto data = Utils::DecodeImageData(response.data.data(),response.data.size(),&width,&height,&channels,3);
+                    auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
                     boost::asio::post(this->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,this,post,data,width,height,channels));
                 }
             });
@@ -112,7 +112,7 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
 }
 void SubredditWindow::setPostThumbnail(post* p,unsigned char* data, int width, int height, int channels)
 {
-    auto image = Utils::LoadImage(data,width,height,channels);
+    auto image = Utils::loadImage(data,width,height,channels);
     stbi_image_free(data);
     p->thumbnail_picture = std::move(image);
 }
@@ -209,11 +209,11 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Light)]);
         ImGui::Text("(%s)",p->domain.c_str());
         ImGui::PopFont();
-        auto commentsText = fmt::format(reinterpret_cast<const char*>(ICON_FA_COMMENTS " {} comments"),p->commentsCount);
+
         auto normalPositionY = ImGui::GetCursorPosY();
         auto desiredPositionY = height - ImGui::GetFrameHeightWithSpacing();
         if(normalPositionY < desiredPositionY) ImGui::SetCursorPosY(desiredPositionY);
-        if(ImGui::Button(commentsText.c_str()))
+        if(ImGui::Button(p->commentsText.c_str()))
         {
             commentsSignal(p->id,p->title);
         }

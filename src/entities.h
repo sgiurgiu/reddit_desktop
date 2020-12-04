@@ -5,6 +5,7 @@
 #include "json.hpp"
 #include <vector>
 #include <memory>
+#include <chrono>
 #include <glad/glad.h>
 
 struct user
@@ -69,6 +70,59 @@ struct gl_image
     int channels = 0;
     ~gl_image();
 };
+using gl_image_ptr = std::shared_ptr<gl_image>;
+struct oembed
+{
+    int height;
+    int width;
+    int thumbnailHeight;
+    int thumbnailWidth;
+    std::string providerUrl;
+    std::string thumbnailUrl;
+    std::string title;
+    std::string html;
+    std::string providerName;
+    std::string type;
+};
+
+struct reddit_video
+{
+    int bitrate;
+    int height;
+    int width;
+    int64_t duration;
+    std::string fallbackUrl;
+    std::string scrubberMediaUrl;
+    std::string dashUrl;
+    std::string hlsUrl;
+    bool isGif;
+    std::string transcodingStatus;
+};
+
+struct media
+{
+    std::string type;
+    std::unique_ptr<reddit_video> redditVideo;
+    std::unique_ptr<oembed> oemEmbed;
+};
+
+struct gif_image
+{
+    gif_image(){}
+    gif_image(gl_image_ptr img, int delay):
+        img(std::move(img)),delay(delay)
+    {}
+    gl_image_ptr img;
+    int delay;
+    std::chrono::steady_clock::time_point lastDisplay;
+    bool displayed = false;
+};
+
+struct post_gif
+{
+    std::vector<std::unique_ptr<gif_image>> images;
+    int currentImage = 0;
+};
 
 struct post
 {
@@ -90,18 +144,21 @@ struct post
     uint64_t createdAt;
     std::string humanReadableTimeDifference;
     int commentsCount = 0;
+    std::string commentsText;
     std::string subreddit;
     int score = 0;
     std::string humanScore;
     std::string url;
     std::string urlOverridenByDest;
     std::vector<images_preview> previews;
-    std::unique_ptr<gl_image> thumbnail_picture;
+    gl_image_ptr thumbnail_picture;
     std::string authorFullName;
     std::string author;
     std::string domain;
     std::string postHint;
-    std::unique_ptr<gl_image> post_picture;
+    gl_image_ptr post_picture;
+    std::unique_ptr<media> postMedia;
+    std::unique_ptr<post_gif> gif;
 };
 using post_ptr = std::shared_ptr<post>;
 using posts_list = std::vector<post_ptr>;

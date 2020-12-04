@@ -34,6 +34,8 @@ private:
     void setParentPost(post_ptr receivedParentPost);
     void showComment(comment_ptr c);
     void setPostImage(unsigned char* data, int width, int height, int channels);
+    void setPostGif(unsigned char* data, int width, int height, int channels,
+                    int count, int* delays);
 private:
 
     std::string postId;

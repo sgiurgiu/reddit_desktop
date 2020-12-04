@@ -20,7 +20,7 @@ public:
                      boost::asio::ssl::context& ssl_context,const std::string& host,
                      const std::string& service):
         resolver(boost::asio::make_strand(context)),
-        stream(boost::asio::make_strand(context), ssl_context),
+        stream(boost::asio::make_strand(context), ssl_context),buffer(1024*1024*50),
         host(host),service(service)
     {
         responseParser.body_limit((std::numeric_limits<std::uint64_t>::max)());
@@ -81,40 +81,7 @@ private:
         sendRequest();
     }
 
-    void onWrite(const boost::system::error_code& ec,std::size_t bytesTransferred)
-    {
-        boost::ignore_unused(bytesTransferred);
 
-        if(ec)
-        {
-            onError(ec);
-            return;
-        }
-        response.body().clear();
-        response.clear();
-
-        using namespace std::placeholders;
-        auto readMethod = std::bind(&RedditConnection::onRead,this->shared_from_this(),_1,_2);
-        if constexpr (isStreaming)
-        {
-            boost::beast::http::async_read(stream, buffer, responseParser, readMethod);
-        }
-        else
-        {
-            boost::beast::http::async_read(stream, buffer, response, readMethod);
-        }
-    }
-
-    void onRead(const boost::system::error_code& ec,std::size_t bytesTransferred)
-    {
-        boost::ignore_unused(bytesTransferred);
-        if(ec)
-        {
-            onError(ec);
-            return;
-        }
-        responseReceivedComplete();
-    }
 
 
 protected:
@@ -144,6 +111,42 @@ protected:
         auto writeMethod = std::bind(&RedditConnection::onWrite,this->shared_from_this(),_1,_2);
         // Send the HTTP request to the remote host
         boost::beast::http::async_write(stream, request,writeMethod);
+    }
+
+    virtual void onWrite(const boost::system::error_code& ec,std::size_t bytesTransferred)
+    {
+        boost::ignore_unused(bytesTransferred);
+
+        if(ec)
+        {
+            onError(ec);
+            return;
+        }
+        response.clear();
+
+        using namespace std::placeholders;
+        auto readMethod = std::bind(&RedditConnection::onRead,this->shared_from_this(),_1,_2);
+        if constexpr (isStreaming)
+        {
+            boost::beast::http::async_read(stream, buffer, responseParser, readMethod);
+        }
+        else
+        {
+            boost::beast::http::async_read(stream, buffer, response, readMethod);
+        }
+    }
+
+    virtual void onRead(const boost::system::error_code& ec,std::size_t bytesTransferred)
+    {
+        boost::ignore_unused(bytesTransferred);
+
+        if(ec)
+        {
+            onError(ec);
+            return;
+        }
+
+        responseReceivedComplete();
     }
 
     virtual void responseReceivedComplete() = 0;

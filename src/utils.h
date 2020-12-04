@@ -34,10 +34,11 @@ public:
     static std::string convertSizeToHuman(uint64_t size);
     static std::string decode64(const std::string &val);
     static std::string encode64(const std::string &val);
-    static std::unique_ptr<gl_image> LoadImage(unsigned char* data, int width, int height, int channels);
+    static gl_image_ptr loadImage(unsigned char* data, int width, int height, int channels);
     static std::string getHumanReadableTimeAgo(uint64_t time);
     static std::string getHumanReadableNumber(int number);
-    static stbi_uc * DecodeImageData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file, int desired_channels);
+    static stbi_uc * decodeImageData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file);
+    static stbi_uc * decodeGifData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file,int *count, int** delays);
 private:
     static void AddFont(const unsigned int* fontData, const unsigned int fontDataSize, float fontSize);
 

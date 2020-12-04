@@ -87,15 +87,20 @@ std::string Utils::encode64(const std::string &val)
     return tmp.append((3 - val.size() % 3) % 3, '=');
 }
 
-stbi_uc * Utils::DecodeImageData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file, int desired_channels)
+stbi_uc * Utils::decodeImageData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file)
 {
     return stbi_load_from_memory(buffer,len,x,y,channels_in_file,STBI_rgb_alpha);
 }
-
-std::unique_ptr<gl_image> Utils::LoadImage(unsigned char* data, int width, int height, int channels)
+stbi_uc * Utils::decodeGifData(stbi_uc const *buffer, int len, int *x, int *y,
+                               int *channels_in_file, int *count, int** delays)
 {
-    if(!data) return std::unique_ptr<gl_image>();
-    auto image = std::make_unique<gl_image>();
+    return stbi_load_gif_from_memory(buffer, len, delays, x, y, count, channels_in_file, STBI_rgb_alpha);
+}
+
+gl_image_ptr Utils::loadImage(unsigned char* data, int width, int height, int channels)
+{
+    if(!data) return gl_image_ptr();
+    auto image = std::make_shared<gl_image>();
     //https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples
     GLuint image_texture;
     glGenTextures(1, &image_texture);

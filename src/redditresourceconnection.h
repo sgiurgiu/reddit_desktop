@@ -7,13 +7,15 @@
 #include <boost/asio/ip/resolver_base.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/http/vector_body.hpp>
+#include <boost/beast/http/buffer_body.hpp>
 #include <boost/signals2.hpp>
 
 using response_byte = unsigned char;
 using resource_response = client_response<std::vector<response_byte>>;
+using resource_response_body = boost::beast::http::vector_body<response_byte>;
 class RedditResourceConnection : public RedditConnection<
         boost::beast::http::request<boost::beast::http::empty_body>,
-        boost::beast::http::response<boost::beast::http::vector_body<response_byte>>,
+        boost::beast::http::response<resource_response_body>,
         boost::signals2::signal<void(const boost::system::error_code&,
                                   const resource_response&)>
         >
@@ -26,10 +28,13 @@ public:
     void getResource();
 protected:
     virtual void responseReceivedComplete();
+    virtual void onWrite(const boost::system::error_code& ec,std::size_t bytesTransferred) override;
+    virtual void onRead(const boost::system::error_code& ec,std::size_t bytesTransferred) override;
 private:
     void onShutdown(const boost::system::error_code&);
 
 private:
+    boost::beast::http::response_parser<resource_response_body> parser;
     std::string target;
     std::string userAgent;
 };
