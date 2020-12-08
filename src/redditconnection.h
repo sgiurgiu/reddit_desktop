@@ -25,7 +25,15 @@ public:
     {
         responseParser.body_limit((std::numeric_limits<std::uint64_t>::max)());
     }
-    virtual ~RedditConnection() = default;
+    virtual ~RedditConnection()
+    {
+        clearAllSlots();
+    }
+
+    void clearAllSlots()
+    {
+        signal.disconnect_all_slots();
+    }
 
     void connectionCompleteHandler(const typename Signal::slot_type& slot)
     {

@@ -19,6 +19,7 @@ public:
                    const access_token& token,
                    RedditClient* client,
                    const boost::asio::io_context::executor_type& executor);
+    ~CommentsWindow();
     bool isWindowOpen() const {return windowOpen;}
     void showWindow(int appFrameWidth,int appFrameHeight);
     std::string getPostId() const
@@ -36,16 +37,17 @@ private:
     void setPostImage(unsigned char* data, int width, int height, int channels);
     void setPostGif(unsigned char* data, int width, int height, int channels,
                     int count, int* delays);
+    void setPostMediaFrame(uint8_t *data,int width, int height,int linesize);
 private:
 
     std::string postId;
     bool windowOpen = true;
     access_token token;
     RedditClient* client;
-    std::string windowName;
     RedditClient::RedditListingClientConnection connection;
+    RedditClient::MediaStreamingClientConnection mediaStreamingConnection;
+    std::string windowName;
     std::string listingErrorMessage;
-    const boost::asio::io_context::executor_type& uiExecutor;
     bool willBeFocused = false;
     comments_list comments;
     post_ptr parent_post;
@@ -53,6 +55,8 @@ private:
     float post_picture_width = 0.f;
     float post_picture_height = 0.f;
     float post_picture_ratio = 0.f;
+    bool loadingPostData = false;
+    const boost::asio::io_context::executor_type& uiExecutor;
 };
 
 #endif // COMMENTSWINDOW_H

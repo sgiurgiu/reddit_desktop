@@ -8,6 +8,8 @@
 #include <boost/archive/iterators/transform_width.hpp>
 #include <boost/algorithm/string.hpp>
 #include <chrono>
+#include <SDL.h>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -101,6 +103,10 @@ gl_image_ptr Utils::loadImage(unsigned char* data, int width, int height, int ch
 {
     if(!data) return gl_image_ptr();
     auto image = std::make_shared<gl_image>();
+
+    //SDL_CreateTexture();
+    //SDL_UpdateTexture()
+
     //https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples
     GLuint image_texture;
     glGenTextures(1, &image_texture);
@@ -116,9 +122,9 @@ gl_image_ptr Utils::loadImage(unsigned char* data, int width, int height, int ch
 #if defined(GL_UNPACK_ROW_LENGTH) && !defined(__EMSCRIPTEN__)
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 #endif
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height,
-                 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    /*if(channels == 3)
+    /*glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height,
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, data);*/
+    if(channels == 3)
     {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height,
                      0, GL_RGB, GL_UNSIGNED_BYTE, data);
@@ -127,7 +133,7 @@ gl_image_ptr Utils::loadImage(unsigned char* data, int width, int height, int ch
     {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height,
                      0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    }*/
+    }
     image->width = width;
     image->height = height;
     image->channels = channels;

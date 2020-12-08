@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <memory>
+#include <map>
 #include <boost/asio/io_context.hpp>
 
 #include "subredditwindow.h"
@@ -40,9 +41,11 @@ private:
     void addSubredditWindow(std::string title);
     void loginSuccessful(client_response<access_token> token);
     void loadUserInformation(user_info_ptr info);
-    void loadSubscribedSubreddits(subreddit_list srs,
-                                  RedditClient::RedditListingClientConnection connection);
+    void loadSubscribedSubreddits(subreddit_list srs);
+    void sortSubscribedSubreddits();
 private:
+    RedditClient::RedditListingClientConnection userInformationConnection;
+    RedditClient::RedditListingClientConnection subscribedSubredditsConnection;
     const boost::asio::io_context::executor_type& uiExecutor;
     RedditClient client;
     std::vector<std::unique_ptr<SubredditWindow>> subredditWindows;
@@ -61,7 +64,16 @@ private:
     bool showConnectionErrorDialog = false;
     std::string connectionErrorMessage;
     subreddit_list subscribedSubreddits;
+    subreddit_list unsortedSubscribedSubreddits;
     float topPosAfterMenuBar = 0.0f;
+    enum class SubredditsSorting
+    {
+        None,
+        Alphabetical_Ascending,
+        Alphabetical_Descending
+    };
+    std::map<SubredditsSorting,std::string> subredditsSortMethod;
+    SubredditsSorting currentSubredditsSorting = SubredditsSorting::None;
 };
 
 

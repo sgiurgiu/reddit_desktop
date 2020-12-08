@@ -227,6 +227,6 @@ struct subreddit
     bool userIsSubscriber = false;
     bool userIsMuted = false;
 };
-using subreddit_ptr = std::shared_ptr<subreddit>;
-using subreddit_list = std::vector<subreddit_ptr>;
+//using subreddit_ptr = std::shared_ptr<subreddit>;
+using subreddit_list = std::vector<subreddit>;
 #endif // ENTITIES_H

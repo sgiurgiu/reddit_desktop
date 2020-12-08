@@ -23,6 +23,7 @@ public:
     using CommentsSignal = boost::signals2::signal<void(const std::string& id,const std::string& title)>;
     void showCommentsListener(const typename CommentsSignal::slot_type& slot);
     void setFocused();
+    ~SubredditWindow();
 private:
 
     void showWindowMenu();

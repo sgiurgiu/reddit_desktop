@@ -51,6 +51,10 @@ SubredditWindow::SubredditWindow(int id, const std::string& subreddit,
 
     connection->list(target,token);
 }
+SubredditWindow::~SubredditWindow()
+{
+    connection->clearAllSlots();
+}
 void SubredditWindow::setErrorMessage(std::string errorMessage)
 {
     listingErrorMessage = errorMessage;
@@ -94,7 +98,7 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
         auto thumbnail = p->thumbnail;
         if(!p->thumbnail.empty() && p->thumbnail != "self" && p->thumbnail != "default")
         {
-            auto resourceConnection = client->makeResourceClientConnection(p->thumbnail);
+            auto resourceConnection = client->makeResourceClientConnection();
             resourceConnection->connectionCompleteHandler(
                         [post=p.get(),this](const boost::system::error_code&,
                              const resource_response& response)
@@ -106,13 +110,14 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
                     boost::asio::post(this->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,this,post,data,width,height,channels));
                 }
             });
-            resourceConnection->getResource();
+            resourceConnection->getResource(p->thumbnail);
         }
     }
 }
 void SubredditWindow::setPostThumbnail(post* p,unsigned char* data, int width, int height, int channels)
 {
-    auto image = Utils::loadImage(data,width,height,channels);
+    ((void)channels);
+    auto image = Utils::loadImage(data,width,height,STBI_rgb_alpha);
     stbi_image_free(data);
     p->thumbnail_picture = std::move(image);
 }
