@@ -13,25 +13,24 @@ constexpr auto BUFFER_SIZE = 150*1024*1024;
 }
 
 RedditResourceConnection::RedditResourceConnection(boost::asio::io_context& context,
-                                                   boost::asio::ssl::context& ssl_context,
-                                                   const std::string& url,
+                                                   boost::asio::ssl::context& ssl_context,                                                   
                                                    const std::string& userAgent):
     RedditConnection(context,ssl_context,"",""),userAgent(userAgent)
+{
+    parser.body_limit(BUFFER_SIZE);
+}
+
+void RedditResourceConnection::getResource(const std::string& url)
 {
     boost::url_view urlParts(url);
 
     service = urlParts.port().empty() ? urlParts.scheme().to_string() : urlParts.port().to_string();
     host = urlParts.encoded_host().to_string();
-    target = urlParts.encoded_path().to_string();
+    auto target = urlParts.encoded_path().to_string();
     if(!urlParts.encoded_query().empty())
     {
         target+="?"+urlParts.encoded_query().to_string();
     }
-    parser.body_limit(BUFFER_SIZE);
-}
-
-void RedditResourceConnection::getResource()
-{
     request.version(11);
     request.method(boost::beast::http::verb::get);
     request.target(target);

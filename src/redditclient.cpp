@@ -73,7 +73,11 @@ RedditClient::RedditListingClientConnection RedditClient::makeListingClientConne
 {
     return std::make_shared<RedditListingConnection>(context,ssl_context,server,service,userAgent);
 }
-RedditClient::RedditResourceClientConnection RedditClient::makeResourceClientConnection(const std::string& url)
+RedditClient::RedditResourceClientConnection RedditClient::makeResourceClientConnection()
 {
-    return std::make_shared<RedditResourceConnection>(context,ssl_context,url,userAgent);
+    return std::make_shared<RedditResourceConnection>(context,ssl_context,userAgent);
+}
+RedditClient::MediaStreamingClientConnection RedditClient::makeMediaStreamingClientConnection()
+{
+    return std::make_shared<MediaStreamingConnection>(context,userAgent);
 }

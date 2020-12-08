@@ -4,6 +4,7 @@
 #include "markdownrenderer.h"
 #include "fonts/IconsFontAwesome4.h"
 #include <SDL.h>
+#include "spinner/spinner.h"
 
 CommentsWindow::CommentsWindow(const std::string& postId,
                                const std::string& title,
@@ -36,9 +37,18 @@ CommentsWindow::CommentsWindow(const std::string& postId,
     windowName = fmt::format("{}##{}",title,postId);
     connection->list("/comments/"+postId+"?depth=5&limit=50&threaded=true",token);
 }
+CommentsWindow::~CommentsWindow()
+{
+    if(mediaStreamingConnection)
+    {
+        mediaStreamingConnection->clearAllSlots();
+    }
+    connection->clearAllSlots();
+}
 void CommentsWindow::setErrorMessage(std::string errorMessage)
 {
     listingErrorMessage = errorMessage;
+    loadingPostData = false;
 }
 void CommentsWindow::loadListingsFromConnection(const listing& listingResponse)
 {
@@ -106,9 +116,12 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
 {
     listingErrorMessage.clear();
     parent_post = receivedParentPost;
-    if(parent_post->postHint == "image" && !parent_post->url.empty())
+    if(parent_post->postHint == "image" &&
+            !parent_post->url.empty() &&
+            !parent_post->url.ends_with(".gifv"))
     {
-        auto resourceConnection = client->makeResourceClientConnection(parent_post->url);
+        loadingPostData = true;
+        auto resourceConnection = client->makeResourceClientConnection();
         resourceConnection->connectionCompleteHandler(
                     [this,url=parent_post->url](const boost::system::error_code& ec,
                          const resource_response& response)
@@ -137,12 +150,46 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
                 }
             }
         });
-        resourceConnection->getResource();
+        resourceConnection->getResource(parent_post->url);
+    }
+    else //if(parent_post->url.ends_with(".gifv"))
+    {        
+        loadingPostData = true;
+        //https://stackoverflow.com/questions/10715170/receiving-rtsp-stream-using-ffmpeg-library        
+        //https://stackoverflow.com/questions/6495523/ffmpeg-video-to-opengl-texture
+        mediaStreamingConnection = client->makeMediaStreamingClientConnection();
+        mediaStreamingConnection->framesAvailableHandler([this](uint8_t *data,int width, int height,int linesize) {
+            if(mediaStreamingConnection)
+            {
+                boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setPostMediaFrame,this,data,width,height,linesize));
+            }
+        });
+        mediaStreamingConnection->errorHandler([this](int /*errorCode*/,const std::string& str){
+            boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,this,str));
+        });
+        mediaStreamingConnection->streamMedia(parent_post->url);
+    }
+}
+void CommentsWindow::setPostMediaFrame(uint8_t *data,int width, int height,int linesize)
+{
+    loadingPostData = false;
+    if(parent_post->post_picture)
+    {
+        glBindTexture(GL_TEXTURE_2D, parent_post->post_picture->textureId);
+        glTexSubImage2D(
+              GL_TEXTURE_2D,
+              0,
+              0,
+              0,
+              parent_post->post_picture->width,
+              parent_post->post_picture->height,
+              GL_RGB,
+              GL_UNSIGNED_BYTE,
+              data );
     }
     else
     {
-        //https://stackoverflow.com/questions/10715170/receiving-rtsp-stream-using-ffmpeg-library
-        //https://stackoverflow.com/questions/6495523/ffmpeg-video-to-opengl-texture
+        parent_post->post_picture = Utils::loadImage(data,width,height, 3);
     }
 }
 void CommentsWindow::setPostGif(unsigned char* data, int width, int height, int channels,
@@ -155,20 +202,22 @@ void CommentsWindow::setPostGif(unsigned char* data, int width, int height, int 
     for (int i=0; i<count; ++i)
     {
         gif->images.emplace_back(std::make_unique<gif_image>(
-                                     Utils::loadImage(data+stride_bytes * height * i, width, height, channels),
+                                     Utils::loadImage(data+stride_bytes * height * i, width, height, STBI_rgb_alpha),
                                      delays[i]));
     }
 
     free(delays);
     stbi_image_free(data);
     parent_post->gif = std::move(gif);
+    loadingPostData = false;
 }
 
 void CommentsWindow::setPostImage(unsigned char* data, int width, int height, int channels)
 {
-    auto image = Utils::loadImage(data,width,height,channels);
+    auto image = Utils::loadImage(data,width,height,STBI_rgb_alpha);
     stbi_image_free(data);
     parent_post->post_picture = std::move(image);
+    loadingPostData = false;
 }
 void CommentsWindow::showComment(comment_ptr c)
 {
@@ -308,10 +357,14 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
             }
         }
 
-
         if(!parent_post->selfText.empty())
         {
             MarkdownRenderer::RenderMarkdown(parent_post->selfText);
+        }
+        else if(!display_image && loadingPostData)
+        {
+            constexpr std::string_view id = "###spinner_loading_data";
+            ImGui::Spinner(id.data(),50.f,1,ImGui::GetColorU32(ImGuiCol_ButtonActive));
         }
         ImGui::Button(fmt::format("Comment##{}_comment",parent_post->id).c_str());
 

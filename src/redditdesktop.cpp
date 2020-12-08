@@ -18,6 +18,10 @@ RedditDesktop::RedditDesktop(const boost::asio::io_context::executor_type& execu
     client("api.reddit.com","oauth.reddit.com",3),db(db),loginWindow(&client,uiExecutor)
 {
     assert(db != nullptr);
+
+    subredditsSortMethod[SubredditsSorting::None] = "None";
+    subredditsSortMethod[SubredditsSorting::Alphabetical_Ascending] = "Alphabetical";
+    subredditsSortMethod[SubredditsSorting::Alphabetical_Descending] = "Alphabetical (Inverse)";
     current_user = db->getRegisteredUser();
     if(!current_user)
     {
@@ -50,8 +54,8 @@ RedditDesktop::RedditDesktop(const boost::asio::io_context::executor_type& execu
 void RedditDesktop::loginSuccessful(client_response<access_token> token)
 {
     current_access_token = token;
-    auto listingconnection = client.makeListingClientConnection();
-    listingconnection->connectionCompleteHandler([this](const boost::system::error_code& ec,
+    userInformationConnection = client.makeListingClientConnection();
+    userInformationConnection->connectionCompleteHandler([this](const boost::system::error_code& ec,
                                                  const client_response<listing>& response)
      {
         if(ec)
@@ -71,7 +75,7 @@ void RedditDesktop::loginSuccessful(client_response<access_token> token)
             }
         }
      });
-    listingconnection->list("/api/v1/me",current_access_token.data);
+    userInformationConnection->list("/api/v1/me",current_access_token.data);
 
     //add front page window
     addSubredditWindow("");
@@ -79,8 +83,8 @@ void RedditDesktop::loginSuccessful(client_response<access_token> token)
 void RedditDesktop::loadUserInformation(user_info_ptr info)
 {
     info_user = info;
-    auto listingconnection = client.makeListingClientConnection();
-    listingconnection->connectionCompleteHandler([this,listingconnection](const boost::system::error_code& ec,
+    subscribedSubredditsConnection = client.makeListingClientConnection();
+    subscribedSubredditsConnection->connectionCompleteHandler([this](const boost::system::error_code& ec,
                                                  const client_response<listing>& response)
      {
         if(ec)
@@ -99,25 +103,43 @@ void RedditDesktop::loadUserInformation(user_info_ptr info)
                 subreddit_list srs;
                 for(const auto& child: listingChildren)
                 {
-                    srs.emplace_back(std::make_shared<subreddit>(child["data"]));
+                    srs.emplace_back(child["data"]);
                 }
-                boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::loadSubscribedSubreddits,this,std::move(srs),listingconnection));
+
+                boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::loadSubscribedSubreddits,this,std::move(srs)));
             }
         }
      });
-    listingconnection->list("/subreddits/mine/subscriber?show=all&limit=100",current_access_token.data);
+    unsortedSubscribedSubreddits.clear();
+    subscribedSubredditsConnection->list("/subreddits/mine/subscriber?show=all&limit=100",current_access_token.data);
 }
-void RedditDesktop::loadSubscribedSubreddits(subreddit_list srs,RedditClient::RedditListingClientConnection connection)
+void RedditDesktop::loadSubscribedSubreddits(subreddit_list srs)
 {
     if(!srs.empty())
     {
-        auto url = fmt::format("/subreddits/mine/subscriber?show=all&limit=100&after={}&count={}",srs.back()->name,srs.size());
-        connection->list(url,current_access_token.data);
+        auto url = fmt::format("/subreddits/mine/subscriber?show=all&limit=100&after={}&count={}",srs.back().name,srs.size());
+        subscribedSubredditsConnection->list(url,current_access_token.data);
+    }    
+    std::copy(srs.begin(), srs.end(), std::back_inserter(unsortedSubscribedSubreddits));
+    subscribedSubreddits = unsortedSubscribedSubreddits;
+    sortSubscribedSubreddits();
+}
+void RedditDesktop::sortSubscribedSubreddits()
+{
+    if(currentSubredditsSorting != SubredditsSorting::None)
+    {
+        std::stable_sort(subscribedSubreddits.begin(),subscribedSubreddits.end(),[this](const auto& lhs,const auto& rhs){
+            if(currentSubredditsSorting == SubredditsSorting::Alphabetical_Ascending) {
+                return lhs.displayName < rhs.displayName;
+            } else {
+                return lhs.displayName > rhs.displayName;
+            }
+        });
     }
-    std::move(srs.begin(), srs.end(), std::back_inserter(subscribedSubreddits));
-    std::stable_sort(subscribedSubreddits.begin(),subscribedSubreddits.end(),[](const auto& lhs,const auto& rhs){
-        return lhs->displayName < rhs->displayName;
-    });
+    else
+    {
+        subscribedSubreddits = unsortedSubscribedSubreddits;
+    }
 }
 void RedditDesktop::addSubredditWindow(std::string title)
 {    
@@ -203,6 +225,25 @@ void RedditDesktop::showSubredditsWindow()
         return;
     }
 
+    if(ImGui::Button(reinterpret_cast<const char*>(ICON_FA_REFRESH)))
+    {
+        subscribedSubreddits.clear();
+        loadUserInformation(info_user);
+    }
+    ImGui::SameLine();
+    if (ImGui::BeginCombo("##subreddits_sorting_combo", subredditsSortMethod[currentSubredditsSorting].c_str()))
+    {
+        for(const auto& p : subredditsSortMethod)
+        {
+            if (ImGui::Selectable(p.second.c_str(), currentSubredditsSorting == p.first))
+            {
+                currentSubredditsSorting = p.first;
+                sortSubscribedSubreddits();
+            }
+        }
+        ImGui::EndCombo();
+    }
+
     if(ImGui::Selectable("Front Page"))
     {
         addSubredditWindow("");
@@ -213,9 +254,9 @@ void RedditDesktop::showSubredditsWindow()
     }
     for(const auto& sr : subscribedSubreddits)
     {
-        if(ImGui::Selectable(sr->displayName.c_str()))
+        if(ImGui::Selectable(sr.displayName.c_str()))
         {
-            addSubredditWindow(sr->displayNamePrefixed);
+            addSubredditWindow(sr.displayNamePrefixed);
         }
     }
 

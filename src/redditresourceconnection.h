@@ -6,8 +6,6 @@
 #include "entities.h"
 #include <boost/asio/ip/resolver_base.hpp>
 #include <boost/beast/http.hpp>
-#include <boost/beast/http/vector_body.hpp>
-#include <boost/beast/http/buffer_body.hpp>
 #include <boost/signals2.hpp>
 
 using response_byte = unsigned char;
@@ -22,10 +20,9 @@ class RedditResourceConnection : public RedditConnection<
 {
 public:
     RedditResourceConnection(boost::asio::io_context& context,
-                             boost::asio::ssl::context& ssl_context,
-                             const std::string& url,
+                             boost::asio::ssl::context& ssl_context,                             
                              const std::string& userAgent);
-    void getResource();
+    void getResource(const std::string& url);
 protected:
     virtual void responseReceivedComplete();
     virtual void onWrite(const boost::system::error_code& ec,std::size_t bytesTransferred) override;
@@ -35,7 +32,6 @@ private:
 
 private:
     boost::beast::http::response_parser<resource_response_body> parser;
-    std::string target;
     std::string userAgent;
 };
 

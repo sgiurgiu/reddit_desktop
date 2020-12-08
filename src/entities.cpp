@@ -253,7 +253,7 @@ post::post(const nlohmann::json& json)
         postMedia = makeMediaObject(json["secure_media"]);
     }
 
-    if(isVideo || (postHint != "self" && postHint!="link" && !postHint.empty()))
+    //if(isVideo || (postHint != "self" && postHint!="link" && !postHint.empty()))
     {
         std::cout << title <<", is_video:"<<isVideo<<", hint:"<<postHint<<", url:"<<url<<std::endl;
     }

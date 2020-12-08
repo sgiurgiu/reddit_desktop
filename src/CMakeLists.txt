@@ -33,6 +33,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         redditresourceconnection.cpp
         commentswindow.cpp
         markdownrenderer.cpp
+        mediastreamingconnection.cpp
         )
 
 add_executable(${EXECUTABLE_NAME}
