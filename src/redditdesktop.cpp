@@ -231,6 +231,8 @@ void RedditDesktop::showSubredditsWindow()
         loadUserInformation(info_user);
     }
     ImGui::SameLine();
+    ImGui::Text("Sort:");
+    ImGui::SameLine();
     if (ImGui::BeginCombo("##subreddits_sorting_combo", subredditsSortMethod[currentSubredditsSorting].c_str()))
     {
         for(const auto& p : subredditsSortMethod)

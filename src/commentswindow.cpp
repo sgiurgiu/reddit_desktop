@@ -5,6 +5,7 @@
 #include "fonts/IconsFontAwesome4.h"
 #include <SDL.h>
 #include "spinner/spinner.h"
+#include "macros.h"
 
 CommentsWindow::CommentsWindow(const std::string& postId,
                                const std::string& title,
@@ -109,7 +110,7 @@ void CommentsWindow::loadListingChildren(const nlohmann::json& children)
 void CommentsWindow::setComments(comments_list receivedComments)
 {
     listingErrorMessage.clear();
-    comments.reserve(receivedComments.size());
+    comments.reserve(comments.size() + receivedComments.size());
     std::move(receivedComments.begin(), receivedComments.end(), std::back_inserter(comments));
 }
 void CommentsWindow::setParentPost(post_ptr receivedParentPost)
@@ -152,26 +153,31 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
         });
         resourceConnection->getResource(parent_post->url);
     }
-    else //if(parent_post->url.ends_with(".gifv"))
-    {        
-        loadingPostData = true;
-        //https://stackoverflow.com/questions/10715170/receiving-rtsp-stream-using-ffmpeg-library        
-        //https://stackoverflow.com/questions/6495523/ffmpeg-video-to-opengl-texture
-        mediaStreamingConnection = client->makeMediaStreamingClientConnection();
-        mediaStreamingConnection->framesAvailableHandler([this](uint8_t *data,int width, int height,int linesize) {
-            if(mediaStreamingConnection)
-            {
-                boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setPostMediaFrame,this,data,width,height,linesize));
-            }
-        });
-        mediaStreamingConnection->errorHandler([this](int /*errorCode*/,const std::string& str){
-            boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,this,str));
-        });
-        mediaStreamingConnection->streamMedia(parent_post->url);
+    else if (!parent_post->postHint.empty() && parent_post->postHint != "self")
+    {
+        //if(parent_post->url.ends_with(".gifv"))
+        {
+            loadingPostData = true;
+            //https://stackoverflow.com/questions/10715170/receiving-rtsp-stream-using-ffmpeg-library
+            //https://stackoverflow.com/questions/6495523/ffmpeg-video-to-opengl-texture
+            mediaStreamingConnection = client->makeMediaStreamingClientConnection();
+            mediaStreamingConnection->framesAvailableHandler([this](uint8_t *data,int width, int height,int linesize) {
+                if(mediaStreamingConnection)
+                {
+                    boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setPostMediaFrame,this,data,width,height,linesize));
+                }
+            });
+            mediaStreamingConnection->errorHandler([this](int /*errorCode*/,const std::string& str){
+                boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,this,str));
+            });
+            mediaStreamingConnection->streamMedia(parent_post->url);
+        }
+
     }
 }
 void CommentsWindow::setPostMediaFrame(uint8_t *data,int width, int height,int linesize)
 {
+    UNUSED(linesize);
     loadingPostData = false;
     if(parent_post->post_picture)
     {
@@ -214,6 +220,7 @@ void CommentsWindow::setPostGif(unsigned char* data, int width, int height, int 
 
 void CommentsWindow::setPostImage(unsigned char* data, int width, int height, int channels)
 {
+    UNUSED(channels);
     auto image = Utils::loadImage(data,width,height,STBI_rgb_alpha);
     stbi_image_free(data);
     parent_post->post_picture = std::move(image);

@@ -1,5 +1,6 @@
 #include "mediastreamingconnection.h"
 #include <boost/asio.hpp>
+#include <boost/url.hpp>
 
 extern "C"
 {
@@ -65,8 +66,9 @@ namespace
 }
 
 MediaStreamingConnection::MediaStreamingConnection(boost::asio::io_context& context,
+                                                   boost::asio::ssl::context& ssl_context,
                                                    const std::string& userAgent):
-    context(context),userAgent(userAgent),cancel(false)
+    RedditConnection(context,ssl_context,"",""),userAgent(userAgent),cancel(false)
 {
 }
 
@@ -77,12 +79,79 @@ MediaStreamingConnection::~MediaStreamingConnection()
 }
 void MediaStreamingConnection::clearAllSlots()
 {
-    signal.disconnect_all_slots();
+    streamingSignal.disconnect_all_slots();
     errorSignal.disconnect_all_slots();
 }
+
+void MediaStreamingConnection::responseReceivedComplete()
+{
+
+}
+
+void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::size_t bytesTransferred)
+{
+    boost::ignore_unused(bytesTransferred);
+
+    if(ec)
+    {
+        onError(ec);
+        return;
+    }
+    response.clear();
+
+    boost::system::error_code error;
+    boost::beast::http::read_header(stream,buffer,parser,error);
+    if(error)
+    {
+        onError(error);
+        return;
+    }
+    std::string contentType;
+    for(const auto& h : response.base())
+    {
+        if(h.name() == boost::beast::http::field::content_type)
+        {
+            contentType = h.value().to_string();
+        }
+    }
+    if(contentType.empty())
+    {
+        //dunno what we're reading here
+    }
+
+
+    using namespace std::placeholders;
+    auto readMethod = std::bind(&MediaStreamingConnection::onRead,this->shared_from_base<MediaStreamingConnection>(),_1,_2);
+    boost::beast::http::async_read(stream, buffer, parser, readMethod);
+
+}
+
+void MediaStreamingConnection::onRead(const boost::system::error_code& ec,std::size_t bytesTransferred)
+{
+
+}
+
 void MediaStreamingConnection::streamMedia(const std::string& url)
 {
-    boost::asio::post(context.get_executor(),std::bind(&MediaStreamingConnection::startStreaming,shared_from_this(),url));
+    boost::url_view urlParts(url);
+
+    service = urlParts.port().empty() ? urlParts.scheme().to_string() : urlParts.port().to_string();
+    host = urlParts.encoded_host().to_string();
+    auto target = urlParts.encoded_path().to_string();
+    if(!urlParts.encoded_query().empty())
+    {
+        target+="?"+urlParts.encoded_query().to_string();
+    }
+    request.version(11);
+    request.method(boost::beast::http::verb::get);
+    request.target(target);
+    //request.set(boost::beast::http::field::connection, "close");
+    request.set(boost::beast::http::field::host, host);
+    request.set(boost::beast::http::field::accept, "*/*");
+    request.set(boost::beast::http::field::user_agent, userAgent);
+    request.prepare_payload();
+    response.clear();
+    resolveHost();
 }
 
 void MediaStreamingConnection::startStreaming(const std::string& url)
@@ -214,7 +283,7 @@ int MediaStreamingConnection::readFrame(AVPacket* pkt,
         sws_scale(img_convert_ctx, frame->data, frame->linesize, 0,
                                       height, frameRGB->data, frameRGB->linesize);
         if(!cancel && !signal.empty()) {
-            signal(frameRGB->data[0],frameRGB->width,frameRGB->height,frameRGB->linesize[0]);
+            streamingSignal(frameRGB->data[0],frameRGB->width,frameRGB->height,frameRGB->linesize[0]);
         } else {
             return ret;
         }
@@ -233,9 +302,9 @@ int MediaStreamingConnection::readFrame(AVPacket* pkt,
     return ret;
 }
 
-void MediaStreamingConnection::framesAvailableHandler(const typename Signal::slot_type& slot)
+void MediaStreamingConnection::framesAvailableHandler(const typename StreamingSignal::slot_type& slot)
 {
-    signal.connect(slot);
+    streamingSignal.connect(slot);
 }
 void MediaStreamingConnection::errorHandler(const typename ErrorSignal::slot_type& slot)
 {

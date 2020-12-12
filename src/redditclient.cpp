@@ -79,5 +79,5 @@ RedditClient::RedditResourceClientConnection RedditClient::makeResourceClientCon
 }
 RedditClient::MediaStreamingClientConnection RedditClient::makeMediaStreamingClientConnection()
 {
-    return std::make_shared<MediaStreamingConnection>(context,userAgent);
+    return std::make_shared<MediaStreamingConnection>(context,ssl_context,userAgent);
 }

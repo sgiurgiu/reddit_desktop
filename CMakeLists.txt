@@ -1,9 +1,11 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
 
 project(reddit_desktop LANGUAGES C CXX
     VERSION 0.0.1
     DESCRIPTION "Reddit desktop"
     )
+
+option(ENABLE_TESTS "Build tests" ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
@@ -66,6 +68,9 @@ set(EXECUTABLE_NAME reddit_desktop)
 
 add_subdirectory(src)
 
+if(ENABLE_TESTS)
+    add_subdirectory(test)
+endif()
 
 SET(CPACK_PACKAGE_NAME "reddit_desktop")
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Reddit Resktop Application")
