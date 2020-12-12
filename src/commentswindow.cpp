@@ -117,41 +117,22 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
 {
     listingErrorMessage.clear();
     parent_post = receivedParentPost;
+    if ((parent_post->postHint == "link" || parent_post->postHint == "self") &&
+                 !parent_post->url.empty() &&
+                 !parent_post->url.ends_with(".gif") &&
+                 !parent_post->url.ends_with(".gifv") &&
+                 !parent_post->url.ends_with(".mp4") &&
+                 !parent_post->url.ends_with(".webv") &&
+                 !parent_post->url.ends_with(".avi") &&
+                 !parent_post->url.ends_with(".mkv"))
+    {
+        return;
+    }
     if(parent_post->postHint == "image" &&
             !parent_post->url.empty() &&
             !parent_post->url.ends_with(".gifv"))
     {
-        loadingPostData = true;
-        auto resourceConnection = client->makeResourceClientConnection();
-        resourceConnection->connectionCompleteHandler(
-                    [this,url=parent_post->url](const boost::system::error_code& ec,
-                         const resource_response& response)
-        {
-            if(ec)
-            {
-                boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,this,ec.message()));
-                return;
-            }
-            if(response.status == 200)
-            {
-                int* delays = nullptr;
-                int count;
-                int width, height, channels;
-                if(url.ends_with(".gif"))
-                {
-                    auto data = Utils::decodeGifData(response.data.data(),response.data.size(),
-                                                       &width,&height,&channels,&count,&delays);
-                    boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setPostGif,this,
-                                                                 data,width,height,channels,count,delays));
-                }
-                else
-                {
-                    auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
-                    boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setPostImage,this,data,width,height,channels));
-                }
-            }
-        });
-        resourceConnection->getResource(parent_post->url);
+        loadPostImage();
     }
     else if (!parent_post->postHint.empty() && parent_post->postHint != "self")
     {
@@ -172,9 +153,44 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
             });
             mediaStreamingConnection->streamMedia(parent_post->url);
         }
-
     }
 }
+
+void CommentsWindow::loadPostImage()
+{
+    loadingPostData = true;
+    auto resourceConnection = client->makeResourceClientConnection();
+    resourceConnection->connectionCompleteHandler(
+                [this,url=parent_post->url](const boost::system::error_code& ec,
+                     const resource_response& response)
+    {
+        if(ec)
+        {
+            boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,this,ec.message()));
+            return;
+        }
+        if(response.status == 200)
+        {
+            int* delays = nullptr;
+            int count;
+            int width, height, channels;
+            if(url.ends_with(".gif"))
+            {
+                auto data = Utils::decodeGifData(response.data.data(),response.data.size(),
+                                                   &width,&height,&channels,&count,&delays);
+                boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setPostGif,this,
+                                                             data,width,height,channels,count,delays));
+            }
+            else
+            {
+                auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
+                boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setPostImage,this,data,width,height,channels));
+            }
+        }
+    });
+    resourceConnection->getResource(parent_post->url);
+}
+
 void CommentsWindow::setPostMediaFrame(uint8_t *data,int width, int height,int linesize)
 {
     UNUSED(linesize);

@@ -38,6 +38,7 @@ private:
     void setPostGif(unsigned char* data, int width, int height, int channels,
                     int count, int* delays);
     void setPostMediaFrame(uint8_t *data,int width, int height,int linesize);
+    void loadPostImage();
 private:
 
     std::string postId;

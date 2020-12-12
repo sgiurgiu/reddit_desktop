@@ -119,11 +119,9 @@ void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::
         //dunno what we're reading here
     }
 
-
     using namespace std::placeholders;
     auto readMethod = std::bind(&MediaStreamingConnection::onRead,this->shared_from_base<MediaStreamingConnection>(),_1,_2);
     boost::beast::http::async_read(stream, buffer, parser, readMethod);
-
 }
 
 void MediaStreamingConnection::onRead(const boost::system::error_code& ec,std::size_t bytesTransferred)
