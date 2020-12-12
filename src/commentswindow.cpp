@@ -151,7 +151,7 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
             mediaStreamingConnection->errorHandler([this](int /*errorCode*/,const std::string& str){
                 boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,this,str));
             });
-            mediaStreamingConnection->streamMedia(parent_post->url);
+            mediaStreamingConnection->streamMedia(parent_post);
         }
     }
 }

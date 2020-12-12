@@ -1,6 +1,8 @@
 #include "mediastreamingconnection.h"
 #include <boost/asio.hpp>
 #include <boost/url.hpp>
+#include <fstream>
+#include <filesystem>
 
 extern "C"
 {
@@ -83,11 +85,6 @@ void MediaStreamingConnection::clearAllSlots()
     errorSignal.disconnect_all_slots();
 }
 
-void MediaStreamingConnection::responseReceivedComplete()
-{
-
-}
-
 void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::size_t bytesTransferred)
 {
     boost::ignore_unused(bytesTransferred);
@@ -100,14 +97,15 @@ void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::
     response.clear();
 
     boost::system::error_code error;
-    boost::beast::http::read_header(stream,buffer,parser,error);
+    boost::beast::http::read_header(stream,buffer,responseParser,error);
     if(error)
     {
         onError(error);
         return;
     }
+
     std::string contentType;
-    for(const auto& h : response.base())
+    for(const auto& h : responseParser.get())
     {
         if(h.name() == boost::beast::http::field::content_type)
         {
@@ -118,21 +116,79 @@ void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::
     {
         //dunno what we're reading here
     }
+    else
+    {
+        if(contentType.find("html") != contentType.npos)
+        {
+            downloadingHtml = true;
+        }
+    }
+
+    targetFile = std::filesystem::path(std::filesystem::temp_directory_path() / "media.temp");
+
+    responseParser.get().body().open(targetFile.c_str(),boost::beast::file_mode::write,error);
+    if(error)
+    {
+        onError(error);
+        return;
+    }
 
     using namespace std::placeholders;
     auto readMethod = std::bind(&MediaStreamingConnection::onRead,this->shared_from_base<MediaStreamingConnection>(),_1,_2);
-    boost::beast::http::async_read(stream, buffer, parser, readMethod);
+    boost::beast::http::async_read(stream, buffer, responseParser, readMethod);
 }
 
 void MediaStreamingConnection::onRead(const boost::system::error_code& ec,std::size_t bytesTransferred)
 {
+    if(ec)
+    {
+        onError(ec);
+        return;
+    }
 
+    if(!responseParser.is_done())
+    {
+        using namespace std::placeholders;
+        auto readMethod = std::bind(&MediaStreamingConnection::onRead,this->shared_from_base<MediaStreamingConnection>(),_1,_2);
+        boost::beast::http::async_read(stream, buffer, responseParser, readMethod);
+        return;
+    }
+    else
+    {
+        responseReceivedComplete();
+    }
 }
 
-void MediaStreamingConnection::streamMedia(const std::string& url)
+void MediaStreamingConnection::onError(const boost::system::error_code& ec)
 {
-    boost::url_view urlParts(url);
+    errorSignal(ec.value(),ec.message());
+}
 
+void MediaStreamingConnection::responseReceivedComplete()
+{
+    if(responseParser.get().body().is_open())
+    {
+        responseParser.get().body().close();
+    }
+    if(downloadingHtml)
+    {
+        std::ifstream file(targetFile);
+
+    }
+}
+
+void MediaStreamingConnection::streamMedia(post_ptr post)
+{
+    if(post->postMedia)
+    {
+        if(post->postMedia->type == "streamable.com")
+        {
+            //do nothing here, it's easier to parse the streamable.com webpage
+            //than the embedded html
+        }
+    }
+
+    boost::url_view urlParts(post->url);
     service = urlParts.port().empty() ? urlParts.scheme().to_string() : urlParts.port().to_string();
     host = urlParts.encoded_host().to_string();
     auto target = urlParts.encoded_path().to_string();

@@ -1,4 +1,3 @@
-
 file(GLOB_RECURSE HEADERS *.h *.hpp *.hxx )
 add_custom_target(Headers SOURCES ${HEADERS})
 
@@ -20,6 +19,8 @@ set(BOOST_URL_SRC ../external/url/src/src.cpp)
 
 set(SQLITE_SRC sqlite/sqlite3.c)
 
+file(GLOB_RECURSE GUMBO_PARSER_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/../external/gumbo-parser/src/*.c")
+
 set(REDDIT_DESKTOP_SRCS main.cpp
         utils.cpp
         redditdesktop.cpp
@@ -34,6 +35,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         commentswindow.cpp
         markdownrenderer.cpp
         mediastreamingconnection.cpp
+        htmlparser.cpp
         )
 
 add_executable(${EXECUTABLE_NAME}
@@ -44,6 +46,7 @@ add_executable(${EXECUTABLE_NAME}
     ${FMT_SRCS}
     ${SQLITE_SRC}
     ${BOOST_URL_SRC}
+    ${GUMBO_PARSER_SRCS}
     )
 
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE  OpenGL::GL SDL2::SDL2)
@@ -62,6 +65,7 @@ target_include_directories(${EXECUTABLE_NAME} PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/cmark-gfm/extensions"
     "${CMAKE_BINARY_DIR}/external/cmark-gfm/src"
     "${CMAKE_BINARY_DIR}/external/cmark-gfm/extensions"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../external/gumbo-parser/src/"
     )
 
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLAD BOOST_ASIO_NO_DEPRECATED)

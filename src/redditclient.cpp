@@ -33,14 +33,13 @@ void add_windows_root_certs(boost::asio::ssl::context &ctx)
 #endif
 
 RedditClient::RedditClient(std::string_view authServer,std::string_view server, int clientThreadsCount):
-    authServer(authServer),server(server),ssl_context(boost::asio::ssl::context::tlsv1_client),
+    authServer(authServer),server(server),ssl_context(boost::asio::ssl::context::tls_client),
     work(boost::asio::make_work_guard(context))
 {
     ssl_context.set_options(boost::asio::ssl::context::default_workarounds
-                                | boost::asio::ssl::context::no_sslv2
-                                | boost::asio::ssl::context::no_sslv3
-                                | boost::asio::ssl::context::tlsv12_client
-                                | boost::asio::ssl::context::tlsv13_client);
+                                //| boost::asio::ssl::context::no_sslv2
+                                //| boost::asio::ssl::context::no_sslv3
+                                );
     ssl_context.set_verify_mode(boost::asio::ssl::verify_peer);
     ssl_context.set_default_verify_paths();
     using run_function = boost::asio::io_context::count_type(boost::asio::io_context::*)();

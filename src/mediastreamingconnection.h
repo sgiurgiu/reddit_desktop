@@ -32,7 +32,7 @@ public:
                              boost::asio::ssl::context& ssl_context,
                              const std::string& userAgent);
     ~MediaStreamingConnection();
-    void streamMedia(const std::string& url);
+    void streamMedia(post_ptr post);
     using StreamingSignal = boost::signals2::signal<void(uint8_t *data,int width, int height,int linesize)>;
     using ErrorSignal = boost::signals2::signal<void(int errorCode,const std::string&)>;
     void framesAvailableHandler(const typename StreamingSignal::slot_type& slot);
@@ -42,6 +42,7 @@ protected:
     virtual void responseReceivedComplete();
     virtual void onWrite(const boost::system::error_code& ec,std::size_t bytesTransferred) override;
     virtual void onRead(const boost::system::error_code& ec,std::size_t bytesTransferred) override;
+    virtual void onError(const boost::system::error_code& ec) override;
 
 private:
     void startStreaming(const std::string& url);
@@ -54,8 +55,8 @@ private:
     StreamingSignal streamingSignal;
     ErrorSignal errorSignal;
     std::atomic_bool cancel;
-    boost::beast::http::response_parser<media_body> parser;
     std::string targetFile;
+    bool downloadingHtml = false;
 };
 
 #endif // MEDIASTREAMINGCONNECTION_H

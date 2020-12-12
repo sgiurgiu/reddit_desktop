@@ -12,8 +12,8 @@
 #include <string>
 #include <memory>
 
-template<typename Request,typename Response, typename Signal, bool isStreaming = false>
-class RedditConnection : public std::enable_shared_from_this<RedditConnection<Request,Response,Signal,isStreaming>>
+template<typename Request,typename Response, typename Signal>
+class RedditConnection : public std::enable_shared_from_this<RedditConnection<Request,Response,Signal>>
 {
 public:
     RedditConnection(boost::asio::io_context& context,
@@ -134,14 +134,7 @@ protected:
 
         using namespace std::placeholders;
         auto readMethod = std::bind(&RedditConnection::onRead,this->shared_from_this(),_1,_2);
-        if constexpr (isStreaming)
-        {
-            boost::beast::http::async_read(stream, buffer, responseParser, readMethod);
-        }
-        else
-        {
-            boost::beast::http::async_read(stream, buffer, response, readMethod);
-        }
+        boost::beast::http::async_read(stream, buffer, response, readMethod);
     }
 
     virtual void onRead(const boost::system::error_code& ec,std::size_t bytesTransferred)

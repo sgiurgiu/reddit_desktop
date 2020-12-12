@@ -10,3 +10,6 @@
 [submodule "external/cmark-gfm"]
 	path = external/cmark-gfm
 	url = https://github.com/github/cmark-gfm
+[submodule "external/gumbo-parser"]
+	path = external/gumbo-parser
+	url = https://github.com/google/gumbo-parser.git
