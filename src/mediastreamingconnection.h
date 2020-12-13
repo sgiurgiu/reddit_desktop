@@ -19,10 +19,9 @@ struct AVPacket;
 struct SwsContext;
 
 using dummy_response = client_response<void*>;
-using media_body = boost::beast::http::file_body;
 class MediaStreamingConnection : public RedditConnection<
         boost::beast::http::request<boost::beast::http::empty_body>,
-        boost::beast::http::response<media_body>,
+        boost::beast::http::response<boost::beast::http::string_body>,
         boost::signals2::signal<void(const boost::system::error_code&,
                                      const dummy_response&)>
         >
@@ -32,7 +31,7 @@ public:
                              boost::asio::ssl::context& ssl_context,
                              const std::string& userAgent);
     ~MediaStreamingConnection();
-    void streamMedia(post_ptr post);
+    void streamMedia(post* mediaPost);
     using StreamingSignal = boost::signals2::signal<void(uint8_t *data,int width, int height,int linesize)>;
     using ErrorSignal = boost::signals2::signal<void(int errorCode,const std::string&)>;
     void framesAvailableHandler(const typename StreamingSignal::slot_type& slot);
@@ -41,22 +40,22 @@ public:
 protected:
     virtual void responseReceivedComplete();
     virtual void onWrite(const boost::system::error_code& ec,std::size_t bytesTransferred) override;
-    virtual void onRead(const boost::system::error_code& ec,std::size_t bytesTransferred) override;
+   // virtual void onRead(const boost::system::error_code& ec,std::size_t bytesTransferred) override;
     virtual void onError(const boost::system::error_code& ec) override;
 
 private:
-    void startStreaming(const std::string& url);
+    void startStreaming(const std::string& file);
     int readFrame(AVPacket* pkt, AVCodecContext *video_dec_ctx,
                   AVFrame *frame, SwsContext * img_convert_ctx,
                   int height,AVFrame* frameRGB,int64_t* ts);
-
+    void downloadUrl(const std::string& url);
 private:
     std::string userAgent;
     StreamingSignal streamingSignal;
     ErrorSignal errorSignal;
     std::atomic_bool cancel;
-    std::string targetFile;
     bool downloadingHtml = false;
+    post* currentPost;
 };
 
 #endif // MEDIASTREAMINGCONNECTION_H

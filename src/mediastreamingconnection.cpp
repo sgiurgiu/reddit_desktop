@@ -4,6 +4,9 @@
 #include <fstream>
 #include <filesystem>
 
+#include "htmlparser.h"
+#include "macros.h"
+
 extern "C"
 {
     #include <libavcodec/avcodec.h>
@@ -65,6 +68,13 @@ namespace
             av_free(buf);
         }
     };
+    struct avparser_deleter
+    {
+        void operator()(AVCodecParserContext* parser)
+        {
+            av_parser_close(parser);
+        }
+    };
 }
 
 MediaStreamingConnection::MediaStreamingConnection(boost::asio::io_context& context,
@@ -72,6 +82,7 @@ MediaStreamingConnection::MediaStreamingConnection(boost::asio::io_context& cont
                                                    const std::string& userAgent):
     RedditConnection(context,ssl_context,"",""),userAgent(userAgent),cancel(false)
 {
+    responseParser->body_limit(10*1024*1024);//10 MB html file limit should be plenty
 }
 
 MediaStreamingConnection::~MediaStreamingConnection()
@@ -94,10 +105,8 @@ void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::
         onError(ec);
         return;
     }
-    response.clear();
-
     boost::system::error_code error;
-    boost::beast::http::read_header(stream,buffer,responseParser,error);
+    boost::beast::http::read_header(stream.value(),buffer,responseParser.value(),error);
     if(error)
     {
         onError(error);
@@ -105,13 +114,33 @@ void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::
     }
 
     std::string contentType;
-    for(const auto& h : responseParser.get())
+    std::string location;
+    for(const auto& h : responseParser.value().get())
     {
         if(h.name() == boost::beast::http::field::content_type)
         {
             contentType = h.value().to_string();
         }
+        if(h.name() == boost::beast::http::field::location)
+        {
+            location = h.value().to_string();
+        }
     }
+
+    if(!location.empty())
+    {
+        auto status = responseParser->get().result();
+
+        if(status == boost::beast::http::status::moved_permanently ||
+           status == boost::beast::http::status::temporary_redirect ||
+           status == boost::beast::http::status::permanent_redirect)
+        {
+            stream.emplace(boost::asio::make_strand(context), ssl_context);
+            downloadUrl(location);
+            return;
+        }
+    }
+
     if(contentType.empty())
     {
         //dunno what we're reading here
@@ -124,9 +153,6 @@ void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::
         }
     }
 
-    targetFile = std::filesystem::path(std::filesystem::temp_directory_path() / "media.temp");
-
-    responseParser.get().body().open(targetFile.c_str(),boost::beast::file_mode::write,error);
     if(error)
     {
         onError(error);
@@ -135,28 +161,7 @@ void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::
 
     using namespace std::placeholders;
     auto readMethod = std::bind(&MediaStreamingConnection::onRead,this->shared_from_base<MediaStreamingConnection>(),_1,_2);
-    boost::beast::http::async_read(stream, buffer, responseParser, readMethod);
-}
-
-void MediaStreamingConnection::onRead(const boost::system::error_code& ec,std::size_t bytesTransferred)
-{
-    if(ec)
-    {
-        onError(ec);
-        return;
-    }
-
-    if(!responseParser.is_done())
-    {
-        using namespace std::placeholders;
-        auto readMethod = std::bind(&MediaStreamingConnection::onRead,this->shared_from_base<MediaStreamingConnection>(),_1,_2);
-        boost::beast::http::async_read(stream, buffer, responseParser, readMethod);
-        return;
-    }
-    else
-    {
-        responseReceivedComplete();
-    }
+    boost::beast::http::async_read(stream.value(), buffer, responseParser.value(), readMethod);
 }
 
 void MediaStreamingConnection::onError(const boost::system::error_code& ec)
@@ -166,31 +171,57 @@ void MediaStreamingConnection::onError(const boost::system::error_code& ec)
 
 void MediaStreamingConnection::responseReceivedComplete()
 {
-    if(responseParser.get().body().is_open())
-    {
-        responseParser.get().body().close();
-    }
     if(downloadingHtml)
     {
-        std::ifstream file(targetFile);
-
+        HtmlParser htmlParser(responseParser->get().body());
+        auto videoUrl = htmlParser.getVideoUrl(currentPost->domain);
+        boost::system::error_code ec;
+        stream->shutdown(ec);
+        if(videoUrl.empty())
+        {
+            errorSignal(-1,"No video URL found in post");
+            return;
+        }
+        downloadingHtml = false;
+        //std::filesystem::remove(targetPath);
+        //stream.emplace(boost::asio::make_strand(context), ssl_context);
+        startStreaming(videoUrl);
+    }
+    else
+    {
+        //startStreaming(targetFile);
+        BOOST_ASSERT(false);
     }
 }
 
-void MediaStreamingConnection::streamMedia(post_ptr post)
+void MediaStreamingConnection::streamMedia(post* mediaPost)
 {
-    if(post->postMedia)
+    currentPost = mediaPost;
+    auto url = currentPost->url;
+    if(currentPost->postMedia && currentPost->postMedia->redditVideo)
     {
-        if(post->postMedia->type == "streamable.com")
-        {
-            //do nothing here, it's easier to parse the streamable.com webpage
-            //than the embedded html
-        }
+        url = currentPost->postMedia->redditVideo->dashUrl;
+        boost::asio::post(context.get_executor(),std::bind(
+                               &MediaStreamingConnection::startStreaming,
+                               this->shared_from_base<MediaStreamingConnection>(),url));
     }
+    else
+    {
+        downloadUrl(url);
+    }
+}
 
-    boost::url_view urlParts(post->url);
-    service = urlParts.port().empty() ? urlParts.scheme().to_string() : urlParts.port().to_string();
-    host = urlParts.encoded_host().to_string();
+void MediaStreamingConnection::downloadUrl(const std::string& url)
+{
+    boost::url_view urlParts(url);
+    if(!urlParts.port().empty() || !urlParts.scheme().empty())
+    {
+        service = urlParts.port().empty() ? urlParts.scheme().to_string() : urlParts.port().to_string();
+    }
+    if(!urlParts.host().empty())
+    {
+        host = urlParts.encoded_host().to_string();
+    }
     auto target = urlParts.encoded_path().to_string();
     if(!urlParts.encoded_query().empty())
     {
@@ -199,28 +230,31 @@ void MediaStreamingConnection::streamMedia(post_ptr post)
     request.version(11);
     request.method(boost::beast::http::verb::get);
     request.target(target);
-    //request.set(boost::beast::http::field::connection, "close");
+    request.set(boost::beast::http::field::connection, "close");
     request.set(boost::beast::http::field::host, host);
     request.set(boost::beast::http::field::accept, "*/*");
     request.set(boost::beast::http::field::user_agent, userAgent);
     request.prepare_payload();
     response.clear();
+    buffer.consume(buffer.size());
+    buffer.clear();
+    responseParser.emplace();
+    responseParser->body_limit(std::numeric_limits<uint64_t>::max());
     resolveHost();
 }
 
-void MediaStreamingConnection::startStreaming(const std::string& url)
-{
+void MediaStreamingConnection::startStreaming(const std::string& file)
+{   
     int video_stream_idx = -1;
     AVStream *video_stream = nullptr;
-
     AVPacket pkt;
     AVCodec *dec = nullptr;
     AVDictionary *general_options = nullptr;
 
     std::unique_ptr<AVFormatContext,avformat_context_deleter> fmt_ctx{nullptr,avformat_context_deleter{}};
     {
-        AVFormatContext *fmt = nullptr;
-        int ret = avformat_open_input(&fmt,"/home/sergiu/uDsJLCP.mp4"/*url.c_str()*/, nullptr, &general_options);
+        AVFormatContext *fmt = avformat_alloc_context();
+        int ret = avformat_open_input(&fmt,file.c_str(), nullptr, &general_options);
         if (ret < 0)
         {
             char buf[256];
@@ -239,6 +273,10 @@ void MediaStreamingConnection::startStreaming(const std::string& url)
         return;
     }
 
+#ifdef REDDIT_DESKTOP_DEBUG
+    av_dump_format(fmt_ctx.get(), 0, file.c_str(), 0);
+#endif
+
     if((video_stream_idx = av_find_best_stream(fmt_ctx.get(), AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0)) < 0)
     {
         errorSignal(-1,"Media does not contain video stream");
@@ -246,6 +284,8 @@ void MediaStreamingConnection::startStreaming(const std::string& url)
     }
 
     video_stream = fmt_ctx->streams[video_stream_idx];
+    //video_stream->codecpar->extradata;
+
     dec = avcodec_find_decoder(video_stream->codecpar->codec_id);
     if(!dec)
     {
@@ -266,6 +306,12 @@ void MediaStreamingConnection::startStreaming(const std::string& url)
     int width = video_dec_ctx->width;
     int height = video_dec_ctx->height;
     AVPixelFormat pix_fmt = video_dec_ctx->pix_fmt;
+    AVDictionary *opts = NULL;
+    if (video_dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO || video_dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO)
+    {
+        av_dict_set(&opts, "refcounted_frames", "1", 0);
+    }
+
     ret = avcodec_open2(video_dec_ctx.get(), dec, nullptr);
     if(ret < 0)
     {
@@ -278,14 +324,15 @@ void MediaStreamingConnection::startStreaming(const std::string& url)
     std::unique_ptr<AVFrame,avframe_deleter> frame(av_frame_alloc(),avframe_deleter());
     std::unique_ptr<AVFrame,avframe_deleter> frameRGB(av_frame_alloc(),avframe_deleter());
 
-    AVPixelFormat  pFormat = AV_PIX_FMT_RGB24;
+    AVPixelFormat  pFormat = AV_PIX_FMT_RGBA;
 
     //av_image_alloc();
+    //auto lineSize = av_image_get_linesize(pFormat, width, height);
     int numBytes = av_image_get_buffer_size(pFormat, width, height,
                                         1 /*https://stackoverflow.com/questions/35678041/what-is-linesize-alignment-meaning*/);
     std::unique_ptr<uint8_t,avbuffer_deleter> buffer ((uint8_t *) av_malloc(numBytes*sizeof(uint8_t)),avbuffer_deleter());
     av_image_fill_arrays(frameRGB->data,frameRGB->linesize,buffer.get(),pFormat,
-                         width, height,32);
+                         width, height,1);
     frameRGB->width = width;
     frameRGB->height = height;
 
@@ -295,34 +342,37 @@ void MediaStreamingConnection::startStreaming(const std::string& url)
 
     std::unique_ptr<SwsContext,swscontext_deleter> img_convert_ctx(
                 sws_getContext(width, height, pix_fmt, width,
-                                     height, pFormat, SWS_BICUBIC,
+                                     height, pFormat, SWS_BILINEAR,
                                      nullptr, nullptr,nullptr),swscontext_deleter());
     int counter = 0;
     int64_t lastTs = 0;
     int64_t ts = 0;
+
+    //av_parser_parse2(parser.get(),video_dec_ctx.get(),&pkt.data,&pkt.size,data,data_size,AV_NOPTS_VALUE,AV_NOPTS_VALUE,0);
     while (!cancel && av_read_frame(fmt_ctx.get(), &pkt) >= 0)
-    {                
-        ret  = readFrame(&pkt,video_dec_ctx.get(),frame.get(),img_convert_ctx.get(),height,frameRGB.get(),&ts);
-        if(cancel) return;
-        auto waitTime = (ts-lastTs)*av_q2d(video_stream->time_base)*1000;
-        std::this_thread::sleep_for(std::chrono::milliseconds((long)waitTime));
-        lastTs = ts;
-        counter++;
+    {
+        if (pkt.stream_index == video_stream_idx)
+        {
+            ret  = readFrame(&pkt,video_dec_ctx.get(),frame.get(),img_convert_ctx.get(),height,frameRGB.get(),&ts);
+            auto waitTime = (ts-lastTs)*av_q2d(video_stream->time_base)*1000;
+            std::this_thread::sleep_for(std::chrono::milliseconds((long)waitTime));
+            lastTs = ts;
+            counter++;
+        }
+        av_packet_unref(&pkt);
     }
     //flush
     readFrame(nullptr,video_dec_ctx.get(),frame.get(),img_convert_ctx.get(),height,frameRGB.get(),&ts);
+    av_dict_free(&opts);
 }
 
 int MediaStreamingConnection::readFrame(AVPacket* pkt,
                                     AVCodecContext *video_dec_ctx, AVFrame *frame,
                                     SwsContext * img_convert_ctx,int height,AVFrame* frameRGB,int64_t* ts)
 {
-    AVPacket* orig_pkt = pkt;
-    int ret = avcodec_send_packet(video_dec_ctx,pkt);
-    if(ret < 0)
-    {
-        return ret;
-    }
+    int ret = 0;
+    ret = avcodec_send_packet(video_dec_ctx,pkt);
+    if(ret < 0) return ret;
     while(!cancel && ret >=0)
     {
         ret = avcodec_receive_frame(video_dec_ctx, frame);
@@ -336,7 +386,7 @@ int MediaStreamingConnection::readFrame(AVPacket* pkt,
         }
         sws_scale(img_convert_ctx, frame->data, frame->linesize, 0,
                                       height, frameRGB->data, frameRGB->linesize);
-        if(!cancel && !signal.empty()) {
+        if(!cancel && !streamingSignal.empty()) {
             streamingSignal(frameRGB->data[0],frameRGB->width,frameRGB->height,frameRGB->linesize[0]);
         } else {
             return ret;
@@ -344,15 +394,13 @@ int MediaStreamingConnection::readFrame(AVPacket* pkt,
         *ts = frame->best_effort_timestamp;
         //video_dec_ctx->
         //frame->pkt_duration;
-
-        /*cv::Mat img(frameRGB->height,frameRGB->width,CV_8UC3,
-                    frameRGB->data[0],frameRGB->linesize[0]); //dst->data[0]);
-        frames->push_back(img.clone());*/
     }
-    if(orig_pkt)
+    if(ret == AVERROR_EOF)
     {
-        av_packet_unref(orig_pkt);
+        avcodec_flush_buffers(video_dec_ctx);
+        return ret;
     }
+
     return ret;
 }
 

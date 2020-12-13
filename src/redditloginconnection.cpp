@@ -38,13 +38,13 @@ void RedditLoginConnection::login(const user& user)
 void RedditLoginConnection::responseReceivedComplete()
 {
     // Set a timeout on the operation
-    boost::beast::get_lowest_layer(stream).expires_after(std::chrono::seconds(30));
+    boost::beast::get_lowest_layer(stream.value()).expires_after(std::chrono::seconds(30));
     using namespace std::placeholders;
     auto shutdownMethod = std::bind(&RedditLoginConnection::onShutdown,
                                     shared_from_base<RedditLoginConnection>(),_1);
 
     // Gracefully close the stream
-    stream.async_shutdown(shutdownMethod);
+    stream->async_shutdown(shutdownMethod);
 }
 
 void RedditLoginConnection::onShutdown(const boost::system::error_code&)

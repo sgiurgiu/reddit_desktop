@@ -27,16 +27,27 @@ find_package(Threads)
 
 include_directories(${CMAKE_SOURCE_DIR}/src
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/url/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../external/gumbo-parser/src/"
         )
+
+file(GLOB_RECURSE GUMBO_PARSER_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/../external/gumbo-parser/src/*.c")
 
 set(BOOST_URL_SRC ../external/url/src/src.cpp)
 
-set(LIBRD_TEST_SRCS
+set(RD_TEST_SRCS
     test_utils.cpp
+    test_htmlparser.cpp
     )
 
+set(TESTING_RD_CLASSES
+    ${CMAKE_SOURCE_DIR}/src/htmlparser.cpp
+    )
 
-add_executable(${PROJECT_NAME} ${BOOST_URL_SRC} ${LIBRD_TEST_SRCS})
+add_executable(${PROJECT_NAME} ${BOOST_URL_SRC}
+    ${RD_TEST_SRCS}
+    ${TESTING_RD_CLASSES}
+    ${GUMBO_PARSER_SRCS})
 
 
 target_link_libraries(${PROJECT_NAME} PRIVATE gtest_main Threads::Threads)
+target_compile_definitions(${PROJECT_NAME} PRIVATE "RDTEST_DATA_FOLDER=\"${CMAKE_CURRENT_SOURCE_DIR}/data\"")

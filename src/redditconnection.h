@@ -11,6 +11,7 @@
 #include <boost/beast/http/parser.hpp>
 #include <string>
 #include <memory>
+#include <optional>
 
 template<typename Request,typename Response, typename Signal>
 class RedditConnection : public std::enable_shared_from_this<RedditConnection<Request,Response,Signal>>
@@ -19,11 +20,12 @@ public:
     RedditConnection(boost::asio::io_context& context,
                      boost::asio::ssl::context& ssl_context,const std::string& host,
                      const std::string& service):
-        resolver(boost::asio::make_strand(context)),
-        stream(boost::asio::make_strand(context), ssl_context),buffer(1024*1024*50),
+        context(context),ssl_context(ssl_context),
+        resolver(boost::asio::make_strand(context)),        
         host(host),service(service)
     {
-        responseParser.body_limit((std::numeric_limits<std::uint64_t>::max)());
+        stream.emplace(boost::asio::make_strand(context), ssl_context);
+        responseParser.emplace();
     }
     virtual ~RedditConnection()
     {
@@ -49,7 +51,7 @@ private:
             return;
         }
         // Set SNI Hostname (many hosts need this to handshake successfully)
-        if (! SSL_set_tlsext_host_name(stream.native_handle(), host.c_str()))
+        if (! SSL_set_tlsext_host_name(stream->native_handle(), host.c_str()))
         {
             boost::beast::error_code ec{static_cast<int>(::ERR_get_error()),
                          boost::asio::error::get_ssl_category()};
@@ -59,7 +61,7 @@ private:
 
         using namespace std::placeholders;
         auto handshakeMethod = std::bind(&RedditConnection::onHandshake,this->shared_from_this(),_1);
-        stream.async_handshake(boost::asio::ssl::stream_base::client,handshakeMethod);
+        stream->async_handshake(boost::asio::ssl::stream_base::client,handshakeMethod);
     }
 
     void resolveComplete(const boost::system::error_code& ec,
@@ -71,12 +73,12 @@ private:
             return;
         }
         // Set a timeout on the operation
-        boost::beast::get_lowest_layer(stream).expires_after(std::chrono::seconds(30));
+        boost::beast::get_lowest_layer(stream.value()).expires_after(std::chrono::seconds(30));
         using namespace std::placeholders;
         auto connectMethod = std::bind(&RedditConnection::onConnect,this->shared_from_this(),_1,_2);
 
         // Make the connection on the IP address we get from a lookup
-        boost::beast::get_lowest_layer(stream).async_connect(results,connectMethod);
+        boost::beast::get_lowest_layer(stream.value()).async_connect(results,connectMethod);
     }
 
     void onHandshake(const boost::system::error_code& ec)
@@ -114,11 +116,11 @@ protected:
 
     virtual void sendRequest()
     {
-        boost::beast::get_lowest_layer(stream).expires_after(std::chrono::seconds(30));
+        boost::beast::get_lowest_layer(stream.value()).expires_after(std::chrono::seconds(30));
         using namespace std::placeholders;
         auto writeMethod = std::bind(&RedditConnection::onWrite,this->shared_from_this(),_1,_2);
         // Send the HTTP request to the remote host
-        boost::beast::http::async_write(stream, request,writeMethod);
+        boost::beast::http::async_write(stream.value(), request,writeMethod);
     }
 
     virtual void onWrite(const boost::system::error_code& ec,std::size_t bytesTransferred)
@@ -134,7 +136,7 @@ protected:
 
         using namespace std::placeholders;
         auto readMethod = std::bind(&RedditConnection::onRead,this->shared_from_this(),_1,_2);
-        boost::beast::http::async_read(stream, buffer, response, readMethod);
+        boost::beast::http::async_read(stream.value(), buffer, response, readMethod);
     }
 
     virtual void onRead(const boost::system::error_code& ec,std::size_t bytesTransferred)
@@ -152,8 +154,10 @@ protected:
 
     virtual void responseReceivedComplete() = 0;
 protected:
+    boost::asio::io_context& context;
+    boost::asio::ssl::context& ssl_context;
     boost::asio::ip::tcp::resolver resolver;
-    boost::beast::ssl_stream<boost::beast::tcp_stream> stream;
+    std::optional<boost::beast::ssl_stream<boost::beast::tcp_stream>> stream;
     boost::beast::flat_buffer buffer; // (Must persist between reads)
     std::string host;
     std::string service;
@@ -161,7 +165,7 @@ protected:
     Response response;
     Signal signal;
     using parser_t = boost::beast::http::response_parser<typename Response::body_type>;
-    parser_t responseParser;
+    std::optional<parser_t> responseParser;
 };
 
 #endif // REDDITCONNECTION_H

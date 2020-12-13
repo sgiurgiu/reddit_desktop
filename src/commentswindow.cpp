@@ -7,6 +7,27 @@
 #include "spinner/spinner.h"
 #include "macros.h"
 
+namespace
+{
+const std::vector<std::string> mediaDomains ={
+    "www.clippituser.tv",
+    "clippituser.tv",
+    "streamable.com",
+    "streamja.com",
+    "v.redd.it",
+    "youtube.com",
+    "gfycat.com"
+};
+const std::vector<std::string> mediaExtensions = {
+    ".gif",
+    ".gifv",
+    ".mp4",
+    ".webv",
+    ".avi",
+    ".mkv"
+};
+}
+
 CommentsWindow::CommentsWindow(const std::string& postId,
                                const std::string& title,
                                const access_token& token,
@@ -134,9 +155,20 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
     {
         loadPostImage();
     }
-    else if (!parent_post->postHint.empty() && parent_post->postHint != "self")
+    else if (parent_post->postHint != "self")
+
     {
-        //if(parent_post->url.ends_with(".gifv"))
+
+        bool isMediaPost = std::find(mediaDomains.begin(),mediaDomains.end(),parent_post->domain) != mediaDomains.end();
+        if(!isMediaPost)
+        {
+            auto idx = parent_post->url.find_last_of('.');
+            if(idx != std::string::npos)
+            {
+                isMediaPost = std::find(mediaExtensions.begin(),mediaExtensions.end(),parent_post->url.substr(idx)) != mediaExtensions.end();
+            }
+        }
+        if(isMediaPost)
         {
             loadingPostData = true;
             //https://stackoverflow.com/questions/10715170/receiving-rtsp-stream-using-ffmpeg-library
@@ -151,7 +183,7 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
             mediaStreamingConnection->errorHandler([this](int /*errorCode*/,const std::string& str){
                 boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,this,str));
             });
-            mediaStreamingConnection->streamMedia(parent_post);
+            mediaStreamingConnection->streamMedia(parent_post.get());
         }
     }
 }
@@ -205,13 +237,13 @@ void CommentsWindow::setPostMediaFrame(uint8_t *data,int width, int height,int l
               0,
               parent_post->post_picture->width,
               parent_post->post_picture->height,
-              GL_RGB,
+              GL_RGBA,
               GL_UNSIGNED_BYTE,
               data );
     }
     else
     {
-        parent_post->post_picture = Utils::loadImage(data,width,height, 3);
+        parent_post->post_picture = Utils::loadImage(data,width,height, 4);
     }
 }
 void CommentsWindow::setPostGif(unsigned char* data, int width, int height, int channels,

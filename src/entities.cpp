@@ -133,66 +133,66 @@ post::post(const nlohmann::json& json)
     title = json["title"].get<std::string>();
     id = json["id"].get<std::string>();
     name = json["name"].get<std::string>();
-    if(json["selftext"].is_string())
+    if(json.contains("selftext") && json["selftext"].is_string())
     {
         selfText = json["selftext"].get<std::string>();
     }
-    if(json["ups"].is_number())
+    if(json.contains("ups") && json["ups"].is_number())
     {
         ups = json["ups"].get<int>();
     }
-    if(json["downs"].is_number())
+    if(json.contains("downs") && json["downs"].is_number())
     {
         downs = json["downs"].get<int>();
     }
-    if(json["is_video"].is_boolean())
+    if(json.contains("is_video") && json["is_video"].is_boolean())
     {
         isVideo = json["is_video"].get<bool>();
     }
-    if(json["is_self"].is_boolean())
+    if(json.contains("is_self") && json["is_self"].is_boolean())
     {
         isSelf = json["is_self"].get<bool>();
     }
-    if(json["is_meta"].is_boolean())
+    if(json.contains("is_meta") && json["is_meta"].is_boolean())
     {
         isMeta = json["is_meta"].get<bool>();
     }
-    if(json["is_original_content"].is_boolean())
+    if(json.contains("is_original_content") && json["is_original_content"].is_boolean())
     {
         isOriginalContent = json["is_original_content"].get<bool>();
     }
-    if(json["is_reddit_media_domain"].is_boolean())
+    if(json.contains("is_reddit_media_domain") && json["is_reddit_media_domain"].is_boolean())
     {
         isRedditMediaDomain = json["is_reddit_media_domain"].get<bool>();
     }
-    if(json["is_crosspostable"].is_boolean())
+    if(json.contains("is_crosspostable") && json["is_crosspostable"].is_boolean())
     {
         isCrossPostable = json["is_crosspostable"].get<bool>();
     }
-    if(json["thumbnail"].is_string())
+    if(json.contains("thumbnail") && json["thumbnail"].is_string())
     {
         thumbnail = json["thumbnail"].get<std::string>();
     }
-    if(json["created_utc"].is_number())
+    if(json.contains("created_utc") && json["created_utc"].is_number())
     {
         createdAt = json["created_utc"].get<uint64_t>();
         humanReadableTimeDifference = Utils::getHumanReadableTimeAgo(createdAt);
     }
-    if(json["num_comments"].is_number())
+    if(json.contains("num_comments") && json["num_comments"].is_number())
     {
         commentsCount = json["num_comments"].get<int>();
         commentsText = fmt::format(reinterpret_cast<const char*>(ICON_FA_COMMENTS " {} comments##{}"),commentsCount,id);
     }
-    if(json["subreddit_name_prefixed"].is_string())
+    if(json.contains("subreddit_name_prefixed") && json["subreddit_name_prefixed"].is_string())
     {
         subreddit = json["subreddit_name_prefixed"].get<std::string>();
     }
-    if(json["score"].is_number())
+    if(json.contains("score") && json["score"].is_number())
     {
         score = json["score"].get<int>();
         humanScore = Utils::getHumanReadableNumber(score);
     }
-    if(json["url"].is_string())
+    if(json.contains("url") && json["url"].is_string())
     {
         url = json["url"].get<std::string>();
     }
@@ -200,11 +200,11 @@ post::post(const nlohmann::json& json)
     {
         urlOverridenByDest = json["url_overridden_by_dest"].get<std::string>();
     }
-    if(json["author_fullname"].is_string())
+    if(json.contains("author_fullname") && json["author_fullname"].is_string())
     {
         authorFullName = json["author_fullname"].get<std::string>();
     }
-    if(json["author"].is_string())
+    if(json.contains("author") && json["author"].is_string())
     {
         author = json["author"].get<std::string>();
     }

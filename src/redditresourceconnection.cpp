@@ -49,13 +49,13 @@ void RedditResourceConnection::getResource(const std::string& url)
 void RedditResourceConnection::responseReceivedComplete()
 {
     // Set a timeout on the operation
-    boost::beast::get_lowest_layer(stream).expires_after(std::chrono::seconds(30));
+    boost::beast::get_lowest_layer(stream.value()).expires_after(std::chrono::seconds(30));
     using namespace std::placeholders;
     auto shutdownMethod = std::bind(&RedditResourceConnection::onShutdown,
                                     shared_from_base<RedditResourceConnection>(),_1);
 
     // Gracefully close the stream
-    stream.async_shutdown(shutdownMethod);
+    stream->async_shutdown(shutdownMethod);
 }
 void RedditResourceConnection::onWrite(const boost::system::error_code& ec,std::size_t bytesTransferred)
 {
@@ -70,7 +70,7 @@ void RedditResourceConnection::onWrite(const boost::system::error_code& ec,std::
 
     using namespace std::placeholders;
     auto readMethod = std::bind(&RedditResourceConnection::onRead,this->shared_from_base<RedditResourceConnection>(),_1,_2);
-    boost::beast::http::async_read(stream, buffer, parser, readMethod);
+    boost::beast::http::async_read(stream.value(), buffer, parser, readMethod);
 }
 
 void RedditResourceConnection::onRead(const boost::system::error_code& ec,std::size_t bytesTransferred)
