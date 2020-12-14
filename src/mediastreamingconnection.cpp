@@ -133,7 +133,8 @@ void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::
 
         if(status == boost::beast::http::status::moved_permanently ||
            status == boost::beast::http::status::temporary_redirect ||
-           status == boost::beast::http::status::permanent_redirect)
+           status == boost::beast::http::status::permanent_redirect ||
+           status == boost::beast::http::status::found)
         {
             stream.emplace(boost::asio::make_strand(context), ssl_context);
             downloadUrl(location);
@@ -207,6 +208,8 @@ void MediaStreamingConnection::streamMedia(post* mediaPost)
     }
     else
     {
+        //'https://www.youtube.com/watch?v=BaW_jenozKc&gl=US&hl=en&has_verified=1&bpctr=9999999999'
+
         downloadUrl(url);
     }
 }

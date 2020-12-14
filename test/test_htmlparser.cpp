@@ -34,3 +34,30 @@ TEST(HtmlParserTest, ParseStreamjaHtml)
     EXPECT_EQ(urlParts.port().to_string(),"");
     EXPECT_EQ(urlParts.scheme().to_string(),"https");
 }
+
+TEST(HtmlParserTest, ParseYoutubeHtml)
+{
+    std::filesystem::path streamable_html(RDTEST_DATA_FOLDER);
+    streamable_html /= "youtube.html";
+    HtmlParser parser(streamable_html);
+    auto url = parser.getVideoUrl("youtube.com");
+    boost::url_view urlParts(url);
+    EXPECT_FALSE(url.empty());
+    EXPECT_EQ(urlParts.encoded_host().to_string(),"r3---sn-cxaaj5o5q5-t34e.googlevideo.com");
+    EXPECT_EQ(urlParts.encoded_path().to_string(),"/videoplayback");
+    EXPECT_EQ(urlParts.port().to_string(),"");
+    EXPECT_EQ(urlParts.scheme().to_string(),"https");
+}
+TEST(HtmlParserTest, ParseYoutu_beHtml)
+{
+    std::filesystem::path streamable_html(RDTEST_DATA_FOLDER);
+    streamable_html /= "youtu.be.html";
+    HtmlParser parser(streamable_html);
+    auto url = parser.getVideoUrl("youtu.be");
+    boost::url_view urlParts(url);
+    EXPECT_FALSE(url.empty());
+    EXPECT_EQ(urlParts.encoded_host().to_string(),"r3---sn-cxaaj5o5q5-t34e.googlevideo.com");
+    EXPECT_EQ(urlParts.encoded_path().to_string(),"/videoplayback");
+    EXPECT_EQ(urlParts.port().to_string(),"");
+    EXPECT_EQ(urlParts.scheme().to_string(),"https");
+}

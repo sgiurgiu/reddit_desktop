@@ -3,7 +3,9 @@
 
 #include <fstream>
 #include <cstring>
+#include <iostream>
 #include <boost/algorithm/string.hpp>
+#include "json.hpp"
 
 HtmlParser::HtmlParser(const std::filesystem::path& file)
 {
@@ -153,12 +155,92 @@ std::string HtmlParser::lookupDivPlayerContainerVideoUrl(Node* node) const
     return "";
 }
 
+template<class Node>
+std::string HtmlParser::lookupYoutubeVideoUrl(Node* node) const
+{
+    if (node->type != GUMBO_NODE_ELEMENT)
+    {
+        return "";
+    }
+
+    if (node->v.element.tag == GUMBO_TAG_SCRIPT)
+    {
+        GumboVector* children = &node->v.element.children;
+        for (unsigned int i = 0; i < children->length; ++i)
+        {
+            auto child = static_cast<GumboNode*>(children->data[i]);
+            if(child->type != GUMBO_NODE_TEXT) continue;
+            std::string text(child->v.text.text);
+            if(text.find("ytInitialPlayerResponse") == text.npos) continue;
+            //we found our script, get the json from there
+            auto startBracket = text.find_first_of('{');
+            auto endBracket = text.find_last_of('}');
+            if(startBracket == text.npos || endBracket==text.npos) continue;
+            auto ourJson = text.substr(startBracket,endBracket-startBracket+1);
+            try
+            {
+                auto jsonObject = nlohmann::json::parse(ourJson);
+                if(jsonObject.contains("streamingData") && jsonObject["streamingData"].contains("formats"))
+                {
+                    auto formats = jsonObject["streamingData"]["formats"];
+                    if(formats.is_array() && formats.size() > 0)
+                    {
+                        auto removeIt = std::remove_if(formats.begin(),formats.end(),[](const auto& f){
+                            if(!f.contains("url")) return true;
+                            if(!f.contains("mimeType")) return true;
+                            auto mime = f["mimeType"].template get<std::string>();
+                            if(mime.find("video") == mime.npos) return true;
+                            return false;
+                        });
+                        formats.erase(removeIt,formats.end());
+                        if(formats.empty()) continue;
+                        std::stable_sort(formats.begin(),formats.end(),[](const auto& f1,const auto& f2) {
+                            int f1height = -1;
+                            int f2height = -1;
+                            if(f1.contains("height"))
+                            {
+                                f1height = f1["height"].template get<int>();
+                            }
+                            if(f2.contains("height"))
+                            {
+                                f2height = f2["height"].template get<int>();
+                            }
+                            return f1height < f2height;
+                        });
+                        auto& desiredFormat =  formats[formats.size()/2];
+                        return desiredFormat["url"].get<std::string>();
+                    }
+                }
+
+
+            }
+            catch(std::exception& ex)
+            {
+                std::cerr << "Cannot parse youtube json "<<ex.what()<<std::endl;
+            }
+        }
+    }
+
+
+    GumboVector* children = &node->v.element.children;
+    for (unsigned int i = 0; i < children->length; ++i)
+    {
+        auto url = lookupYoutubeVideoUrl(static_cast<GumboNode*>(children->data[i]));
+        if(!url.empty()) return url;
+    }
+    return "";
+}
+
 std::string HtmlParser::getVideoUrl(const std::string& domain) const
 {
     auto output = gumbo_parse_with_options(&kGumboDefaultOptions,contents.c_str(),contents.size());
 
     std::string url;
-    if(domain == "streamable.com")
+    if(domain == "youtube.com" || domain == "youtu.be")
+    {
+        url = this->template lookupYoutubeVideoUrl<GumboNode>(output->root);
+    }
+    else if(domain == "streamable.com")
     {
         url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:video:url");
     }

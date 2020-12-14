@@ -17,6 +17,8 @@ private:
     std::string lookupVideoSourceVideoUrl(Node* node) const;
     template<class Node>
     std::string lookupDivPlayerContainerVideoUrl(Node* node) const;
+    template<class Node>
+    std::string lookupYoutubeVideoUrl(Node* node) const;
 
 private:
     std::string contents;

@@ -16,6 +16,7 @@ const std::vector<std::string> mediaDomains ={
     "streamja.com",
     "v.redd.it",
     "youtube.com",
+    "youtu.be",
     "gfycat.com"
 };
 const std::vector<std::string> mediaExtensions = {
@@ -138,14 +139,17 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
 {
     listingErrorMessage.clear();
     parent_post = receivedParentPost;
-    if ((parent_post->postHint == "link" || parent_post->postHint == "self") &&
-                 !parent_post->url.empty() &&
-                 !parent_post->url.ends_with(".gif") &&
-                 !parent_post->url.ends_with(".gifv") &&
-                 !parent_post->url.ends_with(".mp4") &&
-                 !parent_post->url.ends_with(".webv") &&
-                 !parent_post->url.ends_with(".avi") &&
-                 !parent_post->url.ends_with(".mkv"))
+    bool isMediaPost = std::find(mediaDomains.begin(),mediaDomains.end(),parent_post->domain) != mediaDomains.end();
+    if(!isMediaPost)
+    {
+        auto idx = parent_post->url.find_last_of('.');
+        if(idx != std::string::npos)
+        {
+            isMediaPost = std::find(mediaExtensions.begin(),mediaExtensions.end(),parent_post->url.substr(idx)) != mediaExtensions.end();
+        }
+    }
+
+    if (!isMediaPost && parent_post->postHint != "image")
     {
         return;
     }
@@ -158,16 +162,6 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
     else if (parent_post->postHint != "self")
 
     {
-
-        bool isMediaPost = std::find(mediaDomains.begin(),mediaDomains.end(),parent_post->domain) != mediaDomains.end();
-        if(!isMediaPost)
-        {
-            auto idx = parent_post->url.find_last_of('.');
-            if(idx != std::string::npos)
-            {
-                isMediaPost = std::find(mediaExtensions.begin(),mediaExtensions.end(),parent_post->url.substr(idx)) != mediaExtensions.end();
-            }
-        }
         if(isMediaPost)
         {
             loadingPostData = true;
