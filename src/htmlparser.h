@@ -10,6 +10,8 @@ public:
     explicit HtmlParser(const std::filesystem::path& file);
     explicit HtmlParser(const std::string& contents);
     std::string getVideoUrl(const std::string& domain) const;
+    static std::string unescape(const std::string &input);
+    static std::string escape(const std::string &input);
 private:
     template<class Node>
     std::string lookupMetaOgVideoUrl(Node* node, const std::string& metaProperty) const;

@@ -53,7 +53,7 @@ target_link_libraries(${EXECUTABLE_NAME} PRIVATE  OpenGL::GL SDL2::SDL2)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${CMAKE_DL_LIBS} Threads::Threads )
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE libcmark-gfm-extensions_static libcmark-gfm_static)
-target_link_libraries(${EXECUTABLE_NAME} PRIVATE PkgConfig::FFMPEG)
+target_link_libraries(${EXECUTABLE_NAME} PRIVATE PkgConfig::MPV)
 target_include_directories(${EXECUTABLE_NAME} PRIVATE
     "imgui"
     "${CMAKE_CURRENT_SOURCE_DIR}"

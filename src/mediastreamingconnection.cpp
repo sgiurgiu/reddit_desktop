@@ -226,9 +226,15 @@ void MediaStreamingConnection::downloadUrl(const std::string& url)
         host = urlParts.encoded_host().to_string();
     }
     auto target = urlParts.encoded_path().to_string();
-    if(!urlParts.encoded_query().empty())
+    auto query = urlParts.encoded_query().to_string();
+    if(!query.empty())
     {
         target+="?"+urlParts.encoded_query().to_string();
+    }
+    if(host == "youtube.com" || host == "www.youtube.com" ||  host == "youtu.be")
+    {
+        if(!query.empty()) target+="&gl=US&hl=en&has_verified=1&bpctr=9999999999";
+        else target+="?gl=US&hl=en&has_verified=1&bpctr=9999999999";
     }
     request.version(11);
     request.method(boost::beast::http::verb::get);
@@ -261,7 +267,7 @@ void MediaStreamingConnection::startStreaming(const std::string& file)
         if (ret < 0)
         {
             char buf[256];
-            av_strerror(ret,buf,sizeof(buf));
+            //av_strerror(ret,buf,sizeof(buf));
             errorSignal(ret,buf);
             return;
         }
@@ -271,7 +277,7 @@ void MediaStreamingConnection::startStreaming(const std::string& file)
     if (ret < 0)
     {
         char buf[256];
-        av_strerror(ret,buf,sizeof(buf));
+        //av_strerror(ret,buf,sizeof(buf));
         errorSignal(ret,buf);
         return;
     }
@@ -312,14 +318,14 @@ void MediaStreamingConnection::startStreaming(const std::string& file)
     AVDictionary *opts = NULL;
     if (video_dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO || video_dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO)
     {
-        av_dict_set(&opts, "refcounted_frames", "1", 0);
+        //av_dict_set(&opts, "refcounted_frames", "1", 0);
     }
 
     ret = avcodec_open2(video_dec_ctx.get(), dec, nullptr);
     if(ret < 0)
     {
         char buf[256];
-        av_strerror(ret,buf,sizeof(buf));
+       // av_strerror(ret,buf,sizeof(buf));
         errorSignal(ret,buf);
         return;
     }

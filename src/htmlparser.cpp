@@ -6,6 +6,41 @@
 #include <iostream>
 #include <boost/algorithm/string.hpp>
 #include "json.hpp"
+#include <boost/url.hpp>
+
+#include <boost/spirit/include/karma.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/karma_numeric.hpp>
+#include <boost/spirit/include/karma_uint.hpp>
+
+
+namespace bsq = boost::spirit::qi;
+namespace bk = boost::spirit::karma;
+
+namespace {
+bsq::int_parser<unsigned char, 16, 2, 2> hex_byte;
+template <typename InputIterator>
+struct unescaped_string
+    : bsq::grammar<InputIterator, std::string(char const *)> {
+  unescaped_string() : unescaped_string::base_type(unesc_str) {
+    unesc_char.add("+", ' ');
+
+    unesc_str = *(unesc_char | "%" >> hex_byte | bsq::char_);
+  }
+
+  bsq::rule<InputIterator, std::string(char const *)> unesc_str;
+  bsq::symbols<char const, char const> unesc_char;
+};
+
+template <typename OutputIterator>
+struct escaped_string : bk::grammar<OutputIterator, std::string(char const *)> {
+  escaped_string() : escaped_string::base_type(esc_str) {
+
+    esc_str = *(bk::char_("a-zA-Z0-9_.~-") | "%" << bk::right_align(2,0)[bk::hex]);
+  }
+  bk::rule<OutputIterator, std::string(char const *)> esc_str;
+};
+}
 
 HtmlParser::HtmlParser(const std::filesystem::path& file)
 {
@@ -186,7 +221,7 @@ std::string HtmlParser::lookupYoutubeVideoUrl(Node* node) const
                     if(formats.is_array() && formats.size() > 0)
                     {
                         auto removeIt = std::remove_if(formats.begin(),formats.end(),[](const auto& f){
-                            if(!f.contains("url")) return true;
+                            if(!f.contains("url") && !f.contains("signatureCipher")) return true;
                             if(!f.contains("mimeType")) return true;
                             auto mime = f["mimeType"].template get<std::string>();
                             if(mime.find("video") == mime.npos) return true;
@@ -208,11 +243,27 @@ std::string HtmlParser::lookupYoutubeVideoUrl(Node* node) const
                             return f1height < f2height;
                         });
                         auto& desiredFormat =  formats[formats.size()/2];
-                        return desiredFormat["url"].get<std::string>();
+                        if(desiredFormat.contains("url"))
+                        {
+                            return desiredFormat["url"].get<std::string>();
+                        }
+                        else if (desiredFormat.contains("signatureCipher"))
+                        {
+                            auto sigCihper = desiredFormat["signatureCipher"].get<std::string>();
+                            std::string tmpUrl("http://example.com/?"+sigCihper);
+                            boost::url_view urlParts(tmpUrl);
+                            auto params = urlParts.params();
+                            for(const auto& p : params)
+                            {
+                                if(p.encoded_key() == "url")
+                                {
+                                    auto url = p.encoded_value().to_string();
+                                    return HtmlParser::unescape(url);
+                                }
+                            }
+                        }
                     }
                 }
-
-
             }
             catch(std::exception& ex)
             {
@@ -236,7 +287,7 @@ std::string HtmlParser::getVideoUrl(const std::string& domain) const
     auto output = gumbo_parse_with_options(&kGumboDefaultOptions,contents.c_str(),contents.size());
 
     std::string url;
-    if(domain == "youtube.com" || domain == "youtu.be")
+    if(domain == "youtube.com" || domain == "www.youtube.com" || domain == "youtu.be")
     {
         url = this->template lookupYoutubeVideoUrl<GumboNode>(output->root);
     }
@@ -268,4 +319,34 @@ std::string HtmlParser::getVideoUrl(const std::string& domain) const
 
     gumbo_destroy_output(&kGumboDefaultOptions,output);
     return url;
+}
+
+std::string HtmlParser::unescape(const std::string &input)
+{
+  std::string retVal;
+  retVal.reserve(input.size());
+  typedef std::string::const_iterator iterator_type;
+
+  char const *start = "";
+  iterator_type beg = input.begin();
+  iterator_type end = input.end();
+  unescaped_string<iterator_type> p;
+
+  if (!bsq::parse(beg, end, p(start), retVal))
+    retVal = input;
+  return retVal;
+}
+
+std::string HtmlParser::escape(const std::string &input)
+{
+  typedef std::back_insert_iterator<std::string> sink_type;
+  std::string retVal;
+  retVal.reserve(input.size() * 3);
+  sink_type sink(retVal);
+  char const *start = "";
+
+  escaped_string<sink_type> g;
+  if (!bk::generate(sink, g(start), input))
+    retVal = input;
+  return retVal;
 }

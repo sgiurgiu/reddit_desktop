@@ -16,6 +16,7 @@ const std::vector<std::string> mediaDomains ={
     "streamja.com",
     "v.redd.it",
     "youtube.com",
+    "www.youtube.com",
     "youtu.be",
     "gfycat.com"
 };
@@ -160,7 +161,6 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
         loadPostImage();
     }
     else if (parent_post->postHint != "self")
-
     {
         if(isMediaPost)
         {
