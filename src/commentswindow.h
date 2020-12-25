@@ -11,6 +11,9 @@
 #include "redditlistingconnection.h"
 #include "utils.h"
 
+#include <mpv/client.h>
+#include <mpv/render_gl.h>
+
 class CommentsWindow
 {
 public:
@@ -37,8 +40,12 @@ private:
     void setPostImage(unsigned char* data, int width, int height, int channels);
     void setPostGif(unsigned char* data, int width, int height, int channels,
                     int count, int* delays);
-    void setPostMediaFrame(uint8_t *data,int width, int height,int linesize);
+    void setPostMediaFrame();
     void loadPostImage();
+    void setupMediaContext(std::string file);
+    void static mpvRenderUpdate(void* context);
+    void static onMpvEvents(void* context);
+    void handleMpvEvents();
 private:
 
     std::string postId;
@@ -58,6 +65,13 @@ private:
     float post_picture_ratio = 0.f;
     bool loadingPostData = false;
     const boost::asio::io_context::executor_type& uiExecutor;
+    mpv_handle* mpv = nullptr;
+    mpv_render_context *mpv_gl = nullptr;
+    boost::asio::io_context mpvEventIOContext;
+    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> mpvEventIOContextWork;
+    std::thread mvpEventThread;
+    unsigned int mediaFramebufferObject = 0;
+
 };
 
 #endif // COMMENTSWINDOW_H

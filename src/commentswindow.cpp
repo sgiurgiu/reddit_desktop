@@ -6,6 +6,7 @@
 #include <SDL.h>
 #include "spinner/spinner.h"
 #include "macros.h"
+#include <iostream>
 
 namespace
 {
@@ -30,13 +31,22 @@ const std::vector<std::string> mediaExtensions = {
 };
 }
 
+namespace
+{
+static void* get_proc_address_mpv(void *fn_ctx, const char *name)
+{
+    return SDL_GL_GetProcAddress(name);
+}
+
+}
+
 CommentsWindow::CommentsWindow(const std::string& postId,
                                const std::string& title,
                                const access_token& token,
                                RedditClient* client,
                                const boost::asio::io_context::executor_type& executor):
     postId(postId),token(token),client(client),connection(client->makeListingClientConnection()),
-    uiExecutor(executor)
+    uiExecutor(executor),mpvEventIOContextWork(boost::asio::make_work_guard(mpvEventIOContext))
 {
     SDL_GetDesktopDisplayMode(0, &displayMode);
     connection->connectionCompleteHandler([this](const boost::system::error_code& ec,
@@ -60,6 +70,9 @@ CommentsWindow::CommentsWindow(const std::string& postId,
     });
     windowName = fmt::format("{}##{}",title,postId);
     connection->list("/comments/"+postId+"?depth=5&limit=50&threaded=true",token);
+    using run_function = boost::asio::io_context::count_type(boost::asio::io_context::*)();
+    auto bound_run_fuction = std::bind(static_cast<run_function>(&boost::asio::io_context::run),std::ref(mpvEventIOContext));
+    mvpEventThread = std::thread(bound_run_fuction);
 }
 CommentsWindow::~CommentsWindow()
 {
@@ -68,6 +81,61 @@ CommentsWindow::~CommentsWindow()
         mediaStreamingConnection->clearAllSlots();
     }
     connection->clearAllSlots();
+    if(mpv_gl)
+    {
+        mpv_render_context_free(mpv_gl);
+    }
+    if(mpv)
+    {
+        mpv_detach_destroy(mpv);
+    }
+    mpvEventIOContextWork.reset();
+    mpvEventIOContext.stop();
+    if(mvpEventThread.joinable())
+    {
+        mvpEventThread.join();
+    }
+    if(mediaFramebufferObject > 0)
+    {
+        glDeleteFramebuffers(1, &mediaFramebufferObject);
+    }
+}
+void CommentsWindow::onMpvEvents(void* context)
+{
+    CommentsWindow* win=(CommentsWindow*)context;
+    boost::asio::post(win->mpvEventIOContext.get_executor(),std::bind(&CommentsWindow::handleMpvEvents,win));
+}
+void CommentsWindow::handleMpvEvents()
+{
+    while (true)
+    {
+       mpv_event *mp_event = mpv_wait_event(mpv, 0);
+       std::cout << "event:"<<mp_event->event_id<<std::endl;
+       if (mp_event->event_id == MPV_EVENT_NONE)
+           break;
+       switch(mp_event->event_id)
+       {
+       case MPV_EVENT_PROPERTY_CHANGE:
+       {
+           mpv_event_property *prop = (mpv_event_property *)mp_event->data;
+           std::cout << "prop change:"<<prop->name<<std::endl;
+           break;
+       }
+       case MPV_EVENT_VIDEO_RECONFIG:
+       {
+           int propValue;
+           int width,height;
+           mpv_get_property(mpv,"width",mpv_format::MPV_FORMAT_INT64,&propValue);
+           width = propValue;
+           mpv_get_property(mpv,"height",mpv_format::MPV_FORMAT_INT64,&propValue);
+           height = propValue;
+           std::cout << "width:"<<width<<",height:"<<height<<std::endl;
+       }
+           break;
+       default:
+           break;
+       }
+    }
 }
 void CommentsWindow::setErrorMessage(std::string errorMessage)
 {
@@ -164,14 +232,15 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
     {
         if(isMediaPost)
         {
+
             loadingPostData = true;
             //https://stackoverflow.com/questions/10715170/receiving-rtsp-stream-using-ffmpeg-library
             //https://stackoverflow.com/questions/6495523/ffmpeg-video-to-opengl-texture
             mediaStreamingConnection = client->makeMediaStreamingClientConnection();
-            mediaStreamingConnection->framesAvailableHandler([this](uint8_t *data,int width, int height,int linesize) {
+            mediaStreamingConnection->streamAvailableHandler([this](std::string file) {
                 if(mediaStreamingConnection)
                 {
-                    boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setPostMediaFrame,this,data,width,height,linesize));
+                    boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setupMediaContext,this,file));
                 }
             });
             mediaStreamingConnection->errorHandler([this](int /*errorCode*/,const std::string& str){
@@ -217,28 +286,93 @@ void CommentsWindow::loadPostImage()
     resourceConnection->getResource(parent_post->url);
 }
 
-void CommentsWindow::setPostMediaFrame(uint8_t *data,int width, int height,int linesize)
+void CommentsWindow::setupMediaContext(std::string file)
 {
-    UNUSED(linesize);
-    loadingPostData = false;
-    if(parent_post->post_picture)
+    mpv = mpv_create();
+    //mpv_set_option_string(mpv, "idle", "no");
+    mpv_set_option_string(mpv, "config", "no");
+    mpv_set_option_string(mpv, "cache", "yes");
+    //int64_t maxBytes = 1024*1024*10;
+    //mpv_set_option(mpv, "demuxer-max-bytes", MPV_FORMAT_INT64,&maxBytes);
+
+    mpv_initialize(mpv);
+    mpv_opengl_init_params gl_params = {get_proc_address_mpv, nullptr, nullptr};
+    //gl_params.get_proc_address = &get_proc_address_mpv;
+    int mpv_advanced_control = 1;
+    mpv_render_param params[] = {
+        {MPV_RENDER_PARAM_API_TYPE, const_cast<char*>(MPV_RENDER_API_TYPE_OPENGL)},
+        {MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_params},
+        {MPV_RENDER_PARAM_ADVANCED_CONTROL, &mpv_advanced_control},
+        {MPV_RENDER_PARAM_INVALID, 0}
+    };
+    mpv_render_context_create(&mpv_gl, mpv, params);
+    mpv_set_wakeup_callback(mpv, &CommentsWindow::onMpvEvents, this);
+    mpv_render_context_set_update_callback(mpv_gl, &CommentsWindow::mpvRenderUpdate, this);
+
+    const char *cmd[] = {"loadfile", file.c_str(), NULL};
+    mpv_command_async(mpv, 0, cmd);
+}
+
+void CommentsWindow::mpvRenderUpdate(void *context)
+{
+    CommentsWindow* win=(CommentsWindow*)context;
+    boost::asio::post(win->uiExecutor,std::bind(&CommentsWindow::setPostMediaFrame,win));
+}
+
+void CommentsWindow::setPostMediaFrame()
+{
+    if(!parent_post) return;
+    uint64_t flags = mpv_render_context_update(mpv_gl);
+    if (!(flags & MPV_RENDER_UPDATE_FRAME))
     {
+        return;
+    }
+
+    if(!parent_post->post_picture)
+    {
+        glGenFramebuffers(1, &mediaFramebufferObject);
+        int propValue;
+        int width,height;
+        mpv_get_property(mpv,"width",mpv_format::MPV_FORMAT_INT64,&propValue);
+        width = propValue;
+        mpv_get_property(mpv,"height",mpv_format::MPV_FORMAT_INT64,&propValue);
+        height = propValue;
+
+        glBindFramebuffer(GL_FRAMEBUFFER, mediaFramebufferObject);
+        parent_post->post_picture = std::make_shared<gl_image>();
+        glGenTextures(1, &parent_post->post_picture->textureId);
         glBindTexture(GL_TEXTURE_2D, parent_post->post_picture->textureId);
-        glTexSubImage2D(
-              GL_TEXTURE_2D,
-              0,
-              0,
-              0,
-              parent_post->post_picture->width,
-              parent_post->post_picture->height,
-              GL_RGBA,
-              GL_UNSIGNED_BYTE,
-              data );
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        // attach it to currently bound framebuffer object
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, parent_post->post_picture->textureId, 0);
+        parent_post->post_picture->width = width;
+        parent_post->post_picture->height = height;
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
-    else
+
+    //glBindFramebuffer(GL_FRAMEBUFFER, mediaFramebufferObject);
+    mpv_opengl_fbo mpfbo{(int)mediaFramebufferObject, parent_post->post_picture->width, parent_post->post_picture->height, 0};
+    int flip_y{0};
+
+    mpv_render_param params[] = {
+                    {MPV_RENDER_PARAM_OPENGL_FBO, &mpfbo},
+                    {MPV_RENDER_PARAM_FLIP_Y, &flip_y},
+                    {MPV_RENDER_PARAM_INVALID,0}
+                };
+    int ret = mpv_render_context_render(mpv_gl, params);
+    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    if(ret < 0)
     {
-        parent_post->post_picture = Utils::loadImage(data,width,height, 4);
+        std::cerr << "error rendering:"<<mpv_error_string(ret)<<std::endl;
+        return;
     }
+    loadingPostData = false;    
 }
 void CommentsWindow::setPostGif(unsigned char* data, int width, int height, int channels,
                 int count, int* delays)

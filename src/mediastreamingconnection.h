@@ -32,9 +32,9 @@ public:
                              const std::string& userAgent);
     ~MediaStreamingConnection();
     void streamMedia(post* mediaPost);
-    using StreamingSignal = boost::signals2::signal<void(uint8_t *data,int width, int height,int linesize)>;
+    using StreamingSignal = boost::signals2::signal<void(std::string file)>;
     using ErrorSignal = boost::signals2::signal<void(int errorCode,const std::string&)>;
-    void framesAvailableHandler(const typename StreamingSignal::slot_type& slot);
+    void streamAvailableHandler(const typename StreamingSignal::slot_type& slot);
     void errorHandler(const typename ErrorSignal::slot_type& slot);
     void clearAllSlots();
 protected:
@@ -45,9 +45,6 @@ protected:
 
 private:
     void startStreaming(const std::string& file);
-    int readFrame(AVPacket* pkt, AVCodecContext *video_dec_ctx,
-                  AVFrame *frame, SwsContext * img_convert_ctx,
-                  int height,AVFrame* frameRGB,int64_t* ts);
     void downloadUrl(const std::string& url);
 private:
     std::string userAgent;
