@@ -130,6 +130,18 @@ void CommentsWindow::handleMpvEvents()
                boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::mpvDoublePropertyChanged,this,
                                                             std::string(prop->name),val));
            }
+           else if(prop->format == MPV_FORMAT_FLAG)
+           {
+               int val = *(int*)prop->data;
+               boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::mpvFlagPropertyChanged,this,
+                                                            std::string(prop->name),val));
+           }
+           else if(prop->format == MPV_FORMAT_INT64)
+           {
+               int64_t val = *(int64_t*)prop->data;
+               boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::mpvInt64PropertyChanged,this,
+                                                            std::string(prop->name),val));
+           }
            break;
        }
        case MPV_EVENT_VIDEO_RECONFIG:
@@ -146,6 +158,20 @@ void CommentsWindow::handleMpvEvents()
        default:
            break;
        }
+    }
+}
+void CommentsWindow::mpvInt64PropertyChanged(std::string name, int64_t value)
+{
+    if(name == "volume")
+    {
+        //mediaState.mediaAudioVolume = value;
+    }
+}
+void CommentsWindow::mpvFlagPropertyChanged(std::string name, int value)
+{
+    if(name == "pause")
+    {
+        mediaState.paused = (bool)value;
     }
 }
 void CommentsWindow::mpvDoublePropertyChanged(std::string name, double value)
@@ -375,11 +401,16 @@ void CommentsWindow::setupMediaContext(std::string file)
 
     mpv_observe_property(mpv, 0, "duration", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "time-pos", MPV_FORMAT_DOUBLE);
+    mpv_observe_property(mpv, 0, "pause", MPV_FORMAT_FLAG);
+
+    double vol = mediaState.mediaAudioVolume;
+    mpv_set_property(mpv,"volume",MPV_FORMAT_DOUBLE,&vol);
+    mpv_observe_property(mpv, 0, "volume", MPV_FORMAT_DOUBLE);
 
     mpv_set_wakeup_callback(mpv, &CommentsWindow::onMpvEvents, this);
     mpv_render_context_set_update_callback(mpv_gl, &CommentsWindow::mpvRenderUpdate, this);
 
-    const char *cmd[] = {"loadfile", file.c_str(), NULL};
+    const char *cmd[] = {"loadfile", file.c_str(), nullptr};
     mpv_command_async(mpv, 0, cmd);
 }
 
@@ -621,7 +652,23 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
             if(mediaState.duration > 0.0f)
             {
                 float progress = mediaState.timePosition / mediaState.duration;
-                ImGui::ProgressBar(progress, ImVec2(post_picture_width, 0.0f));
+                auto progressHeight = 5.f;
+                ImGui::ProgressBar(progress, ImVec2(post_picture_width, progressHeight),"");
+                if(ImGui::Button(reinterpret_cast<const char*>(mediaState.paused ? ICON_FA_PLAY "##_playPauseMedia" : ICON_FA_PAUSE "##_playPauseMedia")))
+                {
+                    int shouldPause = !mediaState.paused;
+                    mpv_set_property_async(mpv,0,"pause",MPV_FORMAT_FLAG,&shouldPause);
+                }
+                ImGui::SameLine();
+                ImGui::TextUnformatted(reinterpret_cast<const char*>(ICON_FA_VOLUME_UP));
+                ImGui::SameLine();
+                ImGui::SetNextItemWidth(100.f);
+                if(ImGui::SliderInt("##_volumeMedia",&mediaState.mediaAudioVolume,0,100,""))
+                {
+                    double vol = mediaState.mediaAudioVolume;
+                    mpv_set_property_async(mpv,0,"volume",MPV_FORMAT_DOUBLE,&vol);
+                }
+
             }
             if(parent_post->isGallery && !parent_post->gallery.images.empty())
             {

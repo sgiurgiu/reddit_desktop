@@ -47,6 +47,8 @@ private:
     void static onMpvEvents(void* context);
     void handleMpvEvents();
     void mpvDoublePropertyChanged(std::string name, double value);
+    void mpvFlagPropertyChanged(std::string name, int value);
+    void mpvInt64PropertyChanged(std::string name, int64_t value);
     void loadPostGalleryImages();
     void setPostGalleryImage(unsigned char* data, int width, int height, int channels, int index);
 private:
