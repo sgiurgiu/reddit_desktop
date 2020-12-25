@@ -123,6 +123,19 @@ struct post_gif
     std::vector<std::unique_ptr<gif_image>> images;
     int currentImage = 0;
 };
+struct post_gallery_item
+{
+    uint64_t id = 0;
+    std::string mediaId;
+    std::string url;
+    gl_image_ptr img;
+};
+
+struct post_gallery
+{
+    std::vector<std::unique_ptr<post_gallery_item>> images;
+    int currentImage = 0;
+};
 
 struct post
 {
@@ -159,6 +172,8 @@ struct post
     gl_image_ptr post_picture;
     std::unique_ptr<media> postMedia;
     std::unique_ptr<post_gif> gif;
+    bool isGallery = false;
+    post_gallery gallery;
 };
 using post_ptr = std::shared_ptr<post>;
 using posts_list = std::vector<post_ptr>;

@@ -26,14 +26,19 @@ struct connection_deleter
 
 class Database
 {
-public:
+private:
     Database();
+public:
+    static Database* getInstance();
     std::optional<user> getRegisteredUser() const;
     void setRegisteredUser(const user& registeredUser);
     void getMainWindowDimensions(int *x, int *y, int *width,int *height);
     void setMainWindowDimensions(int x, int y, int width,int height);
+    void setMediaAudioVolume(int volume);
+    int getMediaAudioVolume();
 private:
     std::unique_ptr<sqlite3,connection_deleter> db;
+    static std::unique_ptr<Database> instance;
 };
 
 #endif // DATABASE_H

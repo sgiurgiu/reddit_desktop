@@ -133,6 +133,54 @@ post::post(const nlohmann::json& json)
     title = json["title"].get<std::string>();
     id = json["id"].get<std::string>();
     name = json["name"].get<std::string>();
+    if(json.contains("is_gallery") && json["is_gallery"].is_boolean())
+    {
+        isGallery = json["is_gallery"].get<bool>();
+    }
+    if(json.contains("gallery_data") && json["gallery_data"].is_object())
+    {
+        const auto& galleryDataJson = json["gallery_data"];
+        if(galleryDataJson.contains("items") && galleryDataJson["items"].is_array())
+        {
+            for(const auto& item : galleryDataJson["items"])
+            {
+                post_gallery_item pi;
+                if(item.contains("id") && item["id"].is_number_unsigned())
+                {
+                    pi.id = item["id"].get<uint64_t>();
+                }
+                if(item.contains("media_id") && item["media_id"].is_string())
+                {
+                    pi.mediaId = item["media_id"].get<std::string>();
+                }
+                gallery.images.emplace_back(std::make_unique<post_gallery_item>(pi));
+            }
+        }
+
+        if(json.contains("media_metadata") && json["media_metadata"].is_object())
+        {
+            const auto& mediaMetadataJson = json["media_metadata"];
+            for(const auto& galImage : gallery.images)
+            {
+                if(mediaMetadataJson.contains(galImage->mediaId) &&
+                   mediaMetadataJson[galImage->mediaId].is_object())
+                {
+                    const auto& mediaMetadataObjJson = mediaMetadataJson[galImage->mediaId];
+                    if(mediaMetadataObjJson.contains("p") &&
+                       mediaMetadataObjJson["p"].is_array() &&
+                       !mediaMetadataObjJson["p"].empty())
+                    {
+                        const auto& lastPreviewItem = mediaMetadataObjJson["p"].back();
+                        if(lastPreviewItem.contains("u") && lastPreviewItem["u"].is_string())
+                        {
+                            galImage->url = lastPreviewItem["u"].get<std::string>();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     if(json.contains("selftext") && json["selftext"].is_string())
     {
         selfText = json["selftext"].get<std::string>();

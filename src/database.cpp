@@ -22,6 +22,9 @@ namespace
         }
     };
 }
+
+std::unique_ptr<Database> Database::instance(nullptr);
+
 Database::Database():db(nullptr,connection_deleter())
 {
     sqlite3* db_ptr;
@@ -30,49 +33,128 @@ Database::Database():db(nullptr,connection_deleter())
     DB_ERR_CHECK("Cannot open database");
     rc = sqlite3_exec(db.get(),"CREATE TABLE IF NOT EXISTS USER(USERNAME TEXT, PASSWORD TEXT, CLIENT_ID TEXT, SECRET TEXT, WEBSITE TEXT, APP_NAME TEXT)",nullptr,nullptr,nullptr);
     DB_ERR_CHECK("Cannot create table USER");
-    rc = sqlite3_exec(db.get(),"CREATE TABLE IF NOT EXISTS WINDOW_DIMS(X INT, Y INT, WIDTH INT, HEIGHT INT)",nullptr,nullptr,nullptr);
+    rc = sqlite3_exec(db.get(),"CREATE TABLE IF NOT EXISTS PROPERTIES(NAME TEXT, PROP_VAL TEXT)",nullptr,nullptr,nullptr);
+    //X INT, Y INT, WIDTH INT, HEIGHT INT
     DB_ERR_CHECK("Cannot create table WINDOW_DIMS");
+}
+Database* Database::getInstance()
+{
+    if(!instance)
+    {
+        instance = std::unique_ptr<Database>(new Database());
+    }
+    return instance.get();
+}
+
+void Database::setMediaAudioVolume(int volume)
+{
+    sqlite3_exec(db.get(),"DELETE FROM PROPERTIES WHERE NAME='VOLUME'",nullptr,nullptr,nullptr);
+    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
+    sqlite3_stmt *stmt_ptr;
+    int rc = sqlite3_prepare_v2(db.get(),"INSERT INTO PROPERTIES(NAME,PROP_VAL) VALUES(?,?)",-1,&stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot insert volume");
+    rc = sqlite3_bind_text(stmt.get(),1,"VOLUME",-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to volume")
+    rc = sqlite3_bind_int(stmt.get(),2,volume);
+    DB_ERR_CHECK("Cannot bind values to volume");
+    rc = sqlite3_step(stmt.get());
+    DB_ERR_CHECK("Cannot insert volume");
+}
+int Database::getMediaAudioVolume()
+{
+    int volume = 100;
+    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
+    sqlite3_stmt *stmt_ptr;
+    int rc = sqlite3_prepare_v2(db.get(),"SELECT NAME,PROP_VAL FROM PROPERTIES WHERE NAME='VOLUME'",-1,&stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot find volume");
+    if(sqlite3_step(stmt.get()) == SQLITE_ROW)
+    {
+        auto name = sqlite3_column_text(stmt.get(),0);
+        auto val = sqlite3_column_int(stmt.get(),1);
+        if(std::string("VOLUME") == std::string(reinterpret_cast<const char*>(name)))
+        {
+             volume = val;
+        }
+    }
+    return volume;
 }
 
 void Database::getMainWindowDimensions(int *x, int *y, int *width,int *height)
 {
     std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
     sqlite3_stmt *stmt_ptr;
-    int rc = sqlite3_prepare_v2(db.get(),"SELECT X,Y,WIDTH,HEIGHT FROM WINDOW_DIMS",-1,&stmt_ptr, nullptr);
+    int rc = sqlite3_prepare_v2(db.get(),"SELECT NAME,PROP_VAL FROM PROPERTIES WHERE NAME='WINDOW_X' OR NAME='WINDOW_Y' "
+                                         "OR NAME='WINDOW_WIDTH' OR NAME='WINDOW_HEIGHT'",-1,&stmt_ptr, nullptr);
     stmt.reset(stmt_ptr);
     DB_ERR_CHECK("Cannot find window dimensions");
-    if(sqlite3_step(stmt.get()) != SQLITE_ROW)
-    {
-        SDL_DisplayMode displayMode;
-        SDL_GetDesktopDisplayMode(0, &displayMode);
-        *width = 1280;
-        *height = 720;
+    SDL_DisplayMode displayMode;
+    SDL_GetDesktopDisplayMode(0, &displayMode);
+    *width = 1280;
+    *height = 720;
 
-        *x = (displayMode.w - *width) / 2;
-        *y = (displayMode.h - *height) / 2;
-        return;
+    *x = (displayMode.w - *width) / 2;
+    *y = (displayMode.h - *height) / 2;
+    while(sqlite3_step(stmt.get()) == SQLITE_ROW)
+    {
+       auto name = sqlite3_column_text(stmt.get(),0);
+       auto val = sqlite3_column_int(stmt.get(),1);
+       if(std::string("WINDOW_X") == std::string(reinterpret_cast<const char*>(name)))
+       {
+            *x = val;
+       }
+       else if(std::string("WINDOW_Y") == std::string(reinterpret_cast<const char*>(name)))
+       {
+            *y = val;
+       }
+       else if(std::string("WINDOW_WIDTH") == std::string(reinterpret_cast<const char*>(name)))
+       {
+            *width = val;
+       }
+       else if(std::string("WINDOW_HEIGHT") == std::string(reinterpret_cast<const char*>(name)))
+       {
+            *height = val;
+       }
     }
-    *x = sqlite3_column_int(stmt.get(),0);
-    *y = sqlite3_column_int(stmt.get(),1);
-    *width = sqlite3_column_int(stmt.get(),2);
-    *height = sqlite3_column_int(stmt.get(),3);
 }
 void Database::setMainWindowDimensions(int x, int y, int width,int height)
 {
-    sqlite3_exec(db.get(),"DELETE FROM WINDOW_DIMS",nullptr,nullptr,nullptr);
+    sqlite3_exec(db.get(),"DELETE FROM PROPERTIES WHERE NAME='WINDOW_X' OR NAME='WINDOW_Y' "
+                          "OR NAME='WINDOW_WIDTH' OR NAME='WINDOW_HEIGHT'",nullptr,nullptr,nullptr);
     std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
     sqlite3_stmt *stmt_ptr;
-    int rc = sqlite3_prepare_v2(db.get(),"INSERT INTO WINDOW_DIMS(X,Y,WIDTH,HEIGHT) VALUES(?,?,?,?)",-1,&stmt_ptr, nullptr);
+    int rc = sqlite3_prepare_v2(db.get(),"INSERT INTO PROPERTIES(NAME,PROP_VAL) VALUES(?,?)",-1,&stmt_ptr, nullptr);
     stmt.reset(stmt_ptr);
     DB_ERR_CHECK("Cannot insert window dimensions");
 
-    rc = sqlite3_bind_int(stmt.get(),1,x);
+    rc = sqlite3_bind_text(stmt.get(),1,"WINDOW_X",-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to window dims")
+    rc = sqlite3_bind_int(stmt.get(),2,x);
     DB_ERR_CHECK("Cannot bind values to window dims");
+    rc = sqlite3_step(stmt.get());
+    DB_ERR_CHECK("Cannot insert window dims");
+    sqlite3_reset(stmt.get());
+
+    rc = sqlite3_bind_text(stmt.get(),1,"WINDOW_Y",-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to window dims")
     rc = sqlite3_bind_int(stmt.get(),2,y);
     DB_ERR_CHECK("Cannot bind values to window dims");
-    rc = sqlite3_bind_int(stmt.get(),3,width);
+    rc = sqlite3_step(stmt.get());
+    DB_ERR_CHECK("Cannot insert window dims");
+    sqlite3_reset(stmt.get());
+
+    rc = sqlite3_bind_text(stmt.get(),1,"WINDOW_WIDTH",-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to window dims")
+    rc = sqlite3_bind_int(stmt.get(),2,width);
     DB_ERR_CHECK("Cannot bind values to window dims");
-    rc = sqlite3_bind_int(stmt.get(),4,height);
+    rc = sqlite3_step(stmt.get());
+    DB_ERR_CHECK("Cannot insert window dims");
+    sqlite3_reset(stmt.get());
+
+    rc = sqlite3_bind_text(stmt.get(),1,"WINDOW_HEIGHT",-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to window dims")
+    rc = sqlite3_bind_int(stmt.get(),2,height);
     DB_ERR_CHECK("Cannot bind values to window dims");
     rc = sqlite3_step(stmt.get());
     DB_ERR_CHECK("Cannot insert window dims");

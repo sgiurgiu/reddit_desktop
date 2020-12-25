@@ -7,6 +7,9 @@
 #include "spinner/spinner.h"
 #include "macros.h"
 #include <iostream>
+#include <mpv/client.h>
+#include <mpv/render_gl.h>
+#include "database.h"
 
 namespace
 {
@@ -35,9 +38,9 @@ namespace
 {
 static void* get_proc_address_mpv(void *fn_ctx, const char *name)
 {
+    //std::cout << "get_proc_address_mpv:"<<name<<std::endl;
     return SDL_GL_GetProcAddress(name);
 }
-
 }
 
 CommentsWindow::CommentsWindow(const std::string& postId,
@@ -73,9 +76,11 @@ CommentsWindow::CommentsWindow(const std::string& postId,
     using run_function = boost::asio::io_context::count_type(boost::asio::io_context::*)();
     auto bound_run_fuction = std::bind(static_cast<run_function>(&boost::asio::io_context::run),std::ref(mpvEventIOContext));
     mvpEventThread = std::thread(bound_run_fuction);
+    mediaState.mediaAudioVolume = Database::getInstance()->getMediaAudioVolume();
 }
 CommentsWindow::~CommentsWindow()
 {
+    Database::getInstance()->setMediaAudioVolume(mediaState.mediaAudioVolume);
     if(mediaStreamingConnection)
     {
         mediaStreamingConnection->clearAllSlots();
@@ -119,6 +124,12 @@ void CommentsWindow::handleMpvEvents()
        {
            mpv_event_property *prop = (mpv_event_property *)mp_event->data;
            std::cout << "prop change:"<<prop->name<<std::endl;
+           if(prop->format == MPV_FORMAT_DOUBLE)
+           {
+               double val = *(double*)prop->data;
+               boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::mpvDoublePropertyChanged,this,
+                                                            std::string(prop->name),val));
+           }
            break;
        }
        case MPV_EVENT_VIDEO_RECONFIG:
@@ -135,6 +146,19 @@ void CommentsWindow::handleMpvEvents()
        default:
            break;
        }
+    }
+}
+void CommentsWindow::mpvDoublePropertyChanged(std::string name, double value)
+{
+    if(name == "time-pos")
+    {
+        mediaState.timePosition = value;
+        std::cout << "prop change timePosition:"<<mediaState.timePosition<<std::endl;
+    }
+    else if (name == "duration")
+    {
+        mediaState.duration = value;
+        std::cout << "prop change duration:"<<mediaState.duration<<std::endl;
     }
 }
 void CommentsWindow::setErrorMessage(std::string errorMessage)
@@ -208,6 +232,13 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
 {
     listingErrorMessage.clear();
     parent_post = receivedParentPost;
+
+    if(parent_post->isGallery && !parent_post->gallery.images.empty())
+    {
+        loadPostGalleryImages();
+        return;
+    }
+
     bool isMediaPost = std::find(mediaDomains.begin(),mediaDomains.end(),parent_post->domain) != mediaDomains.end();
     if(!isMediaPost)
     {
@@ -250,7 +281,42 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
         }
     }
 }
-
+void CommentsWindow::loadPostGalleryImages()
+{
+    loadingPostData = true;
+    for(size_t i=0;i<parent_post->gallery.images.size();i++)
+    {
+        const auto& galImage = parent_post->gallery.images.at(i);
+        if(galImage->url.empty()) continue;
+        auto resourceConnection = client->makeResourceClientConnection();
+        resourceConnection->connectionCompleteHandler(
+                    [this,index=i](const boost::system::error_code& ec,
+                         const resource_response& response)
+        {
+            if(ec)
+            {
+                boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,this,ec.message()));
+                return;
+            }
+            else if(response.status == 200)
+            {
+                int width, height, channels;
+                auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
+                boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setPostGalleryImage,this,
+                                                             data,width,height,channels,(int)index));
+            }
+        });
+        resourceConnection->getResource(galImage->url);
+    }
+}
+void CommentsWindow::setPostGalleryImage(unsigned char* data, int width, int height, int channels, int index)
+{
+    UNUSED(channels);
+    auto image = Utils::loadImage(data,width,height,STBI_rgb_alpha);
+    stbi_image_free(data);
+    parent_post->gallery.images[index]->img = std::move(image);
+    loadingPostData = false;
+}
 void CommentsWindow::loadPostImage()
 {
     loadingPostData = true;
@@ -306,6 +372,10 @@ void CommentsWindow::setupMediaContext(std::string file)
         {MPV_RENDER_PARAM_INVALID, 0}
     };
     mpv_render_context_create(&mpv_gl, mpv, params);
+
+    mpv_observe_property(mpv, 0, "duration", MPV_FORMAT_DOUBLE);
+    mpv_observe_property(mpv, 0, "time-pos", MPV_FORMAT_DOUBLE);
+
     mpv_set_wakeup_callback(mpv, &CommentsWindow::onMpvEvents, this);
     mpv_render_context_set_update_callback(mpv_gl, &CommentsWindow::mpvRenderUpdate, this);
 
@@ -493,6 +563,15 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
             display_image = parent_post->gif->images[parent_post->gif->currentImage]->img;
         }
 
+        if(parent_post->isGallery && !parent_post->gallery.images.empty())
+        {
+            if(parent_post->gallery.currentImage < 0 || parent_post->gallery.currentImage >= (int)parent_post->gallery.images.size())
+            {
+                parent_post->gallery.currentImage = 0;
+            }
+            display_image = parent_post->gallery.images[parent_post->gallery.currentImage]->img;
+        }
+
         if(display_image)
         {
             if(post_picture_width == 0.f && post_picture_height == 0.f)
@@ -537,6 +616,34 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
                 new_height = new_area / new_width;
                 post_picture_width = std::max(100.f,new_width);
                 post_picture_height = std::max(100.f,new_height);
+            }
+
+            if(mediaState.duration > 0.0f)
+            {
+                float progress = mediaState.timePosition / mediaState.duration;
+                ImGui::ProgressBar(progress, ImVec2(post_picture_width, 0.0f));
+            }
+            if(parent_post->isGallery && !parent_post->gallery.images.empty())
+            {
+                if(ImGui::Button(fmt::format(reinterpret_cast<const char*>(ICON_FA_ARROW_LEFT "##{}_previmage"),parent_post->id).c_str()))
+                {
+                    parent_post->gallery.currentImage--;
+                    if(parent_post->gallery.currentImage < 0) parent_post->gallery.currentImage = (int)parent_post->gallery.images.size() - 1;
+                }
+                auto btnSize = ImGui::GetItemRectSize();
+                auto text = fmt::format("{}/{}",parent_post->gallery.currentImage+1,parent_post->gallery.images.size());
+                auto textSize = ImGui::CalcTextSize(text.c_str());
+                auto space = (post_picture_width - btnSize.x * 2.f);
+                ImGui::SameLine((space - textSize.x / 2.f)/2.f);
+                ImGui::Text("%s",text.c_str());
+                auto windowWidth = ImGui::GetWindowContentRegionMax().x;
+                auto remainingWidth = windowWidth - post_picture_width;
+                ImGui::SameLine(windowWidth-remainingWidth-btnSize.x*2.f/3.f);
+                if(ImGui::Button(fmt::format(reinterpret_cast<const char*>(ICON_FA_ARROW_RIGHT "##{}_nextimage"),parent_post->id).c_str()))
+                {
+                    parent_post->gallery.currentImage++;
+                    if(parent_post->gallery.currentImage >= (int)parent_post->gallery.images.size()) parent_post->gallery.currentImage = 0;
+                }
             }
         }
 

@@ -11,8 +11,8 @@
 #include "redditlistingconnection.h"
 #include "utils.h"
 
-#include <mpv/client.h>
-#include <mpv/render_gl.h>
+struct mpv_handle;
+struct mpv_render_context;
 
 class CommentsWindow
 {
@@ -46,6 +46,9 @@ private:
     void static mpvRenderUpdate(void* context);
     void static onMpvEvents(void* context);
     void handleMpvEvents();
+    void mpvDoublePropertyChanged(std::string name, double value);
+    void loadPostGalleryImages();
+    void setPostGalleryImage(unsigned char* data, int width, int height, int channels, int index);
 private:
 
     std::string postId;
@@ -71,6 +74,13 @@ private:
     boost::asio::executor_work_guard<boost::asio::io_context::executor_type> mpvEventIOContextWork;
     std::thread mvpEventThread;
     unsigned int mediaFramebufferObject = 0;
+    struct MediaState {
+        int mediaAudioVolume = 100;
+        bool paused = false;
+        float duration = 0.0;
+        float timePosition = 0.0;
+    };
+    MediaState mediaState;
 
 };
 

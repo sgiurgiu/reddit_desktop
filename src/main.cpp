@@ -34,7 +34,7 @@ using namespace gl;
     void ShowMarkdownWindow(bool *open);
 #endif
 
-void runMainLoop(SDL_Window* window,ImGuiIO& io,Database* const db);
+void runMainLoop(SDL_Window* window,ImGuiIO& io);
 
 #if defined(WIN32_WINMAIN)
 int WINAPI WinMain(
@@ -82,10 +82,10 @@ int main(int /*argc*/, char** /*argv*/)
     SDL_GL_MakeCurrent(window, gl_context);
     SDL_GL_SetSwapInterval(1); // Enable vsync
 
-    Database db;
+    Database* db = Database::getInstance();
     {
         int x,y,w,h;
-        db.getMainWindowDimensions(&x,&y,&w,&h);
+        db->getMainWindowDimensions(&x,&y,&w,&h);
         SDL_SetWindowPosition(window,x,y);
         SDL_SetWindowSize(window,w,h);
     }
@@ -133,13 +133,13 @@ int main(int /*argc*/, char** /*argv*/)
     //io.Fonts->AddFontDefault();
     Utils::LoadFonts();
 
-    runMainLoop(window,io,&db);
+    runMainLoop(window,io);
 
     {
         int x,y,w,h;
         SDL_GetWindowPosition(window,&x,&y);
         SDL_GetWindowSize(window,&w,&h);
-        db.setMainWindowDimensions(x,y,w,h);
+        db->setMainWindowDimensions(x,y,w,h);
     }
 
     // Cleanup
@@ -154,14 +154,14 @@ int main(int /*argc*/, char** /*argv*/)
 }
 
 
-void runMainLoop(SDL_Window* window,ImGuiIO& io,Database* const db)
+void runMainLoop(SDL_Window* window,ImGuiIO& io)
 {
 #ifdef REDDIT_DESKTOP_DEBUG
     bool show_demo_window = true;
     bool show_markdown_window = false;
 #endif
     boost::asio::io_context uiContext;
-    RedditDesktop desktop(uiContext.get_executor(),db);
+    RedditDesktop desktop(uiContext.get_executor());
     MarkdownRenderer::InitEngine();
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     // Main loop
