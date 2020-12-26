@@ -165,6 +165,7 @@ struct post
     std::string urlOverridenByDest;
     std::vector<images_preview> previews;
     gl_image_ptr thumbnail_picture;
+    gl_image_ptr blurred_thumbnail_picture;
     std::string authorFullName;
     std::string author;
     std::string domain;
@@ -174,6 +175,8 @@ struct post
     std::unique_ptr<post_gif> gif;
     bool isGallery = false;
     post_gallery gallery;
+    bool over18 = false;
+    bool shouldShowUnblurredImage = false;
 };
 using post_ptr = std::shared_ptr<post>;
 using posts_list = std::vector<post_ptr>;

@@ -46,6 +46,41 @@ Database* Database::getInstance()
     return instance.get();
 }
 
+void Database::setBlurNSFWPictures(bool flag)
+{
+    sqlite3_exec(db.get(),"DELETE FROM PROPERTIES WHERE NAME='BLUR_NSFW'",nullptr,nullptr,nullptr);
+    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
+    sqlite3_stmt *stmt_ptr;
+    int rc = sqlite3_prepare_v2(db.get(),"INSERT INTO PROPERTIES(NAME,PROP_VAL) VALUES(?,?)",-1,&stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot insert BLUR_NSFW");
+    rc = sqlite3_bind_text(stmt.get(),1,"BLUR_NSFW",-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to BLUR_NSFW")
+    rc = sqlite3_bind_int(stmt.get(),2,flag?1:0);
+    DB_ERR_CHECK("Cannot bind values to BLUR_NSFW");
+    rc = sqlite3_step(stmt.get());
+    DB_ERR_CHECK("Cannot insert BLUR_NSFW");
+}
+bool Database::getBlurNSFWPictures()
+{
+    bool blur = true;
+    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
+    sqlite3_stmt *stmt_ptr;
+    int rc = sqlite3_prepare_v2(db.get(),"SELECT NAME,PROP_VAL FROM PROPERTIES WHERE NAME='BLUR_NSFW'",-1,&stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot find BLUR_NSFW");
+    if(sqlite3_step(stmt.get()) == SQLITE_ROW)
+    {
+        auto name = sqlite3_column_text(stmt.get(),0);
+        auto val = sqlite3_column_int(stmt.get(),1);
+        if(std::string("BLUR_NSFW") == std::string(reinterpret_cast<const char*>(name)))
+        {
+             blur = (val != 0);
+        }
+    }
+    return blur;
+}
+
 void Database::setMediaAudioVolume(int volume)
 {
     sqlite3_exec(db.get(),"DELETE FROM PROPERTIES WHERE NAME='VOLUME'",nullptr,nullptr,nullptr);

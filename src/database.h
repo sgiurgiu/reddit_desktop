@@ -36,6 +36,8 @@ public:
     void setMainWindowDimensions(int x, int y, int width,int height);
     void setMediaAudioVolume(int volume);
     int getMediaAudioVolume();
+    void setBlurNSFWPictures(bool flag);
+    bool getBlurNSFWPictures();
 private:
     std::unique_ptr<sqlite3,connection_deleter> db;
     static std::unique_ptr<Database> instance;

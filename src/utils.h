@@ -35,6 +35,7 @@ public:
     static std::string decode64(const std::string &val);
     static std::string encode64(const std::string &val);
     static gl_image_ptr loadImage(unsigned char* data, int width, int height, int channels);
+    static gl_image_ptr loadBlurredImage(unsigned char* data, int width, int height, int channels);
     static std::string getHumanReadableTimeAgo(uint64_t time);
     static std::string getHumanReadableNumber(int number);
     static stbi_uc * decodeImageData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file);

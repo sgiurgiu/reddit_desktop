@@ -21,6 +21,7 @@ RedditDesktop::RedditDesktop(const boost::asio::io_context::executor_type& execu
     subredditsSortMethod[SubredditsSorting::Alphabetical_Ascending] = "Alphabetical";
     subredditsSortMethod[SubredditsSorting::Alphabetical_Descending] = "Alphabetical (Inverse)";
     current_user = Database::getInstance()->getRegisteredUser();
+    shouldBlurPictures= Database::getInstance()->getBlurNSFWPictures();
     if(!current_user)
     {
         loginWindow.setShowLoginWindow(true);
@@ -298,6 +299,15 @@ void RedditDesktop::showMainMenuBar()
         if (ImGui::BeginMenu("File"))
         {
             showMenuFile();
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Options"))
+        {
+            if(ImGui::Checkbox("Blur NSFW Thumbnails", &shouldBlurPictures))
+            {
+                Database::getInstance()->setBlurNSFWPictures(shouldBlurPictures);
+            }
+
             ImGui::EndMenu();
         }
         if(info_user)

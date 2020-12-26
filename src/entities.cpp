@@ -180,7 +180,10 @@ post::post(const nlohmann::json& json)
             }
         }
     }
-
+    if(json.contains("over_18") && json["over_18"].is_boolean())
+    {
+        over18 = json["over_18"].get<bool>();
+    }
     if(json.contains("selftext") && json["selftext"].is_string())
     {
         selfText = json["selftext"].get<std::string>();

@@ -71,6 +71,7 @@ private:
     };
     std::map<SubredditsSorting,std::string> subredditsSortMethod;
     SubredditsSorting currentSubredditsSorting = SubredditsSorting::None;
+    bool shouldBlurPictures = true;
 };
 
 

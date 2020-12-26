@@ -51,6 +51,7 @@ private:
     std::optional<std::string> before;
     int currentCount = 0;
     bool scrollToTop = false;
+    bool shouldBlurPictures = true;
 };
 
 #endif // SUBREDDITWINDOW_H

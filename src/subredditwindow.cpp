@@ -5,7 +5,7 @@
 #include "fonts/IconsFontAwesome4.h"
 #include "utils.h"
 #include "spinner/spinner.h"
-
+#include "database.h"
 #include <boost/asio/post.hpp>
 
 SubredditWindow::SubredditWindow(int id, const std::string& subreddit,
@@ -50,6 +50,7 @@ SubredditWindow::SubredditWindow(int id, const std::string& subreddit,
     if(!target.starts_with("/")) target = "/" + target;
 
     connection->list(target,token);
+    shouldBlurPictures= Database::getInstance()->getBlurNSFWPictures();
 }
 SubredditWindow::~SubredditWindow()
 {
@@ -118,8 +119,13 @@ void SubredditWindow::setPostThumbnail(post* p,unsigned char* data, int width, i
 {
     ((void)channels);
     auto image = Utils::loadImage(data,width,height,STBI_rgb_alpha);
-    stbi_image_free(data);
     p->thumbnail_picture = std::move(image);
+    if(p->over18 && shouldBlurPictures)
+    {
+        auto blurredImage = Utils::loadBlurredImage(data,width,height,STBI_rgb_alpha);
+        p->blurred_thumbnail_picture = std::move(blurredImage);
+    }
+    stbi_image_free(data);    
 }
 void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
 {
@@ -183,11 +189,32 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
 
         auto height = ImGui::GetCursorPosY();
         ImGui::SameLine();
-        if(p->thumbnail_picture)
+
+        if(p->over18 && shouldBlurPictures && p->blurred_thumbnail_picture && !p->shouldShowUnblurredImage)
+        {
+            ImGui::Image((void*)(intptr_t)p->blurred_thumbnail_picture->textureId,
+                         ImVec2(p->blurred_thumbnail_picture->width,p->blurred_thumbnail_picture->height));
+            height = std::max(height,ImGui::GetCursorPosY());
+            auto rectMin = ImGui::GetItemRectMin();
+            auto rectMax = ImGui::GetItemRectMax();
+            if(ImGui::IsMouseHoveringRect(rectMin,rectMax) && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+            {
+                p->shouldShowUnblurredImage = true;
+            }
+            ImGui::SameLine();
+        }
+        else if(p->thumbnail_picture)
         {
             ImGui::Image((void*)(intptr_t)p->thumbnail_picture->textureId,
                          ImVec2(p->thumbnail_picture->width,p->thumbnail_picture->height));
             height = std::max(height,ImGui::GetCursorPosY());
+            auto rectMin = ImGui::GetItemRectMin();
+            auto rectMax = ImGui::GetItemRectMax();
+            if(ImGui::IsMouseHoveringRect(rectMin,rectMax) && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) &&
+                    p->blurred_thumbnail_picture)
+            {
+                p->shouldShowUnblurredImage = false;
+            }
             ImGui::SameLine();
         }
 
@@ -199,6 +226,17 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::SameLine();        
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Light)]);
         ImGui::Text("Posted by %s %s",p->author.c_str(),p->humanReadableTimeDifference.c_str());
+        if(p->over18)
+        {
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(1.f,0.f,0.f,1.f),"%s",reinterpret_cast<const char*>(ICON_FA_BOMB));
+            if(ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted("Not Safe For Work");
+                ImGui::EndTooltip();
+            }
+        }
         ImGui::PopFont();
 
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Medium_Big)]);
