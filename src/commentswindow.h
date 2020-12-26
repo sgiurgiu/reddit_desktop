@@ -1,7 +1,7 @@
 #ifndef COMMENTSWINDOW_H
 #define COMMENTSWINDOW_H
 
-#include <SDL_video.h>
+
 #include <boost/asio/io_context.hpp>
 #include <string>
 #include <memory>
@@ -10,9 +10,8 @@
 #include "redditclient.h"
 #include "redditlistingconnection.h"
 #include "utils.h"
+#include "postcontentviewer.h"
 
-struct mpv_handle;
-struct mpv_render_context;
 
 class CommentsWindow
 {
@@ -37,53 +36,20 @@ private:
     void setComments(comments_list receivedComments);
     void setParentPost(post_ptr receivedParentPost);
     void showComment(comment_ptr c);
-    void setPostImage(unsigned char* data, int width, int height, int channels);
-    void setPostGif(unsigned char* data, int width, int height, int channels,
-                    int count, int* delays);
-    void setPostMediaFrame();
-    void loadPostImage();
-    void setupMediaContext(std::string file);
-    void static mpvRenderUpdate(void* context);
-    void static onMpvEvents(void* context);
-    void handleMpvEvents();
-    void mpvDoublePropertyChanged(std::string name, double value);
-    void mpvFlagPropertyChanged(std::string name, int value);
-    void mpvInt64PropertyChanged(std::string name, int64_t value);
-    void loadPostGalleryImages();
-    void setPostGalleryImage(unsigned char* data, int width, int height, int channels, int index);
 private:
 
     std::string postId;
     bool windowOpen = true;
     access_token token;
     RedditClient* client;
-    RedditClient::RedditListingClientConnection connection;
-    RedditClient::MediaStreamingClientConnection mediaStreamingConnection;
+    RedditClient::RedditListingClientConnection connection;    
     std::string windowName;
     std::string listingErrorMessage;
     bool willBeFocused = false;
     comments_list comments;
-    post_ptr parent_post;
-    SDL_DisplayMode displayMode;
-    float post_picture_width = 0.f;
-    float post_picture_height = 0.f;
-    float post_picture_ratio = 0.f;
-    bool loadingPostData = false;
+    post_ptr parent_post;    
     const boost::asio::io_context::executor_type& uiExecutor;
-    mpv_handle* mpv = nullptr;
-    mpv_render_context *mpv_gl = nullptr;
-    boost::asio::io_context mpvEventIOContext;
-    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> mpvEventIOContextWork;
-    std::thread mvpEventThread;
-    unsigned int mediaFramebufferObject = 0;
-    struct MediaState {
-        int mediaAudioVolume = 100;
-        bool paused = false;
-        float duration = 0.0;
-        float timePosition = 0.0;
-    };
-    MediaState mediaState;
-
+    std::unique_ptr<PostContentViewer> postContentViewer;
 };
 
 #endif // COMMENTSWINDOW_H

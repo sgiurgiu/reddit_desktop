@@ -36,6 +36,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         markdownrenderer.cpp
         mediastreamingconnection.cpp
         htmlparser.cpp
+        postcontentviewer.cpp
         )
 
 add_executable(${EXECUTABLE_NAME}
