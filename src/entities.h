@@ -68,6 +68,10 @@ struct gl_image
     int width = 0;
     int height = 0;
     int channels = 0;
+    int resizedWidth = 0;
+    int resizedHeight = 0;
+    bool isResized = false;
+    float pictureRatio = 0.0f;
     ~gl_image();
 };
 using gl_image_ptr = std::shared_ptr<gl_image>;
@@ -106,36 +110,14 @@ struct media
     std::unique_ptr<oembed> oemEmbed;
 };
 
-struct gif_image
-{
-    gif_image(){}
-    gif_image(gl_image_ptr img, int delay):
-        img(std::move(img)),delay(delay)
-    {}
-    gl_image_ptr img;
-    int delay;
-    std::chrono::steady_clock::time_point lastDisplay;
-    bool displayed = false;
-};
 
-struct post_gif
-{
-    std::vector<std::unique_ptr<gif_image>> images;
-    int currentImage = 0;
-};
 struct post_gallery_item
 {
     uint64_t id = 0;
     std::string mediaId;
     std::string url;
-    gl_image_ptr img;
 };
 
-struct post_gallery
-{
-    std::vector<std::unique_ptr<post_gallery_item>> images;
-    int currentImage = 0;
-};
 
 struct post
 {
@@ -169,12 +151,10 @@ struct post
     std::string authorFullName;
     std::string author;
     std::string domain;
-    std::string postHint;
-    gl_image_ptr post_picture;
-    std::unique_ptr<media> postMedia;
-    std::unique_ptr<post_gif> gif;
+    std::string postHint;    
+    std::unique_ptr<media> postMedia;    
     bool isGallery = false;
-    post_gallery gallery;
+    std::vector<post_gallery_item> gallery;
     bool over18 = false;
     bool shouldShowUnblurredImage = false;
 };

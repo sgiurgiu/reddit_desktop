@@ -42,9 +42,6 @@ private:
     RedditClient::MediaStreamingClientConnection mediaStreamingConnection;
     std::string errorMessage;
     SDL_DisplayMode displayMode;
-    float post_picture_width = 0.f;
-    float post_picture_height = 0.f;
-    float post_picture_ratio = 0.f;
     bool loadingPostContent = false;
     mpv_handle* mpv = nullptr;
     mpv_render_context *mpv_gl = nullptr;
@@ -61,6 +58,32 @@ private:
         std::atomic<double> height;
     };
     MediaState mediaState;
+    struct gif_image
+    {
+        gif_image(){}
+        gif_image(gl_image_ptr img, int delay):
+            img(std::move(img)),delay(delay)
+        {}
+        gl_image_ptr img;
+        int delay;
+        std::chrono::steady_clock::time_point lastDisplay;
+        bool displayed = false;
+    };
+
+    struct post_gif
+    {
+        std::vector<std::unique_ptr<gif_image>> images;
+        int currentImage = 0;
+    };
+    std::unique_ptr<post_gif> gif;
+    gl_image_ptr postPicture;
+    struct post_gallery
+    {
+        std::vector<gl_image_ptr> images;
+        int currentImage = 0;
+    };
+    post_gallery gallery;
+
 };
 
 #endif // POSTCONTENTVIEWER_H

@@ -57,7 +57,7 @@ PostContentViewer::PostContentViewer(RedditClient* client,
     mvpEventThread = std::thread(bound_run_fuction);
     mediaState.mediaAudioVolume = Database::getInstance()->getMediaAudioVolume();
 
-    if(currentPost->isGallery && !currentPost->gallery.images.empty())
+    if(currentPost->isGallery && !currentPost->gallery.empty())
     {
         loadPostGalleryImages();
         return;
@@ -248,10 +248,11 @@ void PostContentViewer::mpvDoublePropertyChanged(std::string name, double value)
 void PostContentViewer::loadPostGalleryImages()
 {
     loadingPostContent = true;
-    for(size_t i=0;i<currentPost->gallery.images.size();i++)
+    for(size_t i=0;i<currentPost->gallery.size();i++)
     {
-        const auto& galImage = currentPost->gallery.images.at(i);
-        if(galImage->url.empty()) continue;
+        const auto& galImage = currentPost->gallery.at(i);
+        gallery.images.emplace_back();
+        if(galImage.url.empty()) continue;
         auto resourceConnection = client->makeResourceClientConnection();
         resourceConnection->connectionCompleteHandler(
                     [this,index=i](const boost::system::error_code& ec,
@@ -270,7 +271,7 @@ void PostContentViewer::loadPostGalleryImages()
                                                              data,width,height,channels,(int)index));
             }
         });
-        resourceConnection->getResource(galImage->url);
+        resourceConnection->getResource(galImage.url);
     }
 }
 void PostContentViewer::setPostGalleryImage(unsigned char* data, int width, int height, int channels, int index)
@@ -278,7 +279,7 @@ void PostContentViewer::setPostGalleryImage(unsigned char* data, int width, int 
     UNUSED(channels);
     auto image = Utils::loadImage(data,width,height,STBI_rgb_alpha);
     stbi_image_free(data);
-    currentPost->gallery.images[index]->img = std::move(image);
+    gallery.images[index] = std::move(image);
     loadingPostContent = false;
 }
 void PostContentViewer::loadPostImage()
@@ -369,14 +370,14 @@ void PostContentViewer::setPostMediaFrame()
         return;
     }
 
-    if(!currentPost->post_picture)
+    if(!postPicture)
     {
         glGenFramebuffers(1, &mediaFramebufferObject);
 
         glBindFramebuffer(GL_FRAMEBUFFER, mediaFramebufferObject);
-        currentPost->post_picture = std::make_shared<gl_image>();
-        glGenTextures(1, &currentPost->post_picture->textureId);
-        glBindTexture(GL_TEXTURE_2D, currentPost->post_picture->textureId);
+        postPicture = std::make_shared<gl_image>();
+        glGenTextures(1, &postPicture->textureId);
+        glBindTexture(GL_TEXTURE_2D, postPicture->textureId);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (int)mediaState.width, (int)mediaState.height, 0,
                      GL_RGBA, GL_UNSIGNED_BYTE, NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
@@ -385,17 +386,17 @@ void PostContentViewer::setPostMediaFrame()
 
         // attach it to currently bound framebuffer object
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                               currentPost->post_picture->textureId, 0);
-        currentPost->post_picture->width = (int)mediaState.width;
-        currentPost->post_picture->height = (int)mediaState.height;
+                               postPicture->textureId, 0);
+        postPicture->width = (int)mediaState.width;
+        postPicture->height = (int)mediaState.height;
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     //glBindFramebuffer(GL_FRAMEBUFFER, mediaFramebufferObject);
     mpv_opengl_fbo mpfbo{(int)mediaFramebufferObject,
-                currentPost->post_picture->width,
-                currentPost->post_picture->height, GL_RGBA};
+                postPicture->width,
+                postPicture->height, GL_RGBA};
     int flip_y{0};
 
     mpv_render_param params[] = {
@@ -429,7 +430,7 @@ void PostContentViewer::setPostGif(unsigned char* data, int width, int height, i
 
     free(delays);
     stbi_image_free(data);
-    currentPost->gif = std::move(gif);
+    this->gif = std::move(gif);
     loadingPostContent = false;
 }
 
@@ -438,61 +439,61 @@ void PostContentViewer::setPostImage(unsigned char* data, int width, int height,
     UNUSED(channels);
     auto image = Utils::loadImage(data,width,height,STBI_rgb_alpha);
     stbi_image_free(data);
-    currentPost->post_picture = std::move(image);
+    postPicture = std::move(image);
     loadingPostContent = false;
 }
 
 void PostContentViewer::showPostContent()
 {
-    gl_image_ptr display_image = currentPost->post_picture;
+    gl_image_ptr display_image = postPicture;
 
-    if(currentPost->gif)
+    if(gif)
     {
-        if(currentPost->gif->images[currentPost->gif->currentImage]->displayed)
+        if(gif->images[gif->currentImage]->displayed)
         {
-            auto lastDisplay = currentPost->gif->images[currentPost->gif->currentImage]->lastDisplay;
+            auto lastDisplay = gif->images[gif->currentImage]->lastDisplay;
             auto diffSinceLastDisplay = std::chrono::steady_clock::now() - lastDisplay;
             const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(diffSinceLastDisplay);
-            const auto delay = std::chrono::duration<int,std::milli>(currentPost->gif->images[currentPost->gif->currentImage]->delay);
+            const auto delay = std::chrono::duration<int,std::milli>(gif->images[gif->currentImage]->delay);
             if(ms > delay)
             {
-                currentPost->gif->currentImage++;
-                if(currentPost->gif->currentImage >= (int)currentPost->gif->images.size())
+                gif->currentImage++;
+                if(gif->currentImage >= (int)gif->images.size())
                 {
-                    currentPost->gif->currentImage = 0;
-                    for(auto&& img:currentPost->gif->images)
+                    gif->currentImage = 0;
+                    for(auto&& img:gif->images)
                     {
                         img->displayed = false;
                         img->lastDisplay = std::chrono::steady_clock::time_point::min();
                     }
                 }
-                currentPost->gif->images[currentPost->gif->currentImage]->lastDisplay = std::chrono::steady_clock::now();
-                currentPost->gif->images[currentPost->gif->currentImage]->displayed = true;
+                gif->images[gif->currentImage]->lastDisplay = std::chrono::steady_clock::now();
+                gif->images[gif->currentImage]->displayed = true;
             }
         }
         else
         {
-            currentPost->gif->images[currentPost->gif->currentImage]->displayed = true;
-            currentPost->gif->images[currentPost->gif->currentImage]->lastDisplay = std::chrono::steady_clock::now();
+            gif->images[gif->currentImage]->displayed = true;
+            gif->images[gif->currentImage]->lastDisplay = std::chrono::steady_clock::now();
         }
-        display_image = currentPost->gif->images[currentPost->gif->currentImage]->img;
+        display_image = gif->images[gif->currentImage]->img;
     }
 
-    if(currentPost->isGallery && !currentPost->gallery.images.empty())
+    if(currentPost->isGallery && !currentPost->gallery.empty())
     {
-        if(currentPost->gallery.currentImage < 0 || currentPost->gallery.currentImage >= (int)currentPost->gallery.images.size())
+        if(gallery.currentImage < 0 || gallery.currentImage >= (int)gallery.images.size())
         {
-            currentPost->gallery.currentImage = 0;
+            gallery.currentImage = 0;
         }
-        display_image = currentPost->gallery.images[currentPost->gallery.currentImage]->img;
+        display_image = gallery.images[gallery.currentImage];
     }
 
     if(display_image)
     {
-        if(post_picture_width == 0.f && post_picture_height == 0.f)
+        if(!display_image->isResized)
         {
-            auto width = (float)display_image->width;
-            auto height = (float)display_image->height;
+            float width = (float)display_image->width;
+            float height = (float)display_image->height;
             auto availableWidth = ImGui::GetContentRegionAvail().x * 0.9f;
             if(availableWidth > 100 && width > availableWidth)
             {
@@ -510,13 +511,14 @@ void PostContentViewer::showPostContent()
             }
             width = std::max(100.f,width);
             height = std::max(100.f,height);
-            post_picture_width = width;
-            post_picture_height = height;
-            post_picture_ratio = post_picture_width / post_picture_height;
+            display_image->resizedWidth = width;
+            display_image->resizedHeight = height;
+            display_image->pictureRatio = width / height;
+            display_image->isResized = true;
         }
 
         ImGui::ImageButton((void*)(intptr_t)display_image->textureId,
-                           ImVec2(post_picture_width,post_picture_height),ImVec2(0, 0),ImVec2(1,1),0);
+                           ImVec2(display_image->resizedWidth,display_image->resizedHeight),ImVec2(0, 0),ImVec2(1,1),0);
 
         if(ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(),ImGui::GetItemRectMax()) &&
                 ImGui::IsMouseDragging(ImGuiMouseButton_Left))
@@ -524,20 +526,20 @@ void PostContentViewer::showPostContent()
             //keep same aspect ratio
             auto x = ImGui::GetIO().MouseDelta.x;
             auto y = ImGui::GetIO().MouseDelta.y;
-            auto new_width = post_picture_width + x;
-            auto new_height = post_picture_height + y;
+            auto new_width = display_image->resizedWidth + x;
+            auto new_height = display_image->resizedHeight + y;
             auto new_area = new_width * new_height;
-            new_width = std::sqrt(post_picture_ratio * new_area);
+            new_width = std::sqrt(display_image->pictureRatio * new_area);
             new_height = new_area / new_width;
-            post_picture_width = std::max(100.f,new_width);
-            post_picture_height = std::max(100.f,new_height);
+            display_image->resizedWidth = std::max(100.f,new_width);
+            display_image->resizedHeight = std::max(100.f,new_height);
         }
 
         if(mediaState.duration > 0.0f)
         {
             float progress = mediaState.timePosition / mediaState.duration;
             auto progressHeight = 5.f;
-            ImGui::ProgressBar(progress, ImVec2(post_picture_width, progressHeight),"");
+            ImGui::ProgressBar(progress, ImVec2(display_image->resizedWidth, progressHeight),"");
             if(ImGui::Button(reinterpret_cast<const char*>(mediaState.paused ? ICON_FA_PLAY "##_playPauseMedia" : ICON_FA_PAUSE "##_playPauseMedia")))
             {
                 int shouldPause = !mediaState.paused;
@@ -554,26 +556,26 @@ void PostContentViewer::showPostContent()
                 mpv_set_property_async(mpv,0,"volume",MPV_FORMAT_DOUBLE,&volume);
             }
         }
-        if(currentPost->isGallery && !currentPost->gallery.images.empty())
+        if(currentPost->isGallery && !gallery.images.empty())
         {
             if(ImGui::Button(fmt::format(reinterpret_cast<const char*>(ICON_FA_ARROW_LEFT "##{}_previmage"),currentPost->id).c_str()))
             {
-                currentPost->gallery.currentImage--;
-                if(currentPost->gallery.currentImage < 0) currentPost->gallery.currentImage = (int)currentPost->gallery.images.size() - 1;
+                gallery.currentImage--;
+                if(gallery.currentImage < 0) gallery.currentImage = (int)gallery.images.size() - 1;
             }
             auto btnSize = ImGui::GetItemRectSize();
-            auto text = fmt::format("{}/{}",currentPost->gallery.currentImage+1,currentPost->gallery.images.size());
+            auto text = fmt::format("{}/{}",gallery.currentImage+1,gallery.images.size());
             auto textSize = ImGui::CalcTextSize(text.c_str());
-            auto space = (post_picture_width - btnSize.x * 2.f);
+            auto space = (display_image->resizedWidth - btnSize.x * 2.f);
             ImGui::SameLine((space - textSize.x / 2.f)/2.f);
             ImGui::Text("%s",text.c_str());
             auto windowWidth = ImGui::GetWindowContentRegionMax().x;
-            auto remainingWidth = windowWidth - post_picture_width;
+            auto remainingWidth = windowWidth - display_image->resizedWidth;
             ImGui::SameLine(windowWidth-remainingWidth-btnSize.x*2.f/3.f);
             if(ImGui::Button(fmt::format(reinterpret_cast<const char*>(ICON_FA_ARROW_RIGHT "##{}_nextimage"),currentPost->id).c_str()))
             {
-                currentPost->gallery.currentImage++;
-                if(currentPost->gallery.currentImage >= (int)currentPost->gallery.images.size()) currentPost->gallery.currentImage = 0;
+                gallery.currentImage++;
+                if(gallery.currentImage >= (int)gallery.images.size()) gallery.currentImage = 0;
             }
         }
     }

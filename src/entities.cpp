@@ -153,19 +153,19 @@ post::post(const nlohmann::json& json)
                 {
                     pi.mediaId = item["media_id"].get<std::string>();
                 }
-                gallery.images.emplace_back(std::make_unique<post_gallery_item>(pi));
+                gallery.push_back(pi);
             }
         }
 
         if(json.contains("media_metadata") && json["media_metadata"].is_object())
         {
             const auto& mediaMetadataJson = json["media_metadata"];
-            for(const auto& galImage : gallery.images)
+            for(auto&& galImage : gallery)
             {
-                if(mediaMetadataJson.contains(galImage->mediaId) &&
-                   mediaMetadataJson[galImage->mediaId].is_object())
+                if(mediaMetadataJson.contains(galImage.mediaId) &&
+                   mediaMetadataJson[galImage.mediaId].is_object())
                 {
-                    const auto& mediaMetadataObjJson = mediaMetadataJson[galImage->mediaId];
+                    const auto& mediaMetadataObjJson = mediaMetadataJson[galImage.mediaId];
                     if(mediaMetadataObjJson.contains("p") &&
                        mediaMetadataObjJson["p"].is_array() &&
                        !mediaMetadataObjJson["p"].empty())
@@ -173,7 +173,7 @@ post::post(const nlohmann::json& json)
                         const auto& lastPreviewItem = mediaMetadataObjJson["p"].back();
                         if(lastPreviewItem.contains("u") && lastPreviewItem["u"].is_string())
                         {
-                            galImage->url = lastPreviewItem["u"].get<std::string>();
+                            galImage.url = lastPreviewItem["u"].get<std::string>();
                         }
                     }
                 }
