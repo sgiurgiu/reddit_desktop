@@ -64,7 +64,6 @@ void SubredditWindow::loadListingsFromConnection(const listing& listingResponse)
 {
     posts_list tmpPosts;
 
-
     for(auto& child:listingResponse.json["data"]["children"])
     {
         auto kind = child["kind"].get<std::string>();
@@ -90,18 +89,16 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
         after = afterJson.get<std::string>();
     }
     listingErrorMessage.clear();    
-    posts.clear();
-    posts.reserve(receivedPosts.size());
-    std::move(receivedPosts.begin(), receivedPosts.end(), std::back_inserter(posts));
+    posts = std::move(receivedPosts);
     scrollToTop = true;
     for(auto&& p : posts)
     {
-        auto thumbnail = p->thumbnail;
-        if(!p->thumbnail.empty() && p->thumbnail != "self" && p->thumbnail != "default")
+        if(!p.post->thumbnail.empty() && p.post->thumbnail != "self" &&
+                p.post->thumbnail != "default")
         {
             auto resourceConnection = client->makeResourceClientConnection();
             resourceConnection->connectionCompleteHandler(
-                        [post=p.get(),this](const boost::system::error_code&,
+                        [post=&p,this](const boost::system::error_code&,
                              const resource_response& response)
             {
                 if(response.status == 200)
@@ -111,19 +108,19 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
                     boost::asio::post(this->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,this,post,data,width,height,channels));
                 }
             });
-            resourceConnection->getResource(p->thumbnail);
+            resourceConnection->getResource(p.post->thumbnail);
         }
     }
 }
-void SubredditWindow::setPostThumbnail(post* p,unsigned char* data, int width, int height, int channels)
+void SubredditWindow::setPostThumbnail(PostDisplay* p,unsigned char* data, int width, int height, int channels)
 {
     ((void)channels);
     auto image = Utils::loadImage(data,width,height,STBI_rgb_alpha);
-    p->thumbnail_picture = std::move(image);
-    if(p->over18 && shouldBlurPictures)
+    p->thumbnailPicture = std::move(image);
+    if(p->post->over18 && shouldBlurPictures)
     {
         auto blurredImage = Utils::loadBlurredImage(data,width,height,STBI_rgb_alpha);
-        p->blurred_thumbnail_picture = std::move(blurredImage);
+        p->blurredThumbnailPicture = std::move(blurredImage);
     }
     stbi_image_free(data);    
 }
@@ -178,9 +175,9 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::PushStyleColor(ImGuiCol_Button,ImVec4(1.0f,1.0f,1.0f,0.0f));
         ImGui::Dummy(ImVec2(upvotesButtonsIdent/2.f,0.f));ImGui::SameLine();
         ImGui::Button(reinterpret_cast<const char*>(ICON_FA_ARROW_UP));
-        auto scoreIdent = (maxScoreWidth - ImGui::CalcTextSize(p->humanScore.c_str()).x)/2.f;
+        auto scoreIdent = (maxScoreWidth - ImGui::CalcTextSize(p.post->humanScore.c_str()).x)/2.f;
         ImGui::Dummy(ImVec2(scoreIdent,0.f));ImGui::SameLine();
-        ImGui::Text("%s",p->humanScore.c_str());
+        ImGui::Text("%s",p.post->humanScore.c_str());
         if(ImGui::GetItemRectSize().x > maxScoreWidth) maxScoreWidth = ImGui::GetItemRectSize().x;
         ImGui::Dummy(ImVec2(upvotesButtonsIdent/2.f,0.f));ImGui::SameLine();
         ImGui::Button(reinterpret_cast<const char*>(ICON_FA_ARROW_DOWN));        
@@ -190,30 +187,31 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         auto height = ImGui::GetCursorPosY();
         ImGui::SameLine();
 
-        if(p->over18 && shouldBlurPictures && p->blurred_thumbnail_picture && !p->shouldShowUnblurredImage)
+        if(p.post->over18 && shouldBlurPictures && p.blurredThumbnailPicture &&
+                !p.shouldShowUnblurredImage)
         {
-            ImGui::Image((void*)(intptr_t)p->blurred_thumbnail_picture->textureId,
-                         ImVec2(p->blurred_thumbnail_picture->width,p->blurred_thumbnail_picture->height));
+            ImGui::Image((void*)(intptr_t)p.blurredThumbnailPicture->textureId,
+                         ImVec2(p.blurredThumbnailPicture->width,p.blurredThumbnailPicture->height));
             height = std::max(height,ImGui::GetCursorPosY());
             auto rectMin = ImGui::GetItemRectMin();
             auto rectMax = ImGui::GetItemRectMax();
             if(ImGui::IsMouseHoveringRect(rectMin,rectMax) && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
             {
-                p->shouldShowUnblurredImage = true;
+                p.shouldShowUnblurredImage = true;
             }
             ImGui::SameLine();
         }
-        else if(p->thumbnail_picture)
+        else if(p.thumbnailPicture)
         {
-            ImGui::Image((void*)(intptr_t)p->thumbnail_picture->textureId,
-                         ImVec2(p->thumbnail_picture->width,p->thumbnail_picture->height));
+            ImGui::Image((void*)(intptr_t)p.thumbnailPicture->textureId,
+                         ImVec2(p.thumbnailPicture->width,p.thumbnailPicture->height));
             height = std::max(height,ImGui::GetCursorPosY());
             auto rectMin = ImGui::GetItemRectMin();
             auto rectMax = ImGui::GetItemRectMax();
             if(ImGui::IsMouseHoveringRect(rectMin,rectMax) && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) &&
-                    p->blurred_thumbnail_picture)
+                    p.blurredThumbnailPicture)
             {
-                p->shouldShowUnblurredImage = false;
+                p.shouldShowUnblurredImage = false;
             }
             ImGui::SameLine();
         }
@@ -221,12 +219,12 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::BeginGroup();
 
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Bold)]);
-        ImGui::Text("%s",p->subreddit.c_str());
+        ImGui::Text("%s",p.post->subreddit.c_str());
         ImGui::PopFont();
         ImGui::SameLine();        
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Light)]);
-        ImGui::Text("Posted by %s %s",p->author.c_str(),p->humanReadableTimeDifference.c_str());
-        if(p->over18)
+        ImGui::Text("Posted by %s %s",p.post->author.c_str(),p.post->humanReadableTimeDifference.c_str());
+        if(p.post->over18)
         {
             ImGui::SameLine();
             ImGui::TextColored(ImVec4(1.f,0.f,0.f,1.f),"%s",reinterpret_cast<const char*>(ICON_FA_BOMB));
@@ -240,9 +238,9 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::PopFont();
 
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Medium_Big)]);
-        if(!p->title.empty())
+        if(!p.post->title.empty())
         {
-            ImGui::TextWrapped("%s",p->title.c_str());
+            ImGui::TextWrapped("%s",p.post->title.c_str());
         }
         else
         {
@@ -250,15 +248,15 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         }
         ImGui::PopFont();
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Light)]);
-        ImGui::Text("(%s)",p->domain.c_str());
+        ImGui::Text("(%s)",p.post->domain.c_str());
         ImGui::PopFont();
 
         auto normalPositionY = ImGui::GetCursorPosY();
         auto desiredPositionY = height - ImGui::GetFrameHeightWithSpacing();
         if(normalPositionY < desiredPositionY) ImGui::SetCursorPosY(desiredPositionY);
-        if(ImGui::Button(p->commentsText.c_str()))
+        if(ImGui::Button(p.post->commentsText.c_str()))
         {
-            commentsSignal(p->id,p->title);
+            commentsSignal(p.post->id,p.post->title);
         }
         ImGui::EndGroup();
         ImGui::Separator();

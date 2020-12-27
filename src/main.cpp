@@ -9,6 +9,7 @@
 #include <vector>
 #include <SDL.h>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/executor_work_guard.hpp>
 
 #if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
 #include <GL/gl3w.h>    // Initialize with gl3wInit()
@@ -162,6 +163,9 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
 #endif
     boost::asio::io_context uiContext;
     RedditDesktop desktop(uiContext.get_executor());
+    using work_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
+    work_guard_type work = boost::asio::make_work_guard(uiContext.get_executor());
+
     MarkdownRenderer::InitEngine();
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     // Main loop
@@ -169,8 +173,7 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
     while (!done)
     {
         //execute whatever work we have in the UI thread
-        uiContext.restart();
-        uiContext.run();
+        uiContext.poll_one();
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
         // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
@@ -217,6 +220,8 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
             done = desktop.quitSelected();
         }
     }
+    work.reset();
+    uiContext.stop();
     MarkdownRenderer::ReleaseEngine();
 }
 
@@ -243,7 +248,8 @@ void ShowMarkdownWindow(bool *open)
     }
     ImGui::SetWindowFocus();
 
-    MarkdownRenderer::RenderMarkdown(body);
+    MarkdownRenderer markdown(body);
+    markdown.RenderMarkdown();
 
     ImGui::End();
 }

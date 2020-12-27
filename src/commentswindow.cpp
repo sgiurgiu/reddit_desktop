@@ -106,34 +106,38 @@ void CommentsWindow::setComments(comments_list receivedComments)
 {
     listingErrorMessage.clear();
     comments.reserve(comments.size() + receivedComments.size());
-    std::move(receivedComments.begin(), receivedComments.end(), std::back_inserter(comments));
+    for(auto&& c : receivedComments)
+    {
+        comments.emplace_back(std::make_unique<DisplayComment>(std::move(c)));
+    }
 }
 void CommentsWindow::setParentPost(post_ptr receivedParentPost)
 {
     listingErrorMessage.clear();
-    parent_post = receivedParentPost;
-    postContentViewer = std::make_unique<PostContentViewer>(client,uiExecutor,parent_post);
+    parentPost = receivedParentPost;
+    postContentViewer = std::make_unique<PostContentViewer>(client,uiExecutor,parentPost);
 }
 
-void CommentsWindow::showComment(comment_ptr c)
+void CommentsWindow::showComment(DisplayComment* c)
 {
-    if(ImGui::TreeNodeEx(fmt::format("{} - {} points, {}",c->author,c->humanScore,c->humanReadableTimeDifference).c_str(),ImGuiTreeNodeFlags_DefaultOpen))
+    if(ImGui::TreeNodeEx(fmt::format("{} - {} points, {}",c->comment->author,
+                                     c->comment->humanScore,c->comment->humanReadableTimeDifference).c_str(),ImGuiTreeNodeFlags_DefaultOpen))
     {
-        MarkdownRenderer::RenderMarkdown(c->body);
+        c->renderer.RenderMarkdown();
         ImGui::NewLine();
-        ImGui::Button(fmt::format("{}##{}_up",reinterpret_cast<const char*>(ICON_FA_ARROW_UP),c->id).c_str());ImGui::SameLine();
-        ImGui::Button(fmt::format("{}##{}_down",reinterpret_cast<const char*>(ICON_FA_ARROW_DOWN),c->id).c_str());ImGui::SameLine();
-        ImGui::Button(fmt::format("save##{}_save",c->id).c_str());ImGui::SameLine();
-        ImGui::Button(fmt::format("reply##{}_reply",c->id).c_str());
-        if(c->hasMoreReplies)
+        ImGui::Button(fmt::format("{}##{}_up",reinterpret_cast<const char*>(ICON_FA_ARROW_UP),c->comment->id).c_str());ImGui::SameLine();
+        ImGui::Button(fmt::format("{}##{}_down",reinterpret_cast<const char*>(ICON_FA_ARROW_DOWN),c->comment->id).c_str());ImGui::SameLine();
+        ImGui::Button(fmt::format("save##{}_save",c->comment->id).c_str());ImGui::SameLine();
+        ImGui::Button(fmt::format("reply##{}_reply",c->comment->id).c_str());
+        if(c->comment->hasMoreReplies)
         {
             ImGui::SameLine();
-            ImGui::Button(fmt::format("more replies##{}_more_replies",c->id).c_str());
+            ImGui::Button(fmt::format("more replies##{}_more_replies",c->comment->id).c_str());
         }
         ImGui::Dummy(ImVec2(0.0f, ImGui::GetFontSize()/2.f));
         for(const auto& reply : c->replies)
         {
-            showComment(reply);
+            showComment(reply.get());
         }
         ImGui::TreePop();
     }
@@ -162,25 +166,25 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "%s",listingErrorMessage.c_str());
     }
 
-    if(parent_post)
+    if(parentPost)
     {
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Bold)]);
-        ImGui::TextWrapped("%s",parent_post->title.c_str());
+        ImGui::TextWrapped("%s",parentPost->title.c_str());
         ImGui::PopFont();
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Light)]);
-        ImGui::Text("Posted by %s %s",parent_post->author.c_str(),parent_post->humanReadableTimeDifference.c_str());
+        ImGui::Text("Posted by %s %s",parentPost->author.c_str(),parentPost->humanReadableTimeDifference.c_str());
         ImGui::PopFont();
         ImGui::NewLine();
 
         postContentViewer->showPostContent();
 
-        ImGui::Button(fmt::format("Comment##{}_comment",parent_post->id).c_str());
+        ImGui::Button(fmt::format("Comment##{}_comment",parentPost->id).c_str());
 
         ImGui::Separator();
     }
     for(const auto& c : comments)
     {
-        showComment(c);
+        showComment(c.get());
         ImGui::Separator();
     }
 

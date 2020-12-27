@@ -8,13 +8,6 @@ std::string make_user_agent(const user& u)
 {
     return fmt::format("{}:{}:v{} (by /u/{}",u.website,u.app_name,REDDITDESKTOP_VERSION,u.username);
 }
-gl_image::~gl_image()
-{
-    if(textureId > 0)
-    {
-        glDeleteTextures(1,&textureId);
-    }
-}
 
 namespace {
     std::unique_ptr<reddit_video> makeRedditMediaObject(const nlohmann::json& json)
@@ -369,7 +362,7 @@ comment::comment(const nlohmann::json& json)
             else if(child.contains("kind") && child["kind"].get<std::string>() == "t1" &&
                     child.contains("data") && child["data"].is_object())
             {
-                replies.emplace_back(std::make_shared<comment>(child["data"]));
+                replies.emplace_back(std::make_unique<comment>(child["data"]));
             }
         }
     }

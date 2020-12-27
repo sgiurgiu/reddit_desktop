@@ -7,6 +7,7 @@
 #include "entities.h"
 #include <SDL_video.h>
 #include <atomic>
+#include "resizableglimage.h"
 
 struct mpv_handle;
 struct mpv_render_context;
@@ -61,10 +62,10 @@ private:
     struct gif_image
     {
         gif_image(){}
-        gif_image(gl_image_ptr img, int delay):
+        gif_image(ResizableGLImagePtr img, int delay):
             img(std::move(img)),delay(delay)
         {}
-        gl_image_ptr img;
+        ResizableGLImagePtr img;
         int delay;
         std::chrono::steady_clock::time_point lastDisplay;
         bool displayed = false;
@@ -76,10 +77,10 @@ private:
         int currentImage = 0;
     };
     std::unique_ptr<post_gif> gif;
-    gl_image_ptr postPicture;
+    ResizableGLImagePtr postPicture;
     struct post_gallery
     {
-        std::vector<gl_image_ptr> images;
+        std::vector<ResizableGLImagePtr> images;
         int currentImage = 0;
     };
     post_gallery gallery;

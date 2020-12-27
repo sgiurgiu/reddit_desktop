@@ -111,10 +111,12 @@ PostContentViewer::~PostContentViewer()
     if(mpv_gl)
     {
         mpv_render_context_free(mpv_gl);
+        mpv_gl = nullptr;
     }
     if(mpv)
     {
         mpv_detach_destroy(mpv);
+        mpv = nullptr;
     }
     mpvEventIOContextWork.reset();
     mpvEventIOContext.stop();
@@ -363,7 +365,7 @@ void PostContentViewer::mpvRenderUpdate(void *context)
 
 void PostContentViewer::setPostMediaFrame()
 {
-    if(!currentPost) return;
+    if(!currentPost || !mpv_gl) return;
     uint64_t flags = mpv_render_context_update(mpv_gl);
     if (!(flags & MPV_RENDER_UPDATE_FRAME))
     {
@@ -375,7 +377,7 @@ void PostContentViewer::setPostMediaFrame()
         glGenFramebuffers(1, &mediaFramebufferObject);
 
         glBindFramebuffer(GL_FRAMEBUFFER, mediaFramebufferObject);
-        postPicture = std::make_shared<gl_image>();
+        postPicture = std::make_shared<ResizableGLImage>();
         glGenTextures(1, &postPicture->textureId);
         glBindTexture(GL_TEXTURE_2D, postPicture->textureId);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (int)mediaState.width, (int)mediaState.height, 0,
@@ -419,7 +421,6 @@ void PostContentViewer::setPostGif(unsigned char* data, int width, int height, i
 {
     auto gif = std::make_unique<post_gif>();
 
-    std::vector<std::unique_ptr<gl_image>> images;
     int stride_bytes = width * channels;
     for (int i=0; i<count; ++i)
     {
@@ -445,7 +446,7 @@ void PostContentViewer::setPostImage(unsigned char* data, int width, int height,
 
 void PostContentViewer::showPostContent()
 {
-    gl_image_ptr display_image = postPicture;
+    ResizableGLImagePtr display_image = postPicture;
 
     if(gif)
     {
@@ -582,7 +583,8 @@ void PostContentViewer::showPostContent()
 
     if(!currentPost->selfText.empty())
     {
-        MarkdownRenderer::RenderMarkdown(currentPost->selfText);
+        MarkdownRenderer markdown(currentPost->selfText);
+        markdown.RenderMarkdown();
     }
     else if(!display_image && loadingPostContent)
     {

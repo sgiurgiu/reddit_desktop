@@ -11,7 +11,7 @@
 #include "redditlistingconnection.h"
 #include "utils.h"
 #include "postcontentviewer.h"
-
+#include "markdownrenderer.h"
 
 class CommentsWindow
 {
@@ -30,12 +30,29 @@ public:
     }
     void setFocused();
 private:
+    struct DisplayComment;
+    using DisplayCommentPtr = std::unique_ptr<DisplayComment>;
+    using DisplayCommentList = std::vector<DisplayCommentPtr>;
+    struct DisplayComment
+    {
+        DisplayComment(comment_ptr comment):
+        comment(std::move(comment)),renderer(this->comment->body)
+        {
+            for(auto&& c : this->comment->replies)
+            {
+                replies.emplace_back(std::make_unique<DisplayComment>(std::move(c)));
+            }
+        }
+        comment_ptr comment;
+        MarkdownRenderer renderer;
+        DisplayCommentList replies;
+    };
     void loadListingsFromConnection(const listing& listingResponse);
     void setErrorMessage(std::string errorMessage);
     void loadListingChildren(const nlohmann::json& children);
     void setComments(comments_list receivedComments);
     void setParentPost(post_ptr receivedParentPost);
-    void showComment(comment_ptr c);
+    void showComment(DisplayComment* c);
 private:
 
     std::string postId;
@@ -46,8 +63,8 @@ private:
     std::string windowName;
     std::string listingErrorMessage;
     bool willBeFocused = false;
-    comments_list comments;
-    post_ptr parent_post;    
+    DisplayCommentList comments;
+    post_ptr parentPost;
     const boost::asio::io_context::executor_type& uiExecutor;
     std::unique_ptr<PostContentViewer> postContentViewer;
 };

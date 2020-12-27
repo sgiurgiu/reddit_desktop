@@ -99,18 +99,18 @@ stbi_uc * Utils::decodeGifData(stbi_uc const *buffer, int len, int *x, int *y,
 {
     return stbi_load_gif_from_memory(buffer, len, delays, x, y, count, channels_in_file, STBI_rgb_alpha);
 }
-gl_image_ptr Utils::loadBlurredImage(unsigned char* data, int width, int height, int channels)
+ResizableGLImagePtr Utils::loadBlurredImage(unsigned char* data, int width, int height, int channels)
 {
-    if(!data) return gl_image_ptr();
+    if(!data) return ResizableGLImagePtr();
 
     float sigma = 15;
     iir_gauss_blur(width, height, channels, data, sigma);
     return loadImage(data,width,height,channels);
 }
-gl_image_ptr Utils::loadImage(unsigned char* data, int width, int height, int channels)
+ResizableGLImagePtr Utils::loadImage(unsigned char* data, int width, int height, int channels)
 {
-    if(!data) return gl_image_ptr();
-    auto image = std::make_shared<gl_image>();
+    if(!data) return ResizableGLImagePtr();
+    auto image = std::make_shared<ResizableGLImage>();
 
     //SDL_CreateTexture();
     //SDL_UpdateTexture()

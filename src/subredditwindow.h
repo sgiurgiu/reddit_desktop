@@ -9,7 +9,7 @@
 #include "redditclient.h"
 #include "redditlistingconnection.h"
 #include "utils.h"
-
+#include "resizableglimage.h"
 
 class SubredditWindow
 {
@@ -25,12 +25,20 @@ public:
     void setFocused();
     ~SubredditWindow();
 private:
-
+    struct PostDisplay {
+        PostDisplay(post_ptr post):post(post)
+        {}
+        post_ptr post;
+        ResizableGLImagePtr thumbnailPicture;
+        ResizableGLImagePtr blurredThumbnailPicture;
+        bool shouldShowUnblurredImage = false;
+    };
+    using posts_list = std::vector<PostDisplay>;
     void showWindowMenu();
     void loadListingsFromConnection(const listing& listingResponse);
     void setListings(posts_list receivedPosts, nlohmann::json beforeJson,nlohmann::json afterJson);
     void setErrorMessage(std::string errorMessage);
-    void setPostThumbnail(post* p,unsigned char* data, int width, int height, int channels);
+    void setPostThumbnail(PostDisplay* p,unsigned char* data, int width, int height, int channels);
 private:    
     int id;
     std::string subreddit;

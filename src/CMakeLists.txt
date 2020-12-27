@@ -37,6 +37,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         mediastreamingconnection.cpp
         htmlparser.cpp
         postcontentviewer.cpp
+        resizableglimage.cpp
         )
 
 add_executable(${EXECUTABLE_NAME}

@@ -6,7 +6,6 @@
 #include <vector>
 #include <memory>
 #include <chrono>
-#include <glad/glad.h>
 
 struct user
 {
@@ -62,19 +61,8 @@ struct images_preview
     image_target source;
     std::vector<image_target> resolutions;
 };
-struct gl_image
-{
-    GLuint textureId = 0;
-    int width = 0;
-    int height = 0;
-    int channels = 0;
-    int resizedWidth = 0;
-    int resizedHeight = 0;
-    bool isResized = false;
-    float pictureRatio = 0.0f;
-    ~gl_image();
-};
-using gl_image_ptr = std::shared_ptr<gl_image>;
+
+
 struct oembed
 {
     int height;
@@ -146,8 +134,6 @@ struct post
     std::string url;
     std::string urlOverridenByDest;
     std::vector<images_preview> previews;
-    gl_image_ptr thumbnail_picture;
-    gl_image_ptr blurred_thumbnail_picture;
     std::string authorFullName;
     std::string author;
     std::string domain;
@@ -156,10 +142,8 @@ struct post
     bool isGallery = false;
     std::vector<post_gallery_item> gallery;
     bool over18 = false;
-    bool shouldShowUnblurredImage = false;
 };
 using post_ptr = std::shared_ptr<post>;
-using posts_list = std::vector<post_ptr>;
 struct comment;
 using comment_ptr = std::shared_ptr<comment>;
 using comments_list = std::vector<comment_ptr>;
