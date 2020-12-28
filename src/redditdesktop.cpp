@@ -90,8 +90,45 @@ void RedditDesktop::loadUserInformation(user_info_ptr info)
 
     unsortedSubscribedSubreddits.clear();
     loadSubreddits("/subreddits/mine/subscriber?show=all&limit=100",current_access_token.data);
+    loadMultis("/api/multi/mine",current_access_token.data);
 }
+void RedditDesktop::loadMultis(const std::string& url, const access_token& token)
+{
+    auto multisConnection = client.makeListingClientConnection();
+    multisConnection->connectionCompleteHandler([self=shared_from_this()](const boost::system::error_code& ec,
+                                                 const client_response<listing>& response)
+     {
+        if(ec)
+        {
+            boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,ec.message()));
+        }
+        else
+        {
+            if(response.status >= 400)
+            {
+                boost::asio::post(self->uiExecutor,
+                                  std::bind(&RedditDesktop::setConnectionErrorMessage,self,response.body));
+            }
+            else
+            {
+                multireddit_list srs;
+                for(const auto& child: response.data.json)
+                {
+                    srs.emplace_back(child["data"]);
+                }
 
+                boost::asio::post(self->uiExecutor,
+                                  std::bind(&RedditDesktop::setUserMultis,self,std::move(srs)));
+            }
+        }
+     });
+     multisConnection->list(url,token);
+}
+void RedditDesktop::setUserMultis(multireddit_list multis)
+{
+    userMultis.clear();
+    std::copy(multis.begin(), multis.end(), std::back_inserter(userMultis));
+}
 void RedditDesktop::loadSubscribedSubreddits(subreddit_list srs)
 {
     if(!srs.empty())
@@ -237,10 +274,41 @@ void RedditDesktop::showSubredditsWindow()
         return;
     }
 
+    if (ImGui::BeginTabBar("SubredditsTabBar", ImGuiTabBarFlags_None))
+    {
+        if (ImGui::BeginTabItem("Subreddits"))
+        {
+            showSubredditsTab();
+            ImGui::EndTabItem();
+        }
+
+        if (ImGui::BeginTabItem("Multireddits"))
+        {
+            showMultisTab();
+            ImGui::EndTabItem();
+        }
+
+        ImGui::EndTabBar();
+    }
+    ImGui::End();
+}
+void RedditDesktop::showMultisTab()
+{
+    for(const auto& sr : userMultis)
+    {
+        if(ImGui::Selectable(sr.displayName.c_str()))
+        {
+            addSubredditWindow(sr.path);
+        }
+    }
+}
+void RedditDesktop::showSubredditsTab()
+{
     if(ImGui::Button(reinterpret_cast<const char*>(ICON_FA_REFRESH)))
     {
         subscribedSubreddits.clear();
-        loadUserInformation(info_user);
+        unsortedSubscribedSubreddits.clear();
+        loadSubreddits("/subreddits/mine/subscriber?show=all&limit=100",current_access_token.data);
     }
     ImGui::SameLine();
     ImGui::Text("Sort:");
@@ -273,9 +341,6 @@ void RedditDesktop::showSubredditsWindow()
             addSubredditWindow(sr.displayNamePrefixed);
         }
     }
-
-
-    ImGui::End();
 }
 
 void RedditDesktop::showErrorDialog()
@@ -367,7 +432,8 @@ void RedditDesktop::showOpenSubredditWindow()
         openSubredditWindow = false;
     }
     //ImGui::SetNextWindowSizeConstraints(ImVec2(0, -1),    ImVec2(FLT_MAX, -1));//horizontal
-    if (ImGui::BeginPopupModal(OPENSUBREDDIT_WINDOW_POPUP_TITLE,nullptr,ImGuiWindowFlags_AlwaysAutoResize))
+    if (ImGui::BeginPopupModal(OPENSUBREDDIT_WINDOW_POPUP_TITLE,nullptr,
+                               ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::Text("Enter subreddit name to open");
         char dummy_text[50] = { 0 };

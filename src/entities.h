@@ -209,6 +209,25 @@ struct subreddit
     bool userIsSubscriber = false;
     bool userIsMuted = false;
 };
+struct multireddit
+{
+    multireddit(){}
+    multireddit(const nlohmann::json& json);
+    std::string name;
+    std::string owner;
+    std::string ownerId;
+    uint64_t createdAt;
+    std::string humanReadableTimeDifference;
+    std::string description;
+    std::string displayName;
+    bool over18 = false;
+    bool canEdit = false;
+    int64_t subscribers = 0;
+    std::string path;
+
+
+};
 //using subreddit_ptr = std::shared_ptr<subreddit>;
 using subreddit_list = std::vector<subreddit>;
+using multireddit_list = std::vector<multireddit>;
 #endif // ENTITIES_H

@@ -32,6 +32,8 @@ public:
     }
 private:
     void showSubredditsWindow();
+    void showSubredditsTab();
+    void showMultisTab();
     void showMainMenuBar();
     void showMenuFile();
     void showOpenSubredditWindow();
@@ -43,6 +45,8 @@ private:
     void loadSubscribedSubreddits(subreddit_list srs);
     void loadSubreddits(const std::string& url, const access_token& token);
     void sortSubscribedSubreddits();
+    void loadMultis(const std::string& url, const access_token& token);
+    void setUserMultis(multireddit_list multis);
 private:
     const boost::asio::io_context::executor_type& uiExecutor;
     RedditClient client;
@@ -62,6 +66,7 @@ private:
     std::string connectionErrorMessage;
     subreddit_list subscribedSubreddits;
     subreddit_list unsortedSubscribedSubreddits;
+    multireddit_list userMultis;
     float topPosAfterMenuBar = 0.0f;
     enum class SubredditsSorting
     {

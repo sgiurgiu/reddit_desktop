@@ -32,7 +32,11 @@ void SubredditWindow::loadSubreddit()
     else
     {
         windowName = fmt::format("{}##{}",subreddit,id);
-        if(!target.starts_with("r/") && !target.starts_with("/r/")) target = "/r/" + target;
+        if(!target.starts_with("r/") && !target.starts_with("/r/") &&
+            (!target.starts_with("/user/") && target.find("/m/") == target.npos))
+        {
+            target = "/r/" + target;
+        }
     }
 
     if(!target.starts_with("/")) target = "/" + target;

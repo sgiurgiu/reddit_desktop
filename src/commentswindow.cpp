@@ -14,7 +14,6 @@ CommentsWindow::CommentsWindow(const std::string& postId,
                                RedditClient* client,
                                const boost::asio::io_context::executor_type& executor):
     postId(postId),title(title),token(token),client(client),
-    //connection(),
     uiExecutor(executor)
 {    
 
@@ -22,7 +21,6 @@ CommentsWindow::CommentsWindow(const std::string& postId,
 CommentsWindow::~CommentsWindow()
 {
     if(postContentViewer) postContentViewer->stopPlayingMedia();
-    //connection->clearAllSlots();
 }
 void CommentsWindow::loadComments()
 {
@@ -33,13 +31,15 @@ void CommentsWindow::loadComments()
         if(!self->windowOpen) return;
         if(ec)
         {
-           boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,self,ec.message()));
+           boost::asio::post(self->uiExecutor,
+                             std::bind(&CommentsWindow::setErrorMessage,self,ec.message()));
         }
         else
         {
            if(response.status >= 400)
            {
-                boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,self,response.body));
+                boost::asio::post(self->uiExecutor,
+                                  std::bind(&CommentsWindow::setErrorMessage,self,response.body));
            }
            else
            {

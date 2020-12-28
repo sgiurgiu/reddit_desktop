@@ -493,3 +493,49 @@ subreddit::subreddit(const nlohmann::json& json)
     }
 
 }
+
+multireddit::multireddit(const nlohmann::json& json)
+{
+    if(json.contains("name") && json["name"].is_string())
+    {
+        name =json["name"].get<std::string>();
+    }
+    if(json.contains("owner") && json["owner"].is_string())
+    {
+        owner =json["owner"].get<std::string>();
+    }
+    if(json.contains("owner_id") && json["owner_id"].is_string())
+    {
+        ownerId =json["owner_id"].get<std::string>();
+    }
+    if(json.contains("created_utc") && json["created_utc"].is_number())
+    {
+        createdAt = json["created_utc"].get<uint64_t>();
+        humanReadableTimeDifference = Utils::getHumanReadableTimeAgo(createdAt);
+    }
+    if(json.contains("num_subscribers") && json["num_subscribers"].is_number())
+    {
+        subscribers = json["num_subscribers"].get<int64_t>();
+    }
+    if(json.contains("description_md") && json["description_md"].is_string())
+    {
+        description =json["description_md"].get<std::string>();
+    }
+    if(json.contains("display_name") && json["display_name"].is_string())
+    {
+        displayName =json["display_name"].get<std::string>();
+    }
+    if(json.contains("over18") && json["over18"].is_boolean())
+    {
+        over18 = json["over18"].get<bool>();
+    }
+    if(json.contains("can_edit") && json["can_edit"].is_boolean())
+    {
+        canEdit = json["can_edit"].get<bool>();
+    }
+    if(json.contains("path") && json["path"].is_string())
+    {
+        path =json["path"].get<std::string>();
+    }
+}
+
