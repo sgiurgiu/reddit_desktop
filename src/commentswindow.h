@@ -13,7 +13,7 @@
 #include "postcontentviewer.h"
 #include "markdownrenderer.h"
 
-class CommentsWindow
+class CommentsWindow : public std::enable_shared_from_this<CommentsWindow>
 {
 public:
     CommentsWindow(const std::string& postId,
@@ -22,6 +22,7 @@ public:
                    RedditClient* client,
                    const boost::asio::io_context::executor_type& executor);
     ~CommentsWindow();
+    void loadComments();
     bool isWindowOpen() const {return windowOpen;}
     void showWindow(int appFrameWidth,int appFrameHeight);
     std::string getPostId() const
@@ -54,19 +55,18 @@ private:
     void setParentPost(post_ptr receivedParentPost);
     void showComment(DisplayComment* c);
 private:
-
     std::string postId;
+    std::string title;
     bool windowOpen = true;
     access_token token;
     RedditClient* client;
-    RedditClient::RedditListingClientConnection connection;    
     std::string windowName;
     std::string listingErrorMessage;
     bool willBeFocused = false;
     DisplayCommentList comments;
     post_ptr parentPost;
     const boost::asio::io_context::executor_type& uiExecutor;
-    std::unique_ptr<PostContentViewer> postContentViewer;
+    std::shared_ptr<PostContentViewer> postContentViewer;
 };
 
 #endif // COMMENTSWINDOW_H

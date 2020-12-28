@@ -22,6 +22,10 @@ RedditDesktop::RedditDesktop(const boost::asio::io_context::executor_type& execu
     subredditsSortMethod[SubredditsSorting::Alphabetical_Descending] = "Alphabetical (Inverse)";
     current_user = Database::getInstance()->getRegisteredUser();
     shouldBlurPictures= Database::getInstance()->getBlurNSFWPictures();
+}
+
+void RedditDesktop::loginCurrentUser()
+{
     if(!current_user)
     {
         loginWindow.setShowLoginWindow(true);
@@ -29,20 +33,20 @@ RedditDesktop::RedditDesktop(const boost::asio::io_context::executor_type& execu
     else
     {
         auto loginConnection = client.makeLoginClientConnection();
-        loginConnection->connectionCompleteHandler([this](const boost::system::error_code& ec,const client_response<access_token>& token){
+        loginConnection->connectionCompleteHandler([self=shared_from_this()](const boost::system::error_code& ec,const client_response<access_token>& token){
             if(ec)
             {
-                boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,this,ec.message()));
+                boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,ec.message()));
             }
             else
             {
                 if(token.status >= 400)
                 {
-                    boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,this,token.body));
+                    boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,token.body));
                 }
                 else
                 {
-                    boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::loginSuccessful,this,token));
+                    boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::loginSuccessful,self,token));
                 }
             }
         });
@@ -50,27 +54,28 @@ RedditDesktop::RedditDesktop(const boost::asio::io_context::executor_type& execu
         loginConnection->login(current_user.value());
     }
 }
+
 void RedditDesktop::loginSuccessful(client_response<access_token> token)
 {
     current_access_token = token;
-    userInformationConnection = client.makeListingClientConnection();
-    userInformationConnection->connectionCompleteHandler([this](const boost::system::error_code& ec,
+    auto userInformationConnection = client.makeListingClientConnection();
+    userInformationConnection->connectionCompleteHandler([self=shared_from_this()](const boost::system::error_code& ec,
                                                  const client_response<listing>& response)
      {
         if(ec)
         {
-            boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,this,ec.message()));
+            boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,ec.message()));
         }
         else
         {
             if(response.status >= 400)
             {
-                boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,this,response.body));
+                boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,response.body));
             }
             else
             {
                 auto info = std::make_shared<user_info>(response.data.json);
-                boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::loadUserInformation,this,info));
+                boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::loadUserInformation,self,info));
             }
         }
      });
@@ -82,19 +87,37 @@ void RedditDesktop::loginSuccessful(client_response<access_token> token)
 void RedditDesktop::loadUserInformation(user_info_ptr info)
 {
     info_user = info;
-    subscribedSubredditsConnection = client.makeListingClientConnection();
-    subscribedSubredditsConnection->connectionCompleteHandler([this](const boost::system::error_code& ec,
+
+    unsortedSubscribedSubreddits.clear();
+    loadSubreddits("/subreddits/mine/subscriber?show=all&limit=100",current_access_token.data);
+}
+
+void RedditDesktop::loadSubscribedSubreddits(subreddit_list srs)
+{
+    if(!srs.empty())
+    {
+        auto url = fmt::format("/subreddits/mine/subscriber?show=all&limit=100&after={}&count={}",srs.back().name,srs.size());
+        loadSubreddits(url,current_access_token.data);
+    }    
+    std::copy(srs.begin(), srs.end(), std::back_inserter(unsortedSubscribedSubreddits));
+    subscribedSubreddits = unsortedSubscribedSubreddits;
+    sortSubscribedSubreddits();
+}
+void RedditDesktop::loadSubreddits(const std::string& url, const access_token& token)
+{
+    auto subscribedSubredditsConnection = client.makeListingClientConnection();
+    subscribedSubredditsConnection->connectionCompleteHandler([self=shared_from_this()](const boost::system::error_code& ec,
                                                  const client_response<listing>& response)
      {
         if(ec)
         {
-            boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,this,ec.message()));
+            boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,ec.message()));
         }
         else
         {
             if(response.status >= 400)
             {
-                boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,this,response.body));
+                boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,response.body));
             }
             else
             {
@@ -105,23 +128,11 @@ void RedditDesktop::loadUserInformation(user_info_ptr info)
                     srs.emplace_back(child["data"]);
                 }
 
-                boost::asio::post(this->uiExecutor,std::bind(&RedditDesktop::loadSubscribedSubreddits,this,std::move(srs)));
+                boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::loadSubscribedSubreddits,self,std::move(srs)));
             }
         }
      });
-    unsortedSubscribedSubreddits.clear();
-    subscribedSubredditsConnection->list("/subreddits/mine/subscriber?show=all&limit=100",current_access_token.data);
-}
-void RedditDesktop::loadSubscribedSubreddits(subreddit_list srs)
-{
-    if(!srs.empty())
-    {
-        auto url = fmt::format("/subreddits/mine/subscriber?show=all&limit=100&after={}&count={}",srs.back().name,srs.size());
-        subscribedSubredditsConnection->list(url,current_access_token.data);
-    }    
-    std::copy(srs.begin(), srs.end(), std::back_inserter(unsortedSubscribedSubreddits));
-    subscribedSubreddits = unsortedSubscribedSubreddits;
-    sortSubscribedSubreddits();
+     subscribedSubredditsConnection->list(url,token);
 }
 void RedditDesktop::sortSubscribedSubreddits()
 {
@@ -142,14 +153,16 @@ void RedditDesktop::sortSubscribedSubreddits()
 }
 void RedditDesktop::addSubredditWindow(std::string title)
 {    
-    subredditWindows.push_back(std::make_unique<SubredditWindow>(windowsCount++,title,current_access_token.data,&client,uiExecutor));
+    subredditWindows.emplace_back(std::make_shared<SubredditWindow>(windowsCount++,title,current_access_token.data,&client,uiExecutor));
+    subredditWindows.back()->loadSubreddit();
     subredditWindows.back()->showCommentsListener([this](const std::string& postId,const std::string& title){
-        auto it = std::find_if(commentsWindows.begin(),commentsWindows.end(),[&postId](const std::unique_ptr<CommentsWindow>& win){
+        auto it = std::find_if(commentsWindows.begin(),commentsWindows.end(),[&postId](const std::shared_ptr<CommentsWindow>& win){
             return win->getPostId() == postId;
         });
         if(it == commentsWindows.end())
         {
-            commentsWindows.push_back(std::make_unique<CommentsWindow>(postId,title,current_access_token.data,&client,uiExecutor));
+            commentsWindows.emplace_back(std::make_shared<CommentsWindow>(postId,title,current_access_token.data,&client,uiExecutor));
+            commentsWindows.back()->loadComments();
         }
         else
         {

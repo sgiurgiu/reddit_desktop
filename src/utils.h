@@ -40,6 +40,7 @@ public:
     static std::string getHumanReadableNumber(int number);
     static stbi_uc * decodeImageData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file);
     static stbi_uc * decodeGifData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file,int *count, int** delays);
+    static void openInBrowser(const std::string& url);
 private:
     static void AddFont(const unsigned int* fontData, const unsigned int fontDataSize, float fontSize);
 

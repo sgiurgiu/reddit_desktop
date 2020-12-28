@@ -7,8 +7,10 @@
 #include <boost/archive/iterators/base64_from_binary.hpp>
 #include <boost/archive/iterators/transform_width.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/process/spawn.hpp>
+#include <boost/process/search_path.hpp>
 #include <chrono>
-
+#include <iostream>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #define IIR_GAUSS_BLUR_IMPLEMENTATION
@@ -204,4 +206,19 @@ std::string Utils::getHumanReadableTimeAgo(uint64_t time)
     }
     const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(diff);
     return fmt::format("{} miliseconds ago", ms.count());
+}
+void Utils::openInBrowser(const std::string& url)
+{
+
+#ifdef RD_LINUX
+    auto browser = boost::process::search_path("xdg-open");
+    if(browser.empty())
+    {
+        std::cerr << "Cannot find xdg-open in PATH"<<std::endl;
+        return;
+    }
+    boost::process::spawn(browser,url);
+#elif defined(RD_WINDOWS)
+                    ShellExecuteA(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL);
+#endif
 }

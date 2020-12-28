@@ -7,34 +7,22 @@
 #include "spinner/spinner.h"
 #include "database.h"
 #include <boost/asio/post.hpp>
+#include "utils.h"
 
 SubredditWindow::SubredditWindow(int id, const std::string& subreddit,
                                  const access_token& token,
                                  RedditClient* client,
                                  const boost::asio::io_context::executor_type& executor):
     id(id),subreddit(subreddit),token(token),client(client),
-    connection(client->makeListingClientConnection()),uiExecutor(executor)
+    uiExecutor(executor)
 {
-    connection->connectionCompleteHandler([this](const boost::system::error_code& ec,
-                                const client_response<listing>& response)
-    {
-       if(ec)
-       {
-           boost::asio::post(this->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,this,ec.message()));
-       }
-       else
-       {
-           if(response.status >= 400)
-           {
-               boost::asio::post(this->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,this,response.body));
-           }
-           else
-           {
-               loadListingsFromConnection(response.data);
-           }
-       }
-    });
-
+    shouldBlurPictures= Database::getInstance()->getBlurNSFWPictures();
+}
+SubredditWindow::~SubredditWindow()
+{    
+}
+void SubredditWindow::loadSubreddit()
+{
     target = subreddit;
     if(subreddit.empty())
     {
@@ -48,13 +36,32 @@ SubredditWindow::SubredditWindow(int id, const std::string& subreddit,
     }
 
     if(!target.starts_with("/")) target = "/" + target;
+    loadSubredditListings(target,token);
+}
+void SubredditWindow::loadSubredditListings(const std::string& target,const access_token& token)
+{
+    auto connection = client->makeListingClientConnection();
+    connection->connectionCompleteHandler([self=shared_from_this()](const boost::system::error_code& ec,
+                                const client_response<listing>& response)
+    {
+       if(ec)
+       {
+           boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,ec.message()));
+       }
+       else
+       {
+           if(response.status >= 400)
+           {
+               boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,response.body));
+           }
+           else
+           {
+               self->loadListingsFromConnection(response.data);
+           }
+       }
+    });
 
     connection->list(target,token);
-    shouldBlurPictures= Database::getInstance()->getBlurNSFWPictures();
-}
-SubredditWindow::~SubredditWindow()
-{
-    connection->clearAllSlots();
 }
 void SubredditWindow::setErrorMessage(std::string errorMessage)
 {
@@ -98,14 +105,14 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
         {
             auto resourceConnection = client->makeResourceClientConnection();
             resourceConnection->connectionCompleteHandler(
-                        [post=&p,this](const boost::system::error_code&,
+                        [post=&p,self=shared_from_this()](const boost::system::error_code&,
                              const resource_response& response)
             {
                 if(response.status == 200)
                 {
                     int width, height, channels;
                     auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
-                    boost::asio::post(this->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,this,post,data,width,height,channels));
+                    boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,self,post,data,width,height,channels));
                 }
             });
             resourceConnection->getResource(p.post->thumbnail);
@@ -258,6 +265,18 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         {
             commentsSignal(p.post->id,p.post->title);
         }
+        if(!p.post->url.empty())
+        {
+            ImGui::SameLine();
+
+            if(ImGui::Button(fmt::format("{}##{}",
+                                         reinterpret_cast<const char*>(ICON_FA_EXTERNAL_LINK_SQUARE " Open"),
+                                         p.post->id).c_str()))
+            {
+                Utils::openInBrowser(p.post->url);
+            }
+        }
+
         ImGui::EndGroup();
         ImGui::Separator();
     }   
@@ -275,7 +294,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         }
         if(ImGui::Button(reinterpret_cast<const char*>(ICON_FA_ARROW_LEFT " Previous")) && previousEnabled)
         {
-            connection->list(target+"?before="+before.value()+"&count="+std::to_string(currentCount),token);
+            loadSubredditListings(target+"?before="+before.value()+"&count="+std::to_string(currentCount),token);
             currentCount-=posts.size();
             before.reset();
         }
@@ -297,7 +316,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         if(ImGui::Button(reinterpret_cast<const char*>("Next " ICON_FA_ARROW_RIGHT),previousSize) && nextEnabled)
         {
             currentCount+=posts.size();
-            connection->list(target+"?after="+after.value()+"&count="+std::to_string(currentCount),token);
+            loadSubredditListings(target+"?after="+after.value()+"&count="+std::to_string(currentCount),token);
             after.reset();
         }
         if(!nextEnabled)
@@ -313,7 +332,7 @@ void SubredditWindow::showWindowMenu()
 {
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F5)))
     {
-        connection->list(target,token);
+        loadSubredditListings(target,token);
     }
 
     if (ImGui::BeginMenuBar())

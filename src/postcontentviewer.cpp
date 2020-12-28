@@ -5,7 +5,6 @@
 #include "spinner/spinner.h"
 #include <imgui.h>
 #include <fmt/format.h>
-#include "markdownrenderer.h"
 #include "fonts/IconsFontAwesome4.h"
 #include <SDL.h>
 #include "macros.h"
@@ -19,11 +18,16 @@ const std::vector<std::string> mediaDomains ={
     "clippituser.tv",
     "streamable.com",
     "streamja.com",
+    "streamvi.com",
     "v.redd.it",
     "youtube.com",
     "www.youtube.com",
     "youtu.be",
-    "gfycat.com"
+    "gfycat.com",
+    "imgur.com",
+    "i.imgur.com",
+    "redgifs.com",
+    "www.redgifs.com"
 };
 const std::vector<std::string> mediaExtensions = {
     ".gif",
@@ -49,14 +53,22 @@ PostContentViewer::PostContentViewer(RedditClient* client,
                                      const boost::asio::io_context::executor_type& uiExecutor,
                                      post_ptr currentPost):
     client(client),uiExecutor(uiExecutor),currentPost(currentPost),
-    mpvEventIOContextWork(boost::asio::make_work_guard(mpvEventIOContext))
+    mpvEventIOContextWork(boost::asio::require(mpvEventIOContext.get_executor(),
+                                               boost::asio::execution::outstanding_work.tracked)),
+    stop(false)
 {
     SDL_GetDesktopDisplayMode(0, &displayMode);
     using run_function = boost::asio::io_context::count_type(boost::asio::io_context::*)();
     auto bound_run_fuction = std::bind(static_cast<run_function>(&boost::asio::io_context::run),std::ref(mpvEventIOContext));
     mvpEventThread = std::thread(bound_run_fuction);
     mediaState.mediaAudioVolume = Database::getInstance()->getMediaAudioVolume();
-
+}
+void PostContentViewer::loadContent()
+{
+    if(!currentPost->selfText.empty())
+    {
+        markdown = std::make_unique<MarkdownRenderer>(currentPost->selfText);
+    }
     if(currentPost->isGallery && !currentPost->gallery.empty())
     {
         loadPostGalleryImages();
@@ -89,24 +101,32 @@ PostContentViewer::PostContentViewer(RedditClient* client,
         {
 
             loadingPostContent = true;
-            mediaStreamingConnection = client->makeMediaStreamingClientConnection();
-            mediaStreamingConnection->streamAvailableHandler([this](std::string file) {
-                boost::asio::post(this->uiExecutor,std::bind(&PostContentViewer::setupMediaContext,this,file));
+            auto mediaStreamingConnection = client->makeMediaStreamingClientConnection();
+            mediaStreamingConnection->streamAvailableHandler([self=shared_from_this()](std::string file) {
+                if(self->stop) return;
+                boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setupMediaContext,self,file));
             });
-            mediaStreamingConnection->errorHandler([this](int /*errorCode*/,const std::string& str){
-                boost::asio::post(this->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,this,str));
+            mediaStreamingConnection->errorHandler([self=shared_from_this()](int /*errorCode*/,const std::string& str){
+                if(self->stop) return;
+                boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,self,str));
             });
             mediaStreamingConnection->streamMedia(currentPost.get());
         }
     }
 }
+void PostContentViewer::stopPlayingMedia()
+{
+    stop = true;
+}
 
 PostContentViewer::~PostContentViewer()
 {
+    stopPlayingMedia();
     Database::getInstance()->setMediaAudioVolume(mediaState.mediaAudioVolume);
-    if(mediaStreamingConnection)
+    mpvEventIOContext.stop();
+    if(mvpEventThread.joinable())
     {
-        mediaStreamingConnection->clearAllSlots();
+        mvpEventThread.join();
     }
     if(mpv_gl)
     {
@@ -117,13 +137,7 @@ PostContentViewer::~PostContentViewer()
     {
         mpv_detach_destroy(mpv);
         mpv = nullptr;
-    }
-    mpvEventIOContextWork.reset();
-    mpvEventIOContext.stop();
-    if(mvpEventThread.joinable())
-    {
-        mvpEventThread.join();
-    }
+    }    
     if(mediaFramebufferObject > 0)
     {
         glDeleteFramebuffers(1, &mediaFramebufferObject);
@@ -137,18 +151,30 @@ void PostContentViewer::setErrorMessage(std::string errorMessage)
 void PostContentViewer::onMpvEvents(void* context)
 {
     PostContentViewer* win=(PostContentViewer*)context;
-    boost::asio::post(win->mpvEventIOContext.get_executor(),std::bind(&PostContentViewer::handleMpvEvents,win));
+    if(win->stop) return;
+    boost::asio::post(win->mpvEventIOContext.get_executor(),std::bind(&PostContentViewer::handleMpvEvents,win->shared_from_this()));
 }
 void PostContentViewer::handleMpvEvents()
 {
     while (true)
     {
+       if(stop) return;
        mpv_event *mp_event = mpv_wait_event(mpv, 0);
        std::cout << "event:"<<mp_event->event_id<<std::endl;
        if (mp_event->event_id == MPV_EVENT_NONE)
            break;
        switch(mp_event->event_id)
        {
+       case MPV_EVENT_END_FILE:
+       {
+            mediaState.finished = true;
+       }
+           break;
+       case MPV_EVENT_START_FILE:
+       {
+            mediaState.finished = false;
+       }
+           break;
        case MPV_EVENT_PROPERTY_CHANGE:
        {
            mpv_event_property *prop = (mpv_event_property *)mp_event->data;
@@ -174,6 +200,10 @@ void PostContentViewer::handleMpvEvents()
                else if (name == "height")
                {
                    mediaState.height = value;
+               }
+               else if (name == "volume")
+               {
+                   mediaState.mediaAudioVolume = value;
                }
            }
            else if(prop->format == MPV_FORMAT_FLAG)
@@ -257,19 +287,19 @@ void PostContentViewer::loadPostGalleryImages()
         if(galImage.url.empty()) continue;
         auto resourceConnection = client->makeResourceClientConnection();
         resourceConnection->connectionCompleteHandler(
-                    [this,index=i](const boost::system::error_code& ec,
+                    [self=shared_from_this(),index=i](const boost::system::error_code& ec,
                          const resource_response& response)
         {
             if(ec)
             {
-                boost::asio::post(this->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,this,ec.message()));
+                boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,self,ec.message()));
                 return;
             }
             else if(response.status == 200)
             {
                 int width, height, channels;
                 auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
-                boost::asio::post(this->uiExecutor,std::bind(&PostContentViewer::setPostGalleryImage,this,
+                boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setPostGalleryImage,self,
                                                              data,width,height,channels,(int)index));
             }
         });
@@ -287,14 +317,36 @@ void PostContentViewer::setPostGalleryImage(unsigned char* data, int width, int 
 void PostContentViewer::loadPostImage()
 {
     loadingPostContent = true;
+
+    if(currentPost->domain == "imgur.com")
+    {
+        auto mediaStreamingConnection = client->makeMediaStreamingClientConnection();
+        mediaStreamingConnection->streamAvailableHandler([self=shared_from_this()](std::string file) {
+            if(self->stop) return;
+            self->loadPostImage(file);
+        });
+        mediaStreamingConnection->errorHandler([self=shared_from_this()](int /*errorCode*/,const std::string& str){
+            if(self->stop) return;
+            boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,self,str));
+        });
+        mediaStreamingConnection->streamMedia(currentPost.get());
+    }
+    else
+    {
+        loadPostImage(currentPost->url);
+    }
+}
+void PostContentViewer::loadPostImage(std::string url)
+{
     auto resourceConnection = client->makeResourceClientConnection();
     resourceConnection->connectionCompleteHandler(
-                [this,url=currentPost->url](const boost::system::error_code& ec,
+                [self=shared_from_this(),url=url](const boost::system::error_code& ec,
                      const resource_response& response)
     {
+        if(self->stop) return;
         if(ec)
         {
-            boost::asio::post(this->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,this,ec.message()));
+            boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,self,ec.message()));
             return;
         }
         if(response.status == 200)
@@ -306,25 +358,24 @@ void PostContentViewer::loadPostImage()
             {
                 auto data = Utils::decodeGifData(response.data.data(),response.data.size(),
                                                    &width,&height,&channels,&count,&delays);
-                boost::asio::post(this->uiExecutor,std::bind(&PostContentViewer::setPostGif,this,
+                boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setPostGif,self,
                                                              data,width,height,channels,count,delays));
             }
             else
             {
                 auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
-                boost::asio::post(this->uiExecutor,std::bind(&PostContentViewer::setPostImage,this,data,width,height,channels));
+                boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setPostImage,self,data,width,height,channels));
             }
         }
     });
-    resourceConnection->getResource(currentPost->url);
+    resourceConnection->getResource(url);
 }
-
 void PostContentViewer::setupMediaContext(std::string file)
 {
     mpv = mpv_create();
     //mpv_set_option_string(mpv, "idle", "no");
     mpv_set_option_string(mpv, "config", "no");
-    mpv_set_option_string(mpv, "cache", "yes");
+    //mpv_set_option_string(mpv, "cache", "yes");
     //int64_t maxBytes = 1024*1024*10;
     //mpv_set_option(mpv, "demuxer-max-bytes", MPV_FORMAT_INT64,&maxBytes);
 
@@ -346,13 +397,14 @@ void PostContentViewer::setupMediaContext(std::string file)
     mpv_observe_property(mpv, 0, "width", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "pause", MPV_FORMAT_FLAG);
 
+    mediaState.finished = false;
     double vol = mediaState.mediaAudioVolume;
     mpv_set_property(mpv,"volume",MPV_FORMAT_DOUBLE,&vol);
     mpv_observe_property(mpv, 0, "volume", MPV_FORMAT_DOUBLE);
 
     mpv_set_wakeup_callback(mpv, &PostContentViewer::onMpvEvents, this);
     mpv_render_context_set_update_callback(mpv_gl, &PostContentViewer::mpvRenderUpdate, this);
-
+    std::cout << "playing URL:"<<file<<std::endl;
     const char *cmd[] = {"loadfile", file.c_str(), nullptr};
     mpv_command_async(mpv, 0, cmd);
 }
@@ -360,12 +412,13 @@ void PostContentViewer::setupMediaContext(std::string file)
 void PostContentViewer::mpvRenderUpdate(void *context)
 {
     PostContentViewer* win=(PostContentViewer*)context;
-    boost::asio::post(win->uiExecutor,std::bind(&PostContentViewer::setPostMediaFrame,win));
+    if(win->stop) return;
+    boost::asio::post(win->uiExecutor,std::bind(&PostContentViewer::setPostMediaFrame,win->shared_from_this()));
 }
 
 void PostContentViewer::setPostMediaFrame()
 {
-    if(!currentPost || !mpv_gl) return;
+    if(!currentPost || !mpv_gl || stop) return;
     uint64_t flags = mpv_render_context_update(mpv_gl);
     if (!(flags & MPV_RENDER_UPDATE_FRAME))
     {
@@ -420,7 +473,8 @@ void PostContentViewer::setPostGif(unsigned char* data, int width, int height, i
                 int count, int* delays)
 {
     auto gif = std::make_unique<post_gif>();
-
+    gif->width = width;
+    gif->height = height;
     int stride_bytes = width * channels;
     for (int i=0; i<count; ++i)
     {
@@ -478,6 +532,8 @@ void PostContentViewer::showPostContent()
             gif->images[gif->currentImage]->lastDisplay = std::chrono::steady_clock::now();
         }
         display_image = gif->images[gif->currentImage]->img;
+        display_image->resizedWidth = gif->width;
+        display_image->resizedHeight = gif->height;
     }
 
     if(currentPost->isGallery && !currentPost->gallery.empty())
@@ -516,6 +572,16 @@ void PostContentViewer::showPostContent()
             display_image->resizedHeight = height;
             display_image->pictureRatio = width / height;
             display_image->isResized = true;
+            if(gif)
+            {
+                for(auto&& img:gif->images)
+                {
+                    img->img->resizedWidth = width;
+                    img->img->resizedHeight = height;
+                    img->img->pictureRatio = width / height;
+                    img->img->isResized = true;
+                }
+            }
         }
 
         ImGui::ImageButton((void*)(intptr_t)display_image->textureId,
@@ -535,12 +601,26 @@ void PostContentViewer::showPostContent()
             display_image->resizedWidth = std::max(100.f,new_width);
             display_image->resizedHeight = std::max(100.f,new_height);
         }
+        if(gif)
+        {
+            gif->width = display_image->resizedWidth;
+            gif->height = display_image->resizedHeight;
+        }
 
         if(mediaState.duration > 0.0f)
         {
             float progress = mediaState.timePosition / mediaState.duration;
             auto progressHeight = 5.f;
             ImGui::ProgressBar(progress, ImVec2(display_image->resizedWidth, progressHeight),"");
+            if(mediaState.finished)
+            {
+                if(ImGui::Button(reinterpret_cast<const char*>(ICON_FA_REPEAT "##_restartMedia")))
+                {
+                    const char *cmd[] = {"playlist-play-index","0", nullptr};
+                    mpv_command_async(mpv,0,cmd);
+                }
+                ImGui::SameLine();
+            }
             if(ImGui::Button(reinterpret_cast<const char*>(mediaState.paused ? ICON_FA_PLAY "##_playPauseMedia" : ICON_FA_PAUSE "##_playPauseMedia")))
             {
                 int shouldPause = !mediaState.paused;
@@ -554,7 +634,8 @@ void PostContentViewer::showPostContent()
             if(ImGui::SliderInt("##_volumeMedia",&volume,0,100,""))
             {
                 mediaState.mediaAudioVolume = volume;
-                mpv_set_property_async(mpv,0,"volume",MPV_FORMAT_DOUBLE,&volume);
+                double vold = volume;
+                mpv_set_property_async(mpv,0,"volume",MPV_FORMAT_DOUBLE,&vold);
             }
         }
         if(currentPost->isGallery && !gallery.images.empty())
@@ -581,10 +662,9 @@ void PostContentViewer::showPostContent()
         }
     }
 
-    if(!currentPost->selfText.empty())
+    if(markdown)
     {
-        MarkdownRenderer markdown(currentPost->selfText);
-        markdown.RenderMarkdown();
+        markdown->RenderMarkdown();
     }
     else if(!display_image && loadingPostContent)
     {

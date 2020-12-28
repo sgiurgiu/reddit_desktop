@@ -67,8 +67,9 @@ void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::
            status == boost::beast::http::status::see_other ||
            status == boost::beast::http::status::found)
         {
-            stream.emplace(boost::asio::make_strand(context), ssl_context);
-            downloadUrl(location);
+            stream.emplace(strand, ssl_context);
+            currentUrl = location;
+            downloadUrl(currentUrl);
             return;
         }
     }
@@ -121,27 +122,27 @@ void MediaStreamingConnection::responseReceivedComplete()
     }
     else
     {
-        //startStreaming(targetFile);
-        BOOST_ASSERT(false);
+        startStreaming(currentUrl);
+        //BOOST_ASSERT(false);
     }
 }
 
 void MediaStreamingConnection::streamMedia(post* mediaPost)
 {
     currentPost = mediaPost;
-    auto url = currentPost->url;
+    currentUrl = currentPost->url;
     if(currentPost->postMedia && currentPost->postMedia->redditVideo)
     {
-        url = currentPost->postMedia->redditVideo->dashUrl;
+        currentUrl = currentPost->postMedia->redditVideo->dashUrl;
         boost::asio::post(context.get_executor(),std::bind(
                                &MediaStreamingConnection::startStreaming,
-                               this->shared_from_base<MediaStreamingConnection>(),url));
+                               this->shared_from_base<MediaStreamingConnection>(),currentUrl));
     }
     else
     {
         //'https://www.youtube.com/watch?v=BaW_jenozKc&gl=US&hl=en&has_verified=1&bpctr=9999999999'
 
-        downloadUrl(url);
+        downloadUrl(currentUrl);
     }
 }
 

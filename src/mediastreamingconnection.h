@@ -53,6 +53,7 @@ private:
     std::atomic_bool cancel;
     bool downloadingHtml = false;
     post* currentPost;
+    std::string currentUrl;
 };
 
 #endif // MEDIASTREAMINGCONNECTION_H

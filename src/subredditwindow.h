@@ -8,16 +8,16 @@
 #include "entities.h"
 #include "redditclient.h"
 #include "redditlistingconnection.h"
-#include "utils.h"
 #include "resizableglimage.h"
 
-class SubredditWindow
+class SubredditWindow : public std::enable_shared_from_this<SubredditWindow>
 {
 public:
     SubredditWindow(int id, const std::string& subreddit,
                     const access_token& token,
                     RedditClient* client,
                     const boost::asio::io_context::executor_type& executor);
+    void loadSubreddit();
     bool isWindowOpen() const {return windowOpen;}
     void showWindow(int appFrameWidth,int appFrameHeight);
     using CommentsSignal = boost::signals2::signal<void(const std::string& id,const std::string& title)>;
@@ -35,6 +35,7 @@ private:
     };
     using posts_list = std::vector<PostDisplay>;
     void showWindowMenu();
+    void loadSubredditListings(const std::string& target,const access_token& token);
     void loadListingsFromConnection(const listing& listingResponse);
     void setListings(posts_list receivedPosts, nlohmann::json beforeJson,nlohmann::json afterJson);
     void setErrorMessage(std::string errorMessage);
@@ -46,7 +47,6 @@ private:
     access_token token;
     RedditClient* client;
     std::string windowName;
-    RedditClient::RedditListingClientConnection connection;
     std::string listingErrorMessage;
     posts_list posts;
     std::string target;

@@ -295,7 +295,7 @@ std::string HtmlParser::getVideoUrl(const std::string& domain) const
     {
         url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:video:url");
     }
-    else if (domain == "streamja.com")
+    else if (domain == "streamja.com" || domain == "streamvi.com")
     {
         url = this->template lookupVideoSourceVideoUrl<GumboNode>(output->root);
     }
@@ -303,7 +303,8 @@ std::string HtmlParser::getVideoUrl(const std::string& domain) const
     {
         url = this->template lookupDivPlayerContainerVideoUrl<GumboNode>(output->root);
     }
-    else if(domain.find("imgur") != domain.npos || domain.find("gfycat") != domain.npos)
+    else if(domain.find("imgur") != domain.npos || domain.find("gfycat") != domain.npos ||
+            domain.find("redgifs") != domain.npos)
     {
         url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:video");
         if(url.empty())

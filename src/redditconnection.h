@@ -20,11 +20,11 @@ public:
     RedditConnection(boost::asio::io_context& context,
                      boost::asio::ssl::context& ssl_context,const std::string& host,
                      const std::string& service):
-        context(context),ssl_context(ssl_context),
-        resolver(boost::asio::make_strand(context)),        
+        context(context),ssl_context(ssl_context),strand(boost::asio::make_strand(context)),
+        resolver(strand),
         host(host),service(service)
     {
-        stream.emplace(boost::asio::make_strand(context), ssl_context);
+        stream.emplace(strand, ssl_context);
         responseParser.emplace();
     }
     virtual ~RedditConnection()
@@ -59,9 +59,17 @@ private:
             return;
         }
 
-        using namespace std::placeholders;
-        auto handshakeMethod = std::bind(&RedditConnection::onHandshake,this->shared_from_this(),_1);
-        stream->async_handshake(boost::asio::ssl::stream_base::client,handshakeMethod);
+        if(service == "http" || service == "80" || service == "8080")
+        {
+            isSsl = false;
+            sendRequest();
+        }
+        else
+        {
+            using namespace std::placeholders;
+            auto handshakeMethod = std::bind(&RedditConnection::onHandshake,this->shared_from_this(),_1);
+            stream->async_handshake(boost::asio::ssl::stream_base::client,handshakeMethod);
+        }
     }
 
     void resolveComplete(const boost::system::error_code& ec,
@@ -90,8 +98,6 @@ private:
         }
         sendRequest();
     }
-
-
 
 
 protected:
@@ -156,6 +162,7 @@ protected:
 protected:
     boost::asio::io_context& context;
     boost::asio::ssl::context& ssl_context;
+    boost::asio::strand<boost::asio::io_context::executor_type> strand;
     boost::asio::ip::tcp::resolver resolver;
     std::optional<boost::beast::ssl_stream<boost::beast::tcp_stream>> stream;
     boost::beast::flat_buffer buffer; // (Must persist between reads)
@@ -166,6 +173,7 @@ protected:
     Signal signal;
     using parser_t = boost::beast::http::response_parser<typename Response::body_type>;
     std::optional<parser_t> responseParser;
+    bool isSsl = true;
 };
 
 #endif // REDDITCONNECTION_H

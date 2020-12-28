@@ -13,34 +13,42 @@ CommentsWindow::CommentsWindow(const std::string& postId,
                                const access_token& token,
                                RedditClient* client,
                                const boost::asio::io_context::executor_type& executor):
-    postId(postId),token(token),client(client),connection(client->makeListingClientConnection()),
+    postId(postId),title(title),token(token),client(client),
+    //connection(),
     uiExecutor(executor)
 {    
-    connection->connectionCompleteHandler([this](const boost::system::error_code& ec,
-                                const client_response<listing>& response)
-    {
-       if(ec)
-       {
-           boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,this,ec.message()));
-       }
-       else
-       {
-           if(response.status >= 400)
-           {
-                boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,this,response.body));
-           }
-           else
-           {
-                loadListingsFromConnection(response.data);
-           }
-       }
-    });
-    windowName = fmt::format("{}##{}",title,postId);
-    connection->list("/comments/"+postId+"?depth=5&limit=50&threaded=true",token);
+
 }
 CommentsWindow::~CommentsWindow()
 {
-    connection->clearAllSlots();
+    if(postContentViewer) postContentViewer->stopPlayingMedia();
+    //connection->clearAllSlots();
+}
+void CommentsWindow::loadComments()
+{
+    auto connection = client->makeListingClientConnection();
+    connection->connectionCompleteHandler([self=shared_from_this()](const boost::system::error_code& ec,
+                                const client_response<listing>& response)
+    {
+        if(!self->windowOpen) return;
+        if(ec)
+        {
+           boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,self,ec.message()));
+        }
+        else
+        {
+           if(response.status >= 400)
+           {
+                boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,self,response.body));
+           }
+           else
+           {
+                self->loadListingsFromConnection(response.data);
+           }
+        }
+    });
+    windowName = fmt::format("{}##{}",title,postId);
+    connection->list("/comments/"+postId+"?depth=5&limit=50&threaded=true",token);
 }
 void CommentsWindow::setErrorMessage(std::string errorMessage)
 {
@@ -48,7 +56,7 @@ void CommentsWindow::setErrorMessage(std::string errorMessage)
 }
 void CommentsWindow::loadListingsFromConnection(const listing& listingResponse)
 {
-    if(!listingResponse.json.is_array()) return;
+    if(!windowOpen || !listingResponse.json.is_array()) return;
     for(const auto& child:listingResponse.json)
     {
         if(!child.is_object())
@@ -68,7 +76,7 @@ void CommentsWindow::loadListingsFromConnection(const listing& listingResponse)
 }
 void CommentsWindow::loadListingChildren(const nlohmann::json& children)
 {
-    if(!children.is_array()) return;
+    if(!windowOpen || !children.is_array()) return;
     comments_list comments;
     post_ptr pp;
     for(const auto& child: children)
@@ -95,11 +103,11 @@ void CommentsWindow::loadListingChildren(const nlohmann::json& children)
     }
     if(!comments.empty())
     {
-        boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setComments,this,std::move(comments)));
+        boost::asio::post(uiExecutor,std::bind(&CommentsWindow::setComments,shared_from_this(),std::move(comments)));
     }
     if(pp)
     {
-        boost::asio::post(this->uiExecutor,std::bind(&CommentsWindow::setParentPost,this,std::move(pp)));
+        boost::asio::post(uiExecutor,std::bind(&CommentsWindow::setParentPost,shared_from_this(),std::move(pp)));
     }
 }
 void CommentsWindow::setComments(comments_list receivedComments)
@@ -115,7 +123,8 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
 {
     listingErrorMessage.clear();
     parentPost = receivedParentPost;
-    postContentViewer = std::make_unique<PostContentViewer>(client,uiExecutor,parentPost);
+    postContentViewer = std::make_shared<PostContentViewer>(client,uiExecutor,parentPost);
+    postContentViewer->loadContent();
 }
 
 void CommentsWindow::showComment(DisplayComment* c)
@@ -145,7 +154,11 @@ void CommentsWindow::showComment(DisplayComment* c)
 void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
 {
     ImGui::SetNextWindowSize(ImVec2(appFrameWidth*0.6,appFrameHeight*0.8),ImGuiCond_FirstUseEver);
-    if(!windowOpen) return;
+    if(!windowOpen)
+    {
+        if(postContentViewer) postContentViewer->stopPlayingMedia();
+        return;
+    }
 
     if(!ImGui::Begin(windowName.c_str(),&windowOpen,ImGuiWindowFlags_None))
     {

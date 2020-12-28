@@ -8,11 +8,12 @@
 #include <SDL_video.h>
 #include <atomic>
 #include "resizableglimage.h"
+#include "markdownrenderer.h"
 
 struct mpv_handle;
 struct mpv_render_context;
 
-class PostContentViewer
+class PostContentViewer : public std::enable_shared_from_this<PostContentViewer>
 {
 public:
     PostContentViewer(RedditClient* client,
@@ -20,12 +21,15 @@ public:
                       post_ptr currentPost);
     ~PostContentViewer();
     void showPostContent();
+    void stopPlayingMedia();
+    void loadContent();
 private:
     void setPostImage(unsigned char* data, int width, int height, int channels);
     void setPostGif(unsigned char* data, int width, int height, int channels,
                     int count, int* delays);
     void setPostMediaFrame();
     void loadPostImage();
+    void loadPostImage(std::string url);
     void setupMediaContext(std::string file);
     void static mpvRenderUpdate(void* context);
     void static onMpvEvents(void* context);
@@ -39,15 +43,14 @@ private:
 private:
     RedditClient* client;
     const boost::asio::io_context::executor_type& uiExecutor;
-    post_ptr currentPost;
-    RedditClient::MediaStreamingClientConnection mediaStreamingConnection;
+    post_ptr currentPost;    
     std::string errorMessage;
     SDL_DisplayMode displayMode;
     bool loadingPostContent = false;
     mpv_handle* mpv = nullptr;
     mpv_render_context *mpv_gl = nullptr;
     boost::asio::io_context mpvEventIOContext;
-    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> mpvEventIOContextWork;
+    boost::asio::any_io_executor mpvEventIOContextWork;
     std::thread mvpEventThread;
     unsigned int mediaFramebufferObject = 0;
     struct MediaState {
@@ -57,6 +60,7 @@ private:
         std::atomic<float> timePosition;
         std::atomic<double> width;
         std::atomic<double> height;
+        std::atomic_bool finished;
     };
     MediaState mediaState;
     struct gif_image
@@ -75,6 +79,8 @@ private:
     {
         std::vector<std::unique_ptr<gif_image>> images;
         int currentImage = 0;
+        int width = 0;
+        int height = 0;
     };
     std::unique_ptr<post_gif> gif;
     ResizableGLImagePtr postPicture;
@@ -84,7 +90,8 @@ private:
         int currentImage = 0;
     };
     post_gallery gallery;
-
+    std::unique_ptr<MarkdownRenderer> markdown;
+    std::atomic_bool stop;
 };
 
 #endif // POSTCONTENTVIEWER_H

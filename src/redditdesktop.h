@@ -11,11 +11,12 @@
 #include "redditclient.h"
 #include "commentswindow.h"
 
-class RedditDesktop
+class RedditDesktop : public std::enable_shared_from_this<RedditDesktop>
 {
 public:
     RedditDesktop(const boost::asio::io_context::executor_type& executor);
 
+    void loginCurrentUser();
     void showDesktop();
     bool quitSelected() const
     {
@@ -40,14 +41,13 @@ private:
     void loginSuccessful(client_response<access_token> token);
     void loadUserInformation(user_info_ptr info);
     void loadSubscribedSubreddits(subreddit_list srs);
+    void loadSubreddits(const std::string& url, const access_token& token);
     void sortSubscribedSubreddits();
 private:
-    RedditClient::RedditListingClientConnection userInformationConnection;
-    RedditClient::RedditListingClientConnection subscribedSubredditsConnection;
     const boost::asio::io_context::executor_type& uiExecutor;
     RedditClient client;
-    std::vector<std::unique_ptr<SubredditWindow>> subredditWindows;
-    std::vector<std::unique_ptr<CommentsWindow>> commentsWindows;
+    std::vector<std::shared_ptr<SubredditWindow>> subredditWindows;
+    std::vector<std::shared_ptr<CommentsWindow>> commentsWindows;
     bool shouldQuit = false;
     bool openSubredditWindow = false;
     char selectedSubreddit[100] = { 0 };

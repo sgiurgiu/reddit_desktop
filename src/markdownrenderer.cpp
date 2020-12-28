@@ -365,12 +365,8 @@ void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type)
                 }
                 if(ImGui::IsItemClicked(ImGuiMouseButton_Left))
                 {
-#ifdef RD_LINUX
                     std::string url((const char*)node->as.link.url.data,node->as.link.url.len);
-                    system(fmt::format("xdg-open {}",url).c_str());
-#elif defined(RD_WINDOWS)
-                    //ShellExecuteA(NULL, "open", search_URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
-#endif
+                    Utils::openInBrowser(url);
                 }
                 ImGui::SameLine();
             }

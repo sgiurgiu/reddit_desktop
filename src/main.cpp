@@ -10,6 +10,7 @@
 #include <SDL.h>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/executor_work_guard.hpp>
+#include <memory>
 
 #if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
 #include <GL/gl3w.h>    // Initialize with gl3wInit()
@@ -162,10 +163,13 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
     bool show_markdown_window = false;
 #endif
     boost::asio::io_context uiContext;
-    RedditDesktop desktop(uiContext.get_executor());
-    using work_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
-    work_guard_type work = boost::asio::make_work_guard(uiContext.get_executor());
+    auto work = boost::asio::require(uiContext.get_executor(),
+                                        boost::asio::execution::outstanding_work.tracked);
 
+    auto desktop = std::make_shared<RedditDesktop>(uiContext.get_executor());
+    //using work_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
+    //work_guard_type work = boost::asio::make_work_guard(uiContext.get_executor());
+    desktop->loginCurrentUser();
     MarkdownRenderer::InitEngine();
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     // Main loop
@@ -204,9 +208,9 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
         int windowWidth;
         int windowHeight;
         SDL_GetWindowSize(window,&windowWidth,&windowHeight);
-        desktop.setAppFrameHeight(windowHeight);
-        desktop.setAppFrameWidth(windowWidth);
-        desktop.showDesktop();
+        desktop->setAppFrameHeight(windowHeight);
+        desktop->setAppFrameWidth(windowWidth);
+        desktop->showDesktop();
 
         // Rendering
         ImGui::Render();
@@ -217,10 +221,10 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
         SDL_GL_SwapWindow(window);
         if(!done)
         {
-            done = desktop.quitSelected();
+            done = desktop->quitSelected();
         }
     }
-    work.reset();
+   // work.reset();
     uiContext.stop();
     MarkdownRenderer::ReleaseEngine();
 }
