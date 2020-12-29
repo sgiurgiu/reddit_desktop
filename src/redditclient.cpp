@@ -80,3 +80,7 @@ RedditClient::MediaStreamingClientConnection RedditClient::makeMediaStreamingCli
 {
     return std::make_shared<MediaStreamingConnection>(context,ssl_context,userAgent);
 }
+RedditClient::RedditCreatePostClientConnection RedditClient::makeCreatePostClientConnection()
+{
+    return std::make_shared<RedditCreatePostConnection>(context,ssl_context,server,service,userAgent);
+}

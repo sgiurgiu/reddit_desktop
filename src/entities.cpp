@@ -231,6 +231,14 @@ post::post(const nlohmann::json& json)
     {
         subreddit = json["subreddit_name_prefixed"].get<std::string>();
     }
+    if(json.contains("subreddit") && json["subreddit"].is_string())
+    {
+        subredditName = json["subreddit"].get<std::string>();
+    }
+    if(json.contains("subreddit_id") && json["subreddit_id"].is_string())
+    {
+        subredditId = json["subreddit_id"].get<std::string>();
+    }
     if(json.contains("score") && json["score"].is_number())
     {
         score = json["score"].get<int>();

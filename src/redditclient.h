@@ -6,6 +6,7 @@
 #include "redditlistingconnection.h"
 #include "redditresourceconnection.h"
 #include "mediastreamingconnection.h"
+#include "redditcreatepostconnection.h"
 
 #include <boost/asio/io_context.hpp>
 #include <thread>
@@ -23,10 +24,12 @@ public:
     using RedditListingClientConnection = std::shared_ptr<RedditListingConnection>;
     using RedditResourceClientConnection = std::shared_ptr<RedditResourceConnection>;
     using MediaStreamingClientConnection = std::shared_ptr<MediaStreamingConnection>;
+    using RedditCreatePostClientConnection = std::shared_ptr<RedditCreatePostConnection>;
     RedditLoginClientConnection makeLoginClientConnection();
     RedditListingClientConnection makeListingClientConnection();
     RedditResourceClientConnection makeResourceClientConnection();
     MediaStreamingClientConnection makeMediaStreamingClientConnection();
+    RedditCreatePostClientConnection makeCreatePostClientConnection();
     void setUserAgent(const std::string& userAgent);
 
 private:

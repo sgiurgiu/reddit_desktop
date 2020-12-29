@@ -40,9 +40,13 @@ private:
     void setListings(posts_list receivedPosts, nlohmann::json beforeJson,nlohmann::json afterJson);
     void setErrorMessage(std::string errorMessage);
     void setPostThumbnail(PostDisplay* p,unsigned char* data, int width, int height, int channels);
+    void showNewTextPostDialog();
+    void showNewLinkPostDialog();
+    void submitNewPost(const post_ptr& p);
 private:    
     int id;
     std::string subreddit;
+    std::string subredditName;
     bool windowOpen = true;
     access_token token;
     RedditClient* client;
@@ -60,6 +64,13 @@ private:
     int currentCount = 0;
     bool scrollToTop = false;
     bool shouldBlurPictures = true;
+    bool newTextPostDialog = false;
+    bool showingTextPostDialog = false;
+    char newTextPostTitle[300] = {0};
+    char newTextPostContent[3000] = {0};
+    char newLinkPost[1000] = {0};
+    bool newLinkPostDialog = false;
+    bool showingLinkPostDialog = false;
 };
 
 #endif // SUBREDDITWINDOW_H

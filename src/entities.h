@@ -129,6 +129,8 @@ struct post
     int commentsCount = 0;
     std::string commentsText;
     std::string subreddit;
+    std::string subredditName;
+    std::string subredditId;
     int score = 0;
     std::string humanScore;
     std::string url;
@@ -224,8 +226,6 @@ struct multireddit
     bool canEdit = false;
     int64_t subscribers = 0;
     std::string path;
-
-
 };
 //using subreddit_ptr = std::shared_ptr<subreddit>;
 using subreddit_list = std::vector<subreddit>;

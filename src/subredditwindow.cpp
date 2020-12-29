@@ -1,6 +1,6 @@
 #include "subredditwindow.h"
 #include <imgui.h>
-
+#include <imgui_internal.h>
 #include <fmt/format.h>
 #include "fonts/IconsFontAwesome4.h"
 #include "utils.h"
@@ -9,6 +9,11 @@
 #include <boost/asio/post.hpp>
 #include "utils.h"
 
+namespace
+{
+constexpr auto NEWTEXT_POST_POPUP_TITLE = "New Text Post";
+constexpr auto NEWLINK_POST_POPUP_TITLE = "New Link";
+}
 SubredditWindow::SubredditWindow(int id, const std::string& subreddit,
                                  const access_token& token,
                                  RedditClient* client,
@@ -104,6 +109,10 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
     scrollToTop = true;
     for(auto&& p : posts)
     {
+        if(subredditName.empty())
+        {
+            subredditName = p.post->subredditName;
+        }
         if(!p.post->thumbnail.empty() && p.post->thumbnail != "self" &&
                 p.post->thumbnail != "default")
         {
@@ -139,7 +148,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
 {
     ImGui::SetNextWindowSize(ImVec2(appFrameWidth*0.6,appFrameHeight*0.8),ImGuiCond_FirstUseEver);
     if(!windowOpen) return;
-    if(!ImGui::Begin(windowName.c_str(),&windowOpen,ImGuiWindowFlags_MenuBar))
+    if(!ImGui::Begin(windowName.c_str(),&windowOpen,ImGuiWindowFlags_None))
     {
         ImGui::End();
         return;
@@ -153,13 +162,19 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
     {
         windowOpen = false;
     }
+    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F5)) && ImGui::IsWindowFocused())
+    {
+        loadSubredditListings(target,token);
+    }
+
+
     if(scrollToTop)
     {
         ImGui::SetScrollHereY(0.0f);
         scrollToTop = false;
     }
 
-    showWindowMenu();
+    //showWindowMenu();
 
     //ImGuiStyle& style = ImGui::GetStyle();
    // auto textItemWidth = ImGui::GetItemRectSize().x + style.ItemSpacing.x + style.ItemInnerSpacing.x;
@@ -168,6 +183,16 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
     if(!listingErrorMessage.empty())
     {
         ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "%s",listingErrorMessage.c_str());
+    }
+
+    if(ImGui::Button("Submit New Post"))
+    {
+        newTextPostDialog = true;
+    }
+    ImGui::SameLine();
+    if(ImGui::Button("Submit New Link"))
+    {
+        newLinkPostDialog = true;
     }
 
     if(maxScoreWidth == 0.f)
@@ -330,15 +355,125 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         }
     }
     ImGui::End();
+
+    showNewTextPostDialog();
+    showNewLinkPostDialog();
+}
+void SubredditWindow::showNewLinkPostDialog()
+{
+    if(newLinkPostDialog)
+    {
+        ImGui::OpenPopup(NEWLINK_POST_POPUP_TITLE);
+        newLinkPostDialog = false;
+        showingLinkPostDialog = true;
+    }
+    if (showingLinkPostDialog && ImGui::BeginPopupModal(NEWLINK_POST_POPUP_TITLE,nullptr,
+                               ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("*Title:");
+        if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::IsAnyItemActive()
+                && !ImGui::IsMouseClicked(0))
+        {
+           ImGui::SetKeyboardFocusHere(0);
+        }
+        ImGui::InputText("##newLinkPostTitle",newTextPostTitle,sizeof(newTextPostTitle));
+        ImGui::Text("*Link:");
+        ImGui::InputText("##newLinkPostText",newLinkPost,sizeof(newLinkPost));
+
+        bool okDisabled = std::string_view(newTextPostTitle).empty() ||
+                std::string_view(newLinkPost).empty();
+        if (okDisabled)
+        {
+            ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+        }
+        if (ImGui::Button("OK", ImVec2(120, 0)))
+        {
+            auto p = std::make_shared<post>();
+            p->url = newLinkPost;
+            p->title = newTextPostTitle;
+            p->subreddit = subredditName;
+            p->postHint="link";
+            submitNewPost(p);
+            showingLinkPostDialog = false;
+            newTextPostTitle[0] = 0;
+            newLinkPost[0] = 0;
+            ImGui::CloseCurrentPopup();
+        }
+        if (okDisabled)
+        {
+            ImGui::PopItemFlag();
+            ImGui::PopStyleVar();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0)) ||
+                ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+        {
+            showingLinkPostDialog = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+}
+
+void SubredditWindow::showNewTextPostDialog()
+{
+    if(newTextPostDialog)
+    {
+        ImGui::OpenPopup(NEWTEXT_POST_POPUP_TITLE);
+        newTextPostDialog = false;
+        showingTextPostDialog = true;
+    }
+    if (showingTextPostDialog && ImGui::BeginPopupModal(NEWTEXT_POST_POPUP_TITLE,nullptr,
+                               ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("*Title:");
+        if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::IsAnyItemActive()
+                && !ImGui::IsMouseClicked(0))
+        {
+           ImGui::SetKeyboardFocusHere(0);
+        }
+        ImGui::InputText("##newTextPostTitle",newTextPostTitle,sizeof(newTextPostTitle));
+        ImGui::Text("Text:");
+        ImGui::InputTextMultiline("##newTextPostText",newTextPostContent,sizeof(newTextPostContent));
+
+        bool okDisabled = std::string_view(newTextPostTitle).empty();
+        if (okDisabled)
+        {
+            ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+        }
+        if (ImGui::Button("OK", ImVec2(120, 0)))
+        {
+            auto p = std::make_shared<post>();
+            p->selfText = newTextPostContent;
+            p->title = newTextPostTitle;
+            p->subreddit = subredditName;
+            p->postHint="self";
+            submitNewPost(p);
+            showingTextPostDialog = false;
+            newTextPostTitle[0] = 0;
+            newTextPostContent[0] = 0;
+            ImGui::CloseCurrentPopup();
+        }
+        if (okDisabled)
+        {
+            ImGui::PopItemFlag();
+            ImGui::PopStyleVar();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0)) ||
+                ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+        {
+            showingTextPostDialog = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
 }
 
 void SubredditWindow::showWindowMenu()
 {
-    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F5)))
-    {
-        loadSubredditListings(target,token);
-    }
-
     if (ImGui::BeginMenuBar())
     {
         if (ImGui::BeginMenu("File"))
@@ -369,4 +504,35 @@ void SubredditWindow::showCommentsListener(const typename CommentsSignal::slot_t
 void SubredditWindow::setFocused()
 {
     willBeFocused = true;
+}
+void SubredditWindow::submitNewPost(const post_ptr& p)
+{
+    auto createPostConnection = client->makeCreatePostClientConnection();
+    createPostConnection->connectionCompleteHandler([self=shared_from_this()](const boost::system::error_code& ec,
+                                const client_response<post_ptr>& response)
+    {
+       if(ec)
+       {
+           boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,ec.message()));
+       }
+       else
+       {
+           if(response.status >= 400)
+           {
+               boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,response.body));
+           }
+           else
+           {
+               if(!response.data)
+               {
+                    boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,"Cannot create post"));
+               }
+               else
+               {
+                   self->commentsSignal(response.data->id,response.data->title);
+               }
+           }
+       }
+    });
+    createPostConnection->createPost(p,true,token);
 }
