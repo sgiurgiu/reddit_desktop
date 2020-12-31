@@ -123,8 +123,8 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
 {
     listingErrorMessage.clear();
     parentPost = receivedParentPost;
-    postContentViewer = std::make_shared<PostContentViewer>(client,uiExecutor,parentPost);
-    postContentViewer->loadContent();
+    postContentViewer = std::make_shared<PostContentViewer>(client,uiExecutor);
+    postContentViewer->loadContent(parentPost);
 }
 
 void CommentsWindow::showComment(DisplayComment* c)

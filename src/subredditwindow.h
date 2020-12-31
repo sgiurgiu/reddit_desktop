@@ -9,6 +9,7 @@
 #include "redditclient.h"
 #include "redditlistingconnection.h"
 #include "resizableglimage.h"
+#include "postcontentviewer.h"
 
 class SubredditWindow : public std::enable_shared_from_this<SubredditWindow>
 {
@@ -32,6 +33,8 @@ private:
         ResizableGLImagePtr thumbnailPicture;
         ResizableGLImagePtr blurredThumbnailPicture;
         bool shouldShowUnblurredImage = false;
+        std::shared_ptr<PostContentViewer> postContentViewer;
+        bool showingContent = false;
     };
     using posts_list = std::vector<PostDisplay>;
     void showWindowMenu();

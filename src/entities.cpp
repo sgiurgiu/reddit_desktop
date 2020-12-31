@@ -305,6 +305,22 @@ post::post(const nlohmann::json& json)
         postMedia = makeMediaObject(json["secure_media"]);
     }
 
+    if(!postMedia && json.contains("crosspost_parent_list"))
+    {
+        for(const auto& parent : json["crosspost_parent_list"])
+        {
+            if(parent.contains("media"))
+            {
+                postMedia = makeMediaObject(parent["media"]);
+            }
+            if(parent.contains("secure_media"))
+            {
+                postMedia = makeMediaObject(parent["secure_media"]);
+            }
+            if(postMedia) break;
+        }
+    }
+
     //if(isVideo || (postHint != "self" && postHint!="link" && !postHint.empty()))
     {
         std::cout << title <<", is_video:"<<isVideo<<", hint:"<<postHint<<", url:"<<url<<std::endl;

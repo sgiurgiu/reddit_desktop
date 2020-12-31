@@ -50,9 +50,9 @@ static void* get_proc_address_mpv(void *fn_ctx, const char *name)
 }
 
 PostContentViewer::PostContentViewer(RedditClient* client,
-                                     const boost::asio::io_context::executor_type& uiExecutor,
-                                     post_ptr currentPost):
-    client(client),uiExecutor(uiExecutor),currentPost(currentPost),
+                                     const boost::asio::io_context::executor_type& uiExecutor
+                                     ):
+    client(client),uiExecutor(uiExecutor),
     mpvEventIOContextWork(boost::asio::require(mpvEventIOContext.get_executor(),
                                                boost::asio::execution::outstanding_work.tracked)),
     stop(false)
@@ -63,8 +63,10 @@ PostContentViewer::PostContentViewer(RedditClient* client,
     mvpEventThread = std::thread(bound_run_fuction);
     mediaState.mediaAudioVolume = Database::getInstance()->getMediaAudioVolume();
 }
-void PostContentViewer::loadContent()
+void PostContentViewer::loadContent(post_ptr currentPost)
 {
+    this->currentPost = currentPost;
+    currentPostSet = true;
     if(!currentPost->selfText.empty())
     {
         markdown = std::make_unique<MarkdownRenderer>(currentPost->selfText);
@@ -117,6 +119,7 @@ void PostContentViewer::loadContent()
 void PostContentViewer::stopPlayingMedia()
 {
     stop = true;
+    mediaState.finished = true;
 }
 
 PostContentViewer::~PostContentViewer()
@@ -616,6 +619,7 @@ void PostContentViewer::showPostContent()
             {
                 if(ImGui::Button(reinterpret_cast<const char*>(ICON_FA_REPEAT "##_restartMedia")))
                 {
+                    stop = false;
                     const char *cmd[] = {"playlist-play-index","0", nullptr};
                     mpv_command_async(mpv,0,cmd);
                 }
@@ -623,6 +627,7 @@ void PostContentViewer::showPostContent()
             }
             if(ImGui::Button(reinterpret_cast<const char*>(mediaState.paused ? ICON_FA_PLAY "##_playPauseMedia" : ICON_FA_PAUSE "##_playPauseMedia")))
             {
+                stop = false;
                 int shouldPause = !mediaState.paused;
                 mpv_set_property_async(mpv,0,"pause",MPV_FORMAT_FLAG,&shouldPause);
             }

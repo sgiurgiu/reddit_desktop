@@ -88,9 +88,10 @@ void SubredditWindow::loadListingsFromConnection(const listing& listingResponse)
             tmpPosts.emplace_back(std::make_shared<post>(child["data"]));
         }
     }
-    boost::asio::post(this->uiExecutor,std::bind(&SubredditWindow::setListings,this,std::move(tmpPosts),
-                                                 std::move(listingResponse.json["data"]["before"]),
-                                                 std::move(listingResponse.json["data"]["after"])));
+    boost::asio::post(this->uiExecutor,
+                      std::bind(&SubredditWindow::setListings,this,std::move(tmpPosts),
+                                std::move(listingResponse.json["data"]["before"]),
+                                std::move(listingResponse.json["data"]["after"])));
 }
 void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json beforeJson,nlohmann::json afterJson)
 {
@@ -112,6 +113,10 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
         if(subredditName.empty())
         {
             subredditName = p.post->subredditName;
+        }
+        if(!p.postContentViewer)
+        {
+            p.postContentViewer = std::make_shared<PostContentViewer>(client,uiExecutor);
         }
         if(!p.post->thumbnail.empty() && p.post->thumbnail != "self" &&
                 p.post->thumbnail != "default")
@@ -290,6 +295,18 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         auto normalPositionY = ImGui::GetCursorPosY();
         auto desiredPositionY = height - ImGui::GetFrameHeightWithSpacing();
         if(normalPositionY < desiredPositionY) ImGui::SetCursorPosY(desiredPositionY);
+        if(ImGui::Button(fmt::format("{}##showContent{}",
+                                     reinterpret_cast<const char*>(
+                                         p.showingContent ? ICON_FA_MINUS_SQUARE_O:ICON_FA_PLUS_SQUARE_O),
+                                     p.post->id).c_str()))
+        {
+            p.showingContent = !p.showingContent;
+            if(!p.showingContent)
+            {
+                p.postContentViewer->stopPlayingMedia();
+            }
+        }
+        ImGui::SameLine();
         if(ImGui::Button(p.post->commentsText.c_str()))
         {
             commentsSignal(p.post->id,p.post->title);
@@ -298,12 +315,20 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         {
             ImGui::SameLine();
 
-            if(ImGui::Button(fmt::format("{}##{}",
+            if(ImGui::Button(fmt::format("{}##openLink{}",
                                          reinterpret_cast<const char*>(ICON_FA_EXTERNAL_LINK_SQUARE " Open"),
                                          p.post->id).c_str()))
             {
                 Utils::openInBrowser(p.post->url);
             }
+        }
+        if(p.showingContent)
+        {
+            if(!p.postContentViewer->isCurrentPostSet())
+            {
+                p.postContentViewer->loadContent(p.post);
+            }
+            p.postContentViewer->showPostContent();
         }
 
         ImGui::EndGroup();
@@ -354,13 +379,15 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             ImGui::PopStyleVar();
         }
     }
-    ImGui::End();
 
     showNewTextPostDialog();
     showNewLinkPostDialog();
+
+    ImGui::End();
 }
 void SubredditWindow::showNewLinkPostDialog()
 {
+    auto windowWidth = ImGui::GetWindowWidth();
     if(newLinkPostDialog)
     {
         ImGui::OpenPopup(NEWLINK_POST_POPUP_TITLE);
@@ -376,8 +403,10 @@ void SubredditWindow::showNewLinkPostDialog()
         {
            ImGui::SetKeyboardFocusHere(0);
         }
+        ImGui::SetNextItemWidth(windowWidth * 0.5f);
         ImGui::InputText("##newLinkPostTitle",newTextPostTitle,sizeof(newTextPostTitle));
         ImGui::Text("*Link:");
+        ImGui::SetNextItemWidth(windowWidth * 0.5f);
         ImGui::InputText("##newLinkPostText",newLinkPost,sizeof(newLinkPost));
 
         bool okDisabled = std::string_view(newTextPostTitle).empty() ||
@@ -418,6 +447,7 @@ void SubredditWindow::showNewLinkPostDialog()
 
 void SubredditWindow::showNewTextPostDialog()
 {
+    auto windowWidth = ImGui::GetWindowWidth();
     if(newTextPostDialog)
     {
         ImGui::OpenPopup(NEWTEXT_POST_POPUP_TITLE);
@@ -433,8 +463,10 @@ void SubredditWindow::showNewTextPostDialog()
         {
            ImGui::SetKeyboardFocusHere(0);
         }
+        ImGui::SetNextItemWidth(windowWidth * 0.75f);
         ImGui::InputText("##newTextPostTitle",newTextPostTitle,sizeof(newTextPostTitle));
         ImGui::Text("Text:");
+        ImGui::SetNextItemWidth(windowWidth * 0.75f);
         ImGui::InputTextMultiline("##newTextPostText",newTextPostContent,sizeof(newTextPostContent));
 
         bool okDisabled = std::string_view(newTextPostTitle).empty();

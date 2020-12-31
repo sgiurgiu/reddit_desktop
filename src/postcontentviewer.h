@@ -17,12 +17,16 @@ class PostContentViewer : public std::enable_shared_from_this<PostContentViewer>
 {
 public:
     PostContentViewer(RedditClient* client,
-                      const boost::asio::io_context::executor_type& uiExecutor,
-                      post_ptr currentPost);
+                      const boost::asio::io_context::executor_type& uiExecutor
+                      );
     ~PostContentViewer();
     void showPostContent();
     void stopPlayingMedia();
-    void loadContent();
+    void loadContent(post_ptr currentPost);
+    bool isCurrentPostSet() const
+    {
+        return currentPostSet;
+    }
 private:
     void setPostImage(unsigned char* data, int width, int height, int channels);
     void setPostGif(unsigned char* data, int width, int height, int channels,
@@ -92,6 +96,7 @@ private:
     post_gallery gallery;
     std::unique_ptr<MarkdownRenderer> markdown;
     std::atomic_bool stop;
+    bool currentPostSet = false;
 };
 
 #endif // POSTCONTENTVIEWER_H
