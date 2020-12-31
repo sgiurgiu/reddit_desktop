@@ -84,3 +84,7 @@ RedditClient::RedditCreatePostClientConnection RedditClient::makeCreatePostClien
 {
     return std::make_shared<RedditCreatePostConnection>(context,ssl_context,server,service,userAgent);
 }
+RedditClient::RedditSearchNamesClientConnection RedditClient::makeRedditSearchNamesClientConnection()
+{
+    return std::make_shared<RedditSearchNamesConnection>(context,ssl_context,server,service,userAgent);
+}

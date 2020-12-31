@@ -1,0 +1,35 @@
+#ifndef REDDITSEARCHNAMESCONNECTION_H
+#define REDDITSEARCHNAMESCONNECTION_H
+
+#include "redditconnection.h"
+#include "entities.h"
+#include <memory>
+#include <boost/asio/ip/resolver_base.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/signals2.hpp>
+
+using names_list = std::vector<std::string>;
+
+class RedditSearchNamesConnection : public RedditConnection<
+        boost::beast::http::request<boost::beast::http::empty_body>,
+        boost::beast::http::response<boost::beast::http::string_body>,
+        boost::signals2::signal<void(const boost::system::error_code&,
+                                  const client_response<names_list>&)>
+        >
+{
+public:
+    RedditSearchNamesConnection(boost::asio::io_context& context,
+                                boost::asio::ssl::context& ssl_context,
+                                const std::string& host, const std::string& service,
+                                const std::string& userAgent );
+    void search(const std::string& query, const access_token& token);
+protected:
+    virtual void responseReceivedComplete();
+    virtual void sendRequest();
+private:
+    std::string userAgent;
+    bool connected = false;
+
+};
+
+#endif // REDDITSEARCHNAMESCONNECTION_H

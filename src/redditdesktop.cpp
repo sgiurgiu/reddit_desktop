@@ -254,10 +254,11 @@ void RedditDesktop::showDesktop()
 
     if(loginWindow.showLoginWindow())
     {
-        auto user = loginWindow.getConfiguredUser();
-        auto token = loginWindow.getAccessToken();
-        Database::getInstance()->setRegisteredUser(user);
-        client.setUserAgent(make_user_agent(user));
+        current_user = loginWindow.getConfiguredUser();
+        current_access_token = loginWindow.getAccessToken();
+        Database::getInstance()->setRegisteredUser(current_user.value());
+        client.setUserAgent(make_user_agent(current_user.value()));
+        loginSuccessful(current_access_token);
     }
     showErrorDialog();
 
@@ -412,11 +413,11 @@ void RedditDesktop::showMenuFile()
         openSubredditWindow = true;
     }
 
-    if (ImGui::BeginMenu("Open Recent"))
+    /*if (ImGui::BeginMenu("Open Recent"))
     {
         ImGui::MenuItem("fish_hat.h");
         ImGui::EndMenu();
-    }
+    }*/
     ImGui::Separator();
     if (ImGui::MenuItem(reinterpret_cast<const char*>(ICON_FA_POWER_OFF " Quit"), "Ctrl+Q"))
     {
@@ -443,22 +444,54 @@ void RedditDesktop::showOpenSubredditWindow()
         {
            ImGui::SetKeyboardFocusHere(0);
         }
-        ImGui::PushItemWidth(ImGui::CalcTextSize(dummy_text).x);
+        auto dummySize = ImGui::CalcTextSize(dummy_text);
+        ImGui::PushItemWidth(dummySize.x);
         ImGui::InputText("##opening_subreddit",selectedSubreddit,IM_ARRAYSIZE(selectedSubreddit),
                          ImGuiInputTextFlags_None);
         ImGui::PopItemWidth();
+        ImGui::SameLine();
+        bool searchDisabled = std::string_view(selectedSubreddit).empty();
+        if(searchDisabled)
+        {
+            ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+        }
+        if(ImGui::Button(reinterpret_cast<const char*>(ICON_FA_SEARCH "##searchSubreddit")))
+        {
+            searchSubreddits();
+        }
+        if (searchDisabled)
+        {
+            ImGui::PopItemFlag();
+            ImGui::PopStyleVar();
+        }
+        if(!searchedNamesList.empty())
+        {
+            ImGui::BeginChild("##searchResults", ImVec2(0, dummySize.y*10), true);
+            for(const auto& name : searchedNamesList)
+            {
+                if(ImGui::Selectable(name.c_str()))
+                {
+                    std::copy(name.begin(), name.end(), selectedSubreddit);
+                    selectedSubreddit[name.size()] = '\0';
+                }
+            }
+           ImGui::EndChild();
+        }
         ImGui::Separator();
-        bool okDisabled = std::string_view(selectedSubreddit).empty();
+        bool okDisabled = searchDisabled || searchingSubreddits;
         if(okDisabled)
         {
             ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
             ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
         }
         if (ImGui::Button("OK", ImVec2(120, 0)) ||
-                ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)))
+                (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)) && !okDisabled))
         {
             addSubredditWindow(selectedSubreddit);
             ImGui::CloseCurrentPopup();
+            searchNamesConnection.reset();
+            searchedNamesList.clear();
         }
         if (okDisabled)
         {
@@ -466,12 +499,59 @@ void RedditDesktop::showOpenSubredditWindow()
             ImGui::PopStyleVar();
         }
         ImGui::SameLine();
+        if(searchingSubreddits)
+        {
+            ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+        }
         if (ImGui::Button("Cancel", ImVec2(120, 0)) ||
-                ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+                (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)) && !searchingSubreddits))
         {
             ImGui::CloseCurrentPopup();
+            searchNamesConnection.reset();
+            searchedNamesList.clear();
         }
-
+        if (searchingSubreddits)
+        {
+            ImGui::PopItemFlag();
+            ImGui::PopStyleVar();
+        }
         ImGui::EndPopup();
     }
+}
+void RedditDesktop::searchSubreddits()
+{
+    searchedNamesList.clear();
+    searchingSubreddits = true;
+    if(!searchNamesConnection)
+    {
+        searchNamesConnection = client.makeRedditSearchNamesClientConnection();
+        searchNamesConnection->connectionCompleteHandler([self=shared_from_this()](const boost::system::error_code& ec,
+                                                     const client_response<names_list>& response)
+         {
+            if(ec)
+            {
+                boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,ec.message()));
+            }
+            else
+            {
+                if(response.status >= 400)
+                {
+                    boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,response.body));
+                }
+                else
+                {
+                    boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setSearchResultsNames,self,std::move(response.data)));
+                }
+            }
+         });
+    }
+
+    searchNamesConnection->search(selectedSubreddit,current_access_token.data);
+}
+
+void RedditDesktop::setSearchResultsNames(names_list names)
+{
+    searchedNamesList = std::move(names);
+    searchingSubreddits = false;
 }

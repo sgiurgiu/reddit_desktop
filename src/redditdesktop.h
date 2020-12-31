@@ -47,6 +47,8 @@ private:
     void sortSubscribedSubreddits();
     void loadMultis(const std::string& url, const access_token& token);
     void setUserMultis(multireddit_list multis);
+    void searchSubreddits();
+    void setSearchResultsNames(names_list names);
 private:
     const boost::asio::io_context::executor_type& uiExecutor;
     RedditClient client;
@@ -67,6 +69,7 @@ private:
     subreddit_list subscribedSubreddits;
     subreddit_list unsortedSubscribedSubreddits;
     multireddit_list userMultis;
+    names_list searchedNamesList;
     float topPosAfterMenuBar = 0.0f;
     enum class SubredditsSorting
     {
@@ -77,6 +80,8 @@ private:
     std::map<SubredditsSorting,std::string> subredditsSortMethod;
     SubredditsSorting currentSubredditsSorting = SubredditsSorting::None;
     bool shouldBlurPictures = true;
+    RedditClient::RedditSearchNamesClientConnection searchNamesConnection;
+    bool searchingSubreddits = false;
 };
 
 
