@@ -25,10 +25,28 @@ SubredditWindow::SubredditWindow(int id, const std::string& subreddit,
 }
 SubredditWindow::~SubredditWindow()
 {
+    std::vector<GLuint> textures;
+    textures.reserve(posts.size()*3);
     for(auto&& p : posts)
-    {
-        p.postContentViewer->stopPlayingMedia();
+    {        
+        if(p.thumbnailPicture && p.thumbnailPicture->textureId > 0)
+        {
+            textures.push_back(p.thumbnailPicture->textureId);
+            p.thumbnailPicture->textureId = 0;
+        }
+        if(p.blurredThumbnailPicture && p.blurredThumbnailPicture->textureId > 0)
+        {
+            textures.push_back(p.blurredThumbnailPicture->textureId);
+            p.blurredThumbnailPicture->textureId = 0;
+        }
+        if(p.postContentViewer)
+        {
+            p.postContentViewer->stopPlayingMedia();
+            auto postContentViewerTextures = p.postContentViewer->getAndResetTextures();
+            std::move(postContentViewerTextures.begin(),postContentViewerTextures.end(),std::back_inserter(textures));
+        }
     }
+    glDeleteTextures(textures.size(),textures.data());
 }
 void SubredditWindow::loadSubreddit()
 {
@@ -65,7 +83,7 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
        {
            if(response.status >= 400)
            {
-               boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,response.body));
+               boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,std::move(response.body)));
            }
            else
            {
@@ -78,7 +96,7 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
 }
 void SubredditWindow::setErrorMessage(std::string errorMessage)
 {
-    listingErrorMessage = errorMessage;
+    listingErrorMessage = std::move(errorMessage);
 }
 void SubredditWindow::loadListingsFromConnection(const listing& listingResponse)
 {
@@ -118,10 +136,7 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
         {
             subredditName = p.post->subredditName;
         }
-        if(!p.postContentViewer)
-        {
-            p.postContentViewer = std::make_shared<PostContentViewer>(client,uiExecutor);
-        }
+
         if(!p.post->thumbnail.empty() && p.post->thumbnail != "self" &&
                 p.post->thumbnail != "default")
         {
@@ -305,7 +320,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
                                      p.post->id).c_str()))
         {
             p.showingContent = !p.showingContent;
-            if(!p.showingContent)
+            if(!p.showingContent && p.postContentViewer)
             {
                 p.postContentViewer->stopPlayingMedia();
             }
@@ -328,6 +343,10 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         }
         if(p.showingContent)
         {
+            if(!p.postContentViewer)
+            {
+                p.postContentViewer = std::make_shared<PostContentViewer>(client,uiExecutor);
+            }
             if(!p.postContentViewer->isCurrentPostSet())
             {
                 p.postContentViewer->loadContent(p.post);

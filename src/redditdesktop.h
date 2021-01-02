@@ -84,7 +84,7 @@ private:
     bool shouldBlurPictures = true;
     RedditClient::RedditSearchNamesClientConnection searchNamesConnection;
     bool searchingSubreddits = false;
-    UserInformationWindow userInfoWindow;
+    std::shared_ptr<UserInformationWindow> userInfoWindow;
 };
 
 

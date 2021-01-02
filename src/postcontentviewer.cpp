@@ -518,6 +518,40 @@ void PostContentViewer::setPostImage(unsigned char* data, int width, int height,
     loadingPostContent = false;
 }
 
+std::vector<GLuint> PostContentViewer::getAndResetTextures()
+{
+    std::vector<GLuint> textures;
+    if(postPicture && postPicture->textureId > 0)
+    {
+        textures.push_back(postPicture->textureId);
+        postPicture->textureId = 0;
+    }
+    if(gif)
+    {
+        for(auto&& img : gif->images)
+        {
+            if(img->img && img->img->textureId > 0)
+            {
+                textures.push_back(img->img->textureId);
+                img->img->textureId = 0;
+            }
+        }
+    }
+    if(currentPost && currentPost->isGallery && !currentPost->gallery.empty())
+    {
+        for(auto&& img : gallery.images)
+        {
+            if(img->textureId > 0)
+            {
+                textures.push_back(img->textureId);
+                img->textureId = 0;
+            }
+        }
+    }
+
+    return textures;
+}
+
 void PostContentViewer::showPostContent()
 {
     ResizableGLImagePtr display_image = postPicture;

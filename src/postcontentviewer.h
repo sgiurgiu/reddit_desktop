@@ -27,6 +27,7 @@ public:
     {
         return currentPostSet;
     }
+    std::vector<GLuint> getAndResetTextures();
 private:
     void setPostImage(unsigned char* data, int width, int height, int channels);
     void setPostGif(unsigned char* data, int width, int height, int channels,

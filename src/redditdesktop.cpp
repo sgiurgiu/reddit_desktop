@@ -236,30 +236,37 @@ void RedditDesktop::showDesktop()
     }
     showMainMenuBar();
     showSubredditsWindow();
-    for(auto&& win : subredditWindows)
+
     {
-        if(win->isWindowOpen())
+        auto it = subredditWindows.begin();
+        while(it != subredditWindows.end())
         {
-            win->showWindow(appFrameWidth,appFrameHeight);
+            if((*it)->isWindowOpen())
+            {
+                (*it)->showWindow(appFrameWidth,appFrameHeight);
+                ++it;
+            }
+            else
+            {
+                it = subredditWindows.erase(it);
+            }
         }
     }
-
-    for(auto&& win : commentsWindows)
     {
-        if(win->isWindowOpen())
+        auto it = commentsWindows.begin();
+        while(it != commentsWindows.end())
         {
-            win->showWindow(appFrameWidth,appFrameHeight);
+            if((*it)->isWindowOpen())
+            {
+                (*it)->showWindow(appFrameWidth,appFrameHeight);
+                ++it;
+            }
+            else
+            {
+                it = commentsWindows.erase(it);
+            }
         }
     }
-
-    auto startRemoveSubredditWindows = std::remove_if(subredditWindows.begin(),subredditWindows.end(),[](const auto& win) {
-        return !win->isWindowOpen();
-    });
-    subredditWindows.erase(startRemoveSubredditWindows,subredditWindows.end());
-    auto startRemoveCommentsWindows = std::remove_if(commentsWindows.begin(),commentsWindows.end(),[](const auto& win) {
-        return !win->isWindowOpen();
-    });
-    commentsWindows.erase(startRemoveCommentsWindows,commentsWindows.end());
 
     showOpenSubredditWindow();
 
@@ -271,9 +278,16 @@ void RedditDesktop::showDesktop()
         client.setUserAgent(make_user_agent(current_user.value()));
         loginSuccessful(current_access_token);
     }
-    if(userInfoWindow.isWindowShowing())
+    if(userInfoWindow)
     {
-        userInfoWindow.showUserInfoWindow();
+        if(userInfoWindow->isWindowShowing())
+        {
+            userInfoWindow->showUserInfoWindow(appFrameWidth,appFrameHeight);
+        }
+        else
+        {
+            userInfoWindow.reset();
+        }
     }
     showErrorDialog();
 
@@ -421,7 +435,11 @@ void RedditDesktop::showMainMenuBar()
             ImGui::SameLine(ImGui::GetWindowWidth()-pos);
             if(ImGui::Button(displayed_info.c_str()))
             {
-                userInfoWindow.shouldShowWindow(true);
+                if(!userInfoWindow)
+                {
+                    userInfoWindow = std::make_unique<UserInformationWindow>(current_access_token.data,&client,uiExecutor);
+                }
+                userInfoWindow->shouldShowWindow(true);
             }
             infoButtonWidth = ImGui::GetItemRectSize().x;
         }
