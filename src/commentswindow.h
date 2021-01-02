@@ -20,7 +20,7 @@ public:
                    const std::string& title,
                    const access_token& token,
                    RedditClient* client,
-                   const boost::asio::io_context::executor_type& executor);
+                   const boost::asio::any_io_executor& executor);
     ~CommentsWindow();
     void loadComments();
     bool isWindowOpen() const {return windowOpen;}
@@ -65,7 +65,7 @@ private:
     bool willBeFocused = false;
     DisplayCommentList comments;
     post_ptr parentPost;
-    const boost::asio::io_context::executor_type& uiExecutor;
+    const boost::asio::any_io_executor& uiExecutor;
     std::shared_ptr<PostContentViewer> postContentViewer;
 };
 

@@ -7,7 +7,7 @@
 class LoginWindow
 {
 public:
-    LoginWindow(RedditClient* client, const boost::asio::io_context::executor_type& executor);
+    LoginWindow(RedditClient* client, const boost::asio::any_io_executor& executor);
     void setShowLoginWindow(bool flag);
     bool showLoginWindow();
     user getConfiguredUser() const
@@ -39,7 +39,7 @@ private:
     user configuredUser;
     client_response<access_token> token;
     RedditClient::RedditLoginClientConnection loginConnection;
-    const boost::asio::io_context::executor_type& uiExecutor;
+    const boost::asio::any_io_executor& uiExecutor;
 };
 
 #endif // LOGINWINDOW_H

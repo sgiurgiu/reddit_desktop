@@ -18,36 +18,59 @@
 
 void Utils::AddFont(const unsigned int* fontData, const unsigned int fontDataSize, float fontSize)
 {
-    ImFontConfig config;
-    config.MergeMode = true;
-    config.GlyphMinAdvanceX = fontSize; // Use if you want to make the icon monospaced
+    ImFontConfig fontAwesomeConfig;
+    fontAwesomeConfig.MergeMode = true;
+    fontAwesomeConfig.GlyphMinAdvanceX = fontSize; // Use if you want to make the icon monospaced
     static const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
 
-    ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(fontData,fontDataSize, fontSize);
-    ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(FontAwesome_compressed_data, FontAwesome_compressed_size, fontSize,
-                                                               &config, icon_ranges);
+    ImFontConfig emojiConfig;
+    emojiConfig.MergeMode = true;
+    emojiConfig.GlyphMinAdvanceX = fontSize; // Use if you want to make the icon monospaced
+    static const ImWchar emoji_icon_ranges[] = { 0x231A, 0x26CF,
+                                                // 0x26D1, 0x1F251,
+                                                 0 };
+    static const ImWchar romanian_ranges[] = { 0x0100, 0x017F,
+                                               0x0180, 0x024F,
+                                               0 };
 
+    ImFontConfig config;
+    config.MergeMode = true;
+
+    ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(fontData,fontDataSize, fontSize);
+    ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(fontData,fontDataSize, fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesChineseFull());
+    ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(fontData,fontDataSize, fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+    ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(fontData,fontDataSize, fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesKorean());
+    ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(fontData,fontDataSize, fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesJapanese());
+    ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(fontData,fontDataSize, fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesThai());
+    ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(fontData,fontDataSize, fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesVietnamese());
+    ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(fontData,fontDataSize, fontSize,&config,romanian_ranges);
+
+    ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(FontAwesome_compressed_data,
+                                                         FontAwesome_compressed_size, fontSize,
+                                                         &fontAwesomeConfig, icon_ranges);
+
+    /*ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(NotoColorEmoji_ttf_compressed_data,
+                                                         NotoColorEmoji_ttf_compressed_size, fontSize,
+                                                         &emojiConfig,emoji_icon_ranges);*/
 }
 
 void Utils::LoadFonts()
 {
-    AddFont(Roboto_Black_ttf_compressed_data,Roboto_Black_ttf_compressed_size,16.0f);
-    AddFont(Roboto_BlackItalic_ttf_compressed_data,Roboto_BlackItalic_ttf_compressed_size,16.0f);
-    AddFont(Roboto_Bold_ttf_compressed_data,Roboto_Bold_ttf_compressed_size,16.0f);
-    AddFont(Roboto_BoldItalic_ttf_compressed_data,Roboto_BoldItalic_ttf_compressed_size,16.0f);
-    AddFont(Roboto_Italic_ttf_compressed_data,Roboto_Italic_ttf_compressed_size,16.0f);
-    AddFont(Roboto_Light_ttf_compressed_data,Roboto_Light_ttf_compressed_size,16.0f);
-    AddFont(Roboto_LightItalic_ttf_compressed_data,Roboto_LightItalic_ttf_compressed_size,16.0f);
-    AddFont(Roboto_Medium_ttf_compressed_data,Roboto_Medium_ttf_compressed_size, 16.0f);
-    AddFont(Roboto_MediumItalic_ttf_compressed_data,Roboto_MediumItalic_ttf_compressed_size, 16.0f);
-    AddFont(Roboto_Regular_ttf_compressed_data,Roboto_Regular_ttf_compressed_size,16.0f);
-    AddFont(Roboto_Thin_ttf_compressed_data,Roboto_Thin_ttf_compressed_size,16.0f);
-    AddFont(Roboto_ThinItalic_ttf_compressed_data,Roboto_ThinItalic_ttf_compressed_size,16.0f);
-    AddFont(Roboto_Medium_ttf_compressed_data,Roboto_Medium_ttf_compressed_size, 24.0f);
-    AddFont(Roboto_MediumItalic_ttf_compressed_data,Roboto_MediumItalic_ttf_compressed_size, 24.0f);
-    AddFont(RobotoMono_Regular_ttf_compressed_data,RobotoMono_Regular_ttf_compressed_size, 16.0f);
-    AddFont(RobotoMono_Medium_ttf_compressed_data,RobotoMono_Medium_ttf_compressed_size, 16.0f);
-    AddFont(RobotoMono_Bold_ttf_compressed_data,RobotoMono_Bold_ttf_compressed_size, 16.0f);
+    AddFont(NotoSans_Black_ttf_compressed_data,NotoSans_Black_ttf_compressed_size,16.0f);
+    AddFont(NotoSans_BlackItalic_ttf_compressed_data,NotoSans_BlackItalic_ttf_compressed_size,16.0f);
+    AddFont(NotoSans_Bold_ttf_compressed_data,NotoSans_Bold_ttf_compressed_size,16.0f);
+    AddFont(NotoSans_BoldItalic_ttf_compressed_data,NotoSans_BoldItalic_ttf_compressed_size,16.0f);
+    AddFont(NotoSans_Italic_ttf_compressed_data,NotoSans_Italic_ttf_compressed_size,16.0f);
+    AddFont(NotoSans_Light_ttf_compressed_data,NotoSans_Light_ttf_compressed_size,16.0f);
+    AddFont(NotoSans_LightItalic_ttf_compressed_data,NotoSans_LightItalic_ttf_compressed_size,16.0f);
+    AddFont(NotoSans_Medium_ttf_compressed_data,NotoSans_Medium_ttf_compressed_size, 16.0f);
+    AddFont(NotoSans_MediumItalic_ttf_compressed_data,NotoSans_MediumItalic_ttf_compressed_size, 16.0f);
+    AddFont(NotoSans_Regular_ttf_compressed_data,NotoSans_Regular_ttf_compressed_size,16.0f);
+    AddFont(NotoSans_Thin_ttf_compressed_data,NotoSans_Thin_ttf_compressed_size,16.0f);
+    AddFont(NotoSans_ThinItalic_ttf_compressed_data,NotoSans_ThinItalic_ttf_compressed_size,16.0f);
+    AddFont(NotoSans_Medium_ttf_compressed_data,NotoSans_Medium_ttf_compressed_size, 24.0f);
+    AddFont(NotoSans_MediumItalic_ttf_compressed_data,NotoSans_MediumItalic_ttf_compressed_size, 24.0f);
+    AddFont(NotoMono_Regular_ttf_compressed_data,NotoMono_Regular_ttf_compressed_size, 16.0f);
 }
 
 int Utils::GetFontIndex(Fonts font)

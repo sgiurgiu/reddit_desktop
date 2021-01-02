@@ -16,7 +16,7 @@ class RedditListingConnection : public RedditConnection<
         >
 {
 public:
-    RedditListingConnection(boost::asio::io_context& context,
+    RedditListingConnection(const boost::asio::any_io_executor& executor,
                   boost::asio::ssl::context& ssl_context,
                   const std::string& host, const std::string& service,
                   const std::string& userAgent );

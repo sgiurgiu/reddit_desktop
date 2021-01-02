@@ -131,7 +131,7 @@ void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type)
         if(entering)
         {
             ImGui::Indent();
-            ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_LightItalic)]);
+            ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_LightItalic)]);
         }
         else
         {
@@ -170,7 +170,7 @@ void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type)
     case CMARK_NODE_HEADING:
         if(entering)
         {
-           ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Medium_Big)]);
+           ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Medium_Big)]);
         }
         else
         {
@@ -180,7 +180,7 @@ void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type)
     break;
     case CMARK_NODE_CODE_BLOCK:
         ImGui::Indent();
-        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::RobotoMono_Regular)]);
+        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::NotoMono_Regular)]);
     {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
         ImGuiContext& g = *GImGui;
@@ -299,7 +299,7 @@ void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type)
         ImGui::SameLine(0.0f,ImGui::CalcTextSize(" ").x);
     break;
     case CMARK_NODE_CODE:
-        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::RobotoMono_Regular)]);
+        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::NotoMono_Regular)]);
     {
         std::string text((const char*)node->as.literal.data,node->as.literal.len);
         renderCode(text.c_str(), false);ImGui::SameLine();
@@ -318,7 +318,7 @@ void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type)
     case CMARK_NODE_STRONG:
         if(entering)
         {
-           ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Bold)]);
+           ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Bold)]);
         }
         else
         {
@@ -328,7 +328,7 @@ void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type)
     case CMARK_NODE_EMPH:
         if(entering)
         {
-           ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Italic)]);
+           ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Italic)]);
         }
         else
         {
@@ -439,7 +439,7 @@ void MarkdownRenderer::RenderMarkdown()
 {
     if(document)
     {
-        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Regular)]);//Roboto medium
+        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Regular)]);//Roboto medium
         cmark_event_type ev_type;
         cmark_node *cur;
         cmark_iter *iter = cmark_iter_new(document);

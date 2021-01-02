@@ -9,7 +9,6 @@
 #include <vector>
 #include <SDL.h>
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/executor_work_guard.hpp>
 #include <memory>
 
 #if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
@@ -163,12 +162,8 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
     bool show_markdown_window = false;
 #endif
     boost::asio::io_context uiContext;
-    auto work = boost::asio::require(uiContext.get_executor(),
-                                        boost::asio::execution::outstanding_work.tracked);
+    auto desktop = std::make_shared<RedditDesktop>(uiContext);
 
-    auto desktop = std::make_shared<RedditDesktop>(uiContext.get_executor());
-    //using work_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
-    //work_guard_type work = boost::asio::make_work_guard(uiContext.get_executor());
     desktop->loginCurrentUser();
     MarkdownRenderer::InitEngine();
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
@@ -177,6 +172,7 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
     while (!done)
     {
         //execute whatever work we have in the UI thread
+
         uiContext.poll_one();
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
@@ -224,8 +220,8 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
             done = desktop->quitSelected();
         }
     }
-   // work.reset();
-    uiContext.stop();
+    desktop->closeWindow();
+    uiContext.run();
     MarkdownRenderer::ReleaseEngine();
 }
 

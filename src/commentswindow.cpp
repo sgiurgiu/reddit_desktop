@@ -12,7 +12,7 @@ CommentsWindow::CommentsWindow(const std::string& postId,
                                const std::string& title,
                                const access_token& token,
                                RedditClient* client,
-                               const boost::asio::io_context::executor_type& executor):
+                               const boost::asio::any_io_executor& executor):
     postId(postId),title(title),token(token),client(client),
     uiExecutor(executor)
 {    
@@ -181,10 +181,10 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
 
     if(parentPost)
     {
-        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Bold)]);
+        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Bold)]);
         ImGui::TextWrapped("%s",parentPost->title.c_str());
         ImGui::PopFont();
-        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Light)]);
+        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Light)]);
         ImGui::Text("Posted by %s %s",parentPost->author.c_str(),parentPost->humanReadableTimeDifference.c_str());
         ImGui::PopFont();
         ImGui::NewLine();

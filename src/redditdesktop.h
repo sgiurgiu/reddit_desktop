@@ -14,11 +14,12 @@
 class RedditDesktop : public std::enable_shared_from_this<RedditDesktop>
 {
 public:
-    RedditDesktop(const boost::asio::io_context::executor_type& executor);
+    RedditDesktop(boost::asio::io_context& context);
 
     void loginCurrentUser();
     void showDesktop();
-    bool quitSelected() const
+    void closeWindow();
+    bool quitSelected()
     {
         return shouldQuit;
     }
@@ -50,7 +51,7 @@ private:
     void searchSubreddits();
     void setSearchResultsNames(names_list names);
 private:
-    const boost::asio::io_context::executor_type& uiExecutor;
+    boost::asio::any_io_executor uiExecutor;
     RedditClient client;
     std::vector<std::shared_ptr<SubredditWindow>> subredditWindows;
     std::vector<std::shared_ptr<CommentsWindow>> commentsWindows;

@@ -50,10 +50,10 @@ static void* get_proc_address_mpv(void *fn_ctx, const char *name)
 }
 
 PostContentViewer::PostContentViewer(RedditClient* client,
-                                     const boost::asio::io_context::executor_type& uiExecutor
+                                     const boost::asio::any_io_executor& uiExecutor
                                      ):
     client(client),uiExecutor(uiExecutor),
-    mpvEventIOContextWork(boost::asio::require(mpvEventIOContext.get_executor(),
+    mpvEventIOContextExecutor(boost::asio::require(mpvEventIOContext.get_executor(),
                                                boost::asio::execution::outstanding_work.tracked)),
     stop(false)
 {
@@ -126,6 +126,7 @@ PostContentViewer::~PostContentViewer()
 {
     stopPlayingMedia();
     Database::getInstance()->setMediaAudioVolume(mediaState.mediaAudioVolume);
+    mpvEventIOContextExecutor = boost::asio::any_io_executor();
     mpvEventIOContext.stop();
     if(mvpEventThread.joinable())
     {
@@ -155,7 +156,7 @@ void PostContentViewer::onMpvEvents(void* context)
 {
     PostContentViewer* win=(PostContentViewer*)context;
     if(win->stop) return;
-    boost::asio::post(win->mpvEventIOContext.get_executor(),std::bind(&PostContentViewer::handleMpvEvents,win->shared_from_this()));
+    boost::asio::post(win->mpvEventIOContextExecutor,std::bind(&PostContentViewer::handleMpvEvents,win->shared_from_this()));
 }
 void PostContentViewer::handleMpvEvents()
 {
@@ -590,8 +591,10 @@ void PostContentViewer::showPostContent()
         ImGui::ImageButton((void*)(intptr_t)display_image->textureId,
                            ImVec2(display_image->resizedWidth,display_image->resizedHeight),ImVec2(0, 0),ImVec2(1,1),0);
 
-        if(ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(),ImGui::GetItemRectMax()) &&
-                ImGui::IsMouseDragging(ImGuiMouseButton_Left))
+        if(ImGui::IsWindowFocused(ImGuiFocusedFlags_RootWindow) &&
+                ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(),ImGui::GetItemRectMax()) &&
+                ImGui::IsMouseDragging(ImGuiMouseButton_Left)
+                )
         {
             //keep same aspect ratio
             auto x = ImGui::GetIO().MouseDelta.x;

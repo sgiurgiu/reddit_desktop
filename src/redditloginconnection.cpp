@@ -9,11 +9,11 @@
 
 #include "utils.h"
 
-RedditLoginConnection::RedditLoginConnection(boost::asio::io_context& context,
+RedditLoginConnection::RedditLoginConnection(const boost::asio::any_io_executor& executor,
                                              boost::asio::ssl::context& ssl_context,
                                              const std::string& host,
                                              const std::string& service):
-    RedditConnection(context,ssl_context,host,service)
+    RedditConnection(executor,ssl_context,host,service)
 {
 }
 

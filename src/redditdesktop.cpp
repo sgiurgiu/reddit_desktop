@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 #include <algorithm>
 #include "database.h"
+#include <iostream>
 
 namespace
 {
@@ -14,8 +15,11 @@ constexpr auto ERROR_WINDOW_POPUP_TITLE = "Error Occurred";
 constexpr auto SUBREDDITS_WINDOW_TITLE = "My Subreddits";
 }
 
-RedditDesktop::RedditDesktop(const boost::asio::io_context::executor_type& executor):uiExecutor(executor),
-    client("api.reddit.com","oauth.reddit.com",3),loginWindow(&client,uiExecutor)
+RedditDesktop::RedditDesktop(boost::asio::io_context& context):
+    uiExecutor(boost::asio::require(context.get_executor(),
+                                    boost::asio::execution::outstanding_work.tracked)),
+    client("api.reddit.com","oauth.reddit.com",3),
+    loginWindow(&client,uiExecutor)
 {
     subredditsSortMethod[SubredditsSorting::None] = "None";
     subredditsSortMethod[SubredditsSorting::Alphabetical_Ascending] = "Alphabetical";
@@ -46,7 +50,7 @@ void RedditDesktop::loginCurrentUser()
                 }
                 else
                 {
-                    boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::loginSuccessful,self,token));
+                    boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::loginSuccessful,self,std::move(token)));
                 }
             }
         });
@@ -212,9 +216,14 @@ void RedditDesktop::setConnectionErrorMessage(std::string msg)
     showConnectionErrorDialog = true;
     connectionErrorMessage = msg;
 }
+void RedditDesktop::closeWindow()
+{
+    shouldQuit = true;
+    uiExecutor = boost::asio::any_io_executor();
+}
 void RedditDesktop::showDesktop()
 {
-    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Medium)]);//Roboto medium
+    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Medium)]);//Roboto medium
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Q)) && ImGui::GetIO().KeyCtrl)
     {
         shouldQuit = true;

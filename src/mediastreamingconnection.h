@@ -27,7 +27,7 @@ class MediaStreamingConnection : public RedditConnection<
         >
 {
 public:
-    MediaStreamingConnection(boost::asio::io_context& context,
+    MediaStreamingConnection(const boost::asio::any_io_executor& executor,
                              boost::asio::ssl::context& ssl_context,
                              const std::string& userAgent);
     ~MediaStreamingConnection();

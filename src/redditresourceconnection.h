@@ -19,7 +19,7 @@ class RedditResourceConnection : public RedditConnection<
         >
 {
 public:
-    RedditResourceConnection(boost::asio::io_context& context,
+    RedditResourceConnection(const boost::asio::any_io_executor& executor,
                              boost::asio::ssl::context& ssl_context,                             
                              const std::string& userAgent);
     void getResource(const std::string& url);

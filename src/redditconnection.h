@@ -17,10 +17,10 @@ template<typename Request,typename Response, typename Signal>
 class RedditConnection : public std::enable_shared_from_this<RedditConnection<Request,Response,Signal>>
 {
 public:
-    RedditConnection(boost::asio::io_context& context,
+    RedditConnection(const boost::asio::any_io_executor& executor,
                      boost::asio::ssl::context& ssl_context,const std::string& host,
                      const std::string& service):
-        context(context),ssl_context(ssl_context),strand(boost::asio::make_strand(context)),
+        ssl_context(ssl_context),strand(boost::asio::make_strand(executor)),
         resolver(strand),
         host(host),service(service)
     {
@@ -37,9 +37,10 @@ public:
         signal.disconnect_all_slots();
     }
 
-    void connectionCompleteHandler(const typename Signal::slot_type& slot)
+    template<typename Slot>
+    void connectionCompleteHandler(Slot slot)
     {
-        signal.connect(slot);        
+        signal.connect(std::move(slot));
     }
 private:
     void onConnect(const boost::system::error_code& ec,
@@ -160,9 +161,8 @@ protected:
 
     virtual void responseReceivedComplete() = 0;
 protected:
-    boost::asio::io_context& context;
     boost::asio::ssl::context& ssl_context;
-    boost::asio::strand<boost::asio::io_context::executor_type> strand;
+    boost::asio::strand<boost::asio::any_io_executor> strand;
     boost::asio::ip::tcp::resolver resolver;
     std::optional<boost::beast::ssl_stream<boost::beast::tcp_stream>> stream;
     boost::beast::flat_buffer buffer; // (Must persist between reads)

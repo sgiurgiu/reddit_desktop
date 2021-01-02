@@ -17,14 +17,18 @@ constexpr auto NEWLINK_POST_POPUP_TITLE = "New Link";
 SubredditWindow::SubredditWindow(int id, const std::string& subreddit,
                                  const access_token& token,
                                  RedditClient* client,
-                                 const boost::asio::io_context::executor_type& executor):
+                                 const boost::asio::any_io_executor& executor):
     id(id),subreddit(subreddit),token(token),client(client),
     uiExecutor(executor)
 {
     shouldBlurPictures= Database::getInstance()->getBlurNSFWPictures();
 }
 SubredditWindow::~SubredditWindow()
-{    
+{
+    for(auto&& p : posts)
+    {
+        p.postContentViewer->stopPlayingMedia();
+    }
 }
 void SubredditWindow::loadSubreddit()
 {
@@ -88,7 +92,7 @@ void SubredditWindow::loadListingsFromConnection(const listing& listingResponse)
             tmpPosts.emplace_back(std::make_shared<post>(child["data"]));
         }
     }
-    boost::asio::post(this->uiExecutor,
+    boost::asio::post(uiExecutor,
                       std::bind(&SubredditWindow::setListings,this,std::move(tmpPosts),
                                 std::move(listingResponse.json["data"]["before"]),
                                 std::move(listingResponse.json["data"]["after"])));
@@ -259,11 +263,11 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
 
         ImGui::BeginGroup();
 
-        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Bold)]);
+        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Bold)]);
         ImGui::Text("%s",p.post->subreddit.c_str());
         ImGui::PopFont();
         ImGui::SameLine();        
-        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Light)]);
+        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Light)]);
         ImGui::Text("Posted by %s %s",p.post->author.c_str(),p.post->humanReadableTimeDifference.c_str());
         if(p.post->over18)
         {
@@ -278,7 +282,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         }
         ImGui::PopFont();
 
-        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Medium_Big)]);
+        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Medium_Big)]);
         if(!p.post->title.empty())
         {
             ImGui::TextWrapped("%s",p.post->title.c_str());
@@ -288,7 +292,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             ImGui::TextWrapped("<No Title>");
         }
         ImGui::PopFont();
-        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Roboto_Light)]);
+        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Light)]);
         ImGui::Text("(%s)",p.post->domain.c_str());
         ImGui::PopFont();
 
@@ -329,7 +333,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
                 p.postContentViewer->loadContent(p.post);
             }
             p.postContentViewer->showPostContent();
-        }
+        }        
 
         ImGui::EndGroup();
         ImGui::Separator();

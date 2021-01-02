@@ -17,7 +17,7 @@ class PostContentViewer : public std::enable_shared_from_this<PostContentViewer>
 {
 public:
     PostContentViewer(RedditClient* client,
-                      const boost::asio::io_context::executor_type& uiExecutor
+                      const boost::asio::any_io_executor& uiExecutor
                       );
     ~PostContentViewer();
     void showPostContent();
@@ -46,7 +46,7 @@ private:
     void setErrorMessage(std::string errorMessage);
 private:
     RedditClient* client;
-    const boost::asio::io_context::executor_type& uiExecutor;
+    const boost::asio::any_io_executor& uiExecutor;
     post_ptr currentPost;    
     std::string errorMessage;
     SDL_DisplayMode displayMode;
@@ -54,7 +54,7 @@ private:
     mpv_handle* mpv = nullptr;
     mpv_render_context *mpv_gl = nullptr;
     boost::asio::io_context mpvEventIOContext;
-    boost::asio::any_io_executor mpvEventIOContextWork;
+    boost::asio::any_io_executor mpvEventIOContextExecutor;
     std::thread mvpEventThread;
     unsigned int mediaFramebufferObject = 0;
     struct MediaState {

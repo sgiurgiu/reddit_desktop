@@ -15,7 +15,7 @@ constexpr std::string_view FIELD_TEMPLATE = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 }
 
 LoginWindow::LoginWindow(RedditClient* client,
-                         const boost::asio::io_context::executor_type& executor):
+                         const boost::asio::any_io_executor& executor):
     client(client),loginConnection(client->makeLoginClientConnection()),uiExecutor(executor)
 {
     loginConnection->connectionCompleteHandler([this](const boost::system::error_code& ec,const client_response<access_token>& token){

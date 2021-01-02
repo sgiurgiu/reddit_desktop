@@ -7,10 +7,10 @@
 #include "htmlparser.h"
 #include "macros.h"
 
-MediaStreamingConnection::MediaStreamingConnection(boost::asio::io_context& context,
+MediaStreamingConnection::MediaStreamingConnection(const boost::asio::any_io_executor& executor,
                                                    boost::asio::ssl::context& ssl_context,
                                                    const std::string& userAgent):
-    RedditConnection(context,ssl_context,"",""),userAgent(userAgent),cancel(false)
+    RedditConnection(executor,ssl_context,"",""),userAgent(userAgent),cancel(false)
 {
     responseParser->body_limit(10*1024*1024);//10 MB html file limit should be plenty
 }
@@ -134,7 +134,7 @@ void MediaStreamingConnection::streamMedia(post* mediaPost)
     if(currentPost->postMedia && currentPost->postMedia->redditVideo)
     {
         currentUrl = currentPost->postMedia->redditVideo->dashUrl;
-        boost::asio::post(context.get_executor(),std::bind(
+        boost::asio::post(strand,std::bind(
                                &MediaStreamingConnection::startStreaming,
                                this->shared_from_base<MediaStreamingConnection>(),currentUrl));
     }

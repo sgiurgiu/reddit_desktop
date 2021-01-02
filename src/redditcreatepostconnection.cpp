@@ -5,11 +5,11 @@
 #include "htmlparser.h"
 #include <fstream>
 
-RedditCreatePostConnection::RedditCreatePostConnection(boost::asio::io_context& context,
+RedditCreatePostConnection::RedditCreatePostConnection(const boost::asio::any_io_executor& executor,
                                                        boost::asio::ssl::context& ssl_context,
                                                        const std::string& host, const std::string& service,
                                                        const std::string& userAgent):
-    RedditConnection(context,ssl_context,host,service),userAgent(userAgent)
+    RedditConnection(executor,ssl_context,host,service),userAgent(userAgent)
 {
 }
 

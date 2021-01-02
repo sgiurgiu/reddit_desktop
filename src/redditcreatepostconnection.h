@@ -17,7 +17,7 @@ class RedditCreatePostConnection : public RedditConnection<
     >
 {
 public:
-    RedditCreatePostConnection(boost::asio::io_context& context,
+    RedditCreatePostConnection(const boost::asio::any_io_executor& executor,
                                boost::asio::ssl::context& ssl_context,
                                const std::string& host, const std::string& service,
                                const std::string& userAgent);

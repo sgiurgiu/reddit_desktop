@@ -16,7 +16,7 @@ class RedditLoginConnection : public RedditConnection<
         >
 {
 public:
-    RedditLoginConnection(boost::asio::io_context& context,
+    RedditLoginConnection(const boost::asio::any_io_executor& executor,
                           boost::asio::ssl::context& ssl_context,const std::string& host,
                           const std::string& service);
 

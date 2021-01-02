@@ -12,10 +12,10 @@ namespace
 constexpr auto BUFFER_SIZE = 150*1024*1024;
 }
 
-RedditResourceConnection::RedditResourceConnection(boost::asio::io_context& context,
+RedditResourceConnection::RedditResourceConnection(const boost::asio::any_io_executor& executor,
                                                    boost::asio::ssl::context& ssl_context,                                                   
                                                    const std::string& userAgent):
-    RedditConnection(context,ssl_context,"",""),userAgent(userAgent)
+    RedditConnection(executor,ssl_context,"",""),userAgent(userAgent)
 {
     parser.body_limit(BUFFER_SIZE);
 }

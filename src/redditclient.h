@@ -10,6 +10,7 @@
 #include "redditsearchnamesconnection.h"
 
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/thread_pool.hpp>
 #include <thread>
 #include <boost/asio/ssl/context.hpp>
 #include <string_view>
@@ -39,10 +40,8 @@ private:
     static constexpr auto service = "https";
     std::string authServer;
     std::string server;
-    boost::asio::io_context context;
     boost::asio::ssl::context ssl_context;
-    std::vector<std::thread> clientThreads;
-    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work;
+    boost::asio::thread_pool clientThreads;
     std::string userAgent;
 };
 

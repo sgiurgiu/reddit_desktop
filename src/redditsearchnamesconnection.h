@@ -18,7 +18,7 @@ class RedditSearchNamesConnection : public RedditConnection<
         >
 {
 public:
-    RedditSearchNamesConnection(boost::asio::io_context& context,
+    RedditSearchNamesConnection(const boost::asio::any_io_executor& executor,
                                 boost::asio::ssl::context& ssl_context,
                                 const std::string& host, const std::string& service,
                                 const std::string& userAgent );

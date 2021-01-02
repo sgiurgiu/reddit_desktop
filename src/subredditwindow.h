@@ -17,7 +17,7 @@ public:
     SubredditWindow(int id, const std::string& subreddit,
                     const access_token& token,
                     RedditClient* client,
-                    const boost::asio::io_context::executor_type& executor);
+                    const boost::asio::any_io_executor& executor);
     void loadSubreddit();
     bool isWindowOpen() const {return windowOpen;}
     void showWindow(int appFrameWidth,int appFrameHeight);
@@ -57,7 +57,7 @@ private:
     std::string listingErrorMessage;
     posts_list posts;
     std::string target;
-    const boost::asio::io_context::executor_type& uiExecutor;
+    const boost::asio::any_io_executor& uiExecutor;
     float maxScoreWidth = 0.f;
     float upvotesButtonsIdent = 0.f;
     CommentsSignal commentsSignal;
