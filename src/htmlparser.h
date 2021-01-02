@@ -7,9 +7,22 @@
 class HtmlParser
 {
 public:
+    enum class MediaType
+    {
+        Unknown = 0,
+        Video,
+        Image,
+        Gif
+    };
+    struct MediaLink
+    {
+        std::string url;
+        MediaType type;
+    };
+
     explicit HtmlParser(const std::filesystem::path& file);
     explicit HtmlParser(const std::string& contents);
-    std::string getVideoUrl(const std::string& domain) const;
+    MediaLink getMediaLink(const std::string& domain) const;
     static std::string unescape(const std::string &input);
     static std::string escape(const std::string &input);
 private:

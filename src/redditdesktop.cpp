@@ -7,6 +7,7 @@
 #include <algorithm>
 #include "database.h"
 #include <iostream>
+#include <boost/algorithm/string.hpp>
 
 namespace
 {
@@ -130,8 +131,7 @@ void RedditDesktop::loadMultis(const std::string& url, const access_token& token
 }
 void RedditDesktop::setUserMultis(multireddit_list multis)
 {
-    userMultis.clear();
-    std::copy(multis.begin(), multis.end(), std::back_inserter(userMultis));
+    userMultis = std::move(multis);
 }
 void RedditDesktop::loadSubscribedSubreddits(subreddit_list srs)
 {
@@ -180,10 +180,12 @@ void RedditDesktop::sortSubscribedSubreddits()
     if(currentSubredditsSorting != SubredditsSorting::None)
     {
         std::stable_sort(subscribedSubreddits.begin(),subscribedSubreddits.end(),[this](const auto& lhs,const auto& rhs){
+            auto ldisplayName = boost::to_lower_copy(lhs.displayName);
+            auto rdisplayName = boost::to_lower_copy(rhs.displayName);
             if(currentSubredditsSorting == SubredditsSorting::Alphabetical_Ascending) {
-                return lhs.displayName < rhs.displayName;
+                return ldisplayName < rdisplayName;
             } else {
-                return lhs.displayName > rhs.displayName;
+                return ldisplayName > rdisplayName;
             }
         });
     }
@@ -268,6 +270,10 @@ void RedditDesktop::showDesktop()
         Database::getInstance()->setRegisteredUser(current_user.value());
         client.setUserAgent(make_user_agent(current_user.value()));
         loginSuccessful(current_access_token);
+    }
+    if(userInfoWindow.isWindowShowing())
+    {
+        userInfoWindow.showUserInfoWindow();
     }
     showErrorDialog();
 
@@ -404,10 +410,18 @@ void RedditDesktop::showMainMenuBar()
             static float infoButtonWidth = 0.0f;
             float pos = infoButtonWidth + itemSpacing;
             auto displayed_info = fmt::format("{} ({}-{})",info_user->name,info_user->humanLinkKarma,info_user->humanCommentKarma);
+            if(info_user->hasMail)
+            {
+                displayed_info.append(reinterpret_cast<const char*>(" " ICON_FA_ENVELOPE_O));
+            }
+            if(info_user->hasModMail)
+            {
+                displayed_info.append(reinterpret_cast<const char*>(" " ICON_FA_BELL));
+            }
             ImGui::SameLine(ImGui::GetWindowWidth()-pos);
             if(ImGui::Button(displayed_info.c_str()))
             {
-
+                userInfoWindow.shouldShowWindow(true);
             }
             infoButtonWidth = ImGui::GetItemRectSize().x;
         }

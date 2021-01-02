@@ -107,10 +107,10 @@ void MediaStreamingConnection::responseReceivedComplete()
     if(downloadingHtml)
     {
         HtmlParser htmlParser(responseParser->get().body());
-        auto videoUrl = htmlParser.getVideoUrl(currentPost->domain);
+        auto videoUrl = htmlParser.getMediaLink(currentPost->domain);
         boost::system::error_code ec;
         stream->shutdown(ec);
-        if(videoUrl.empty())
+        if(videoUrl.type == HtmlParser::MediaType::Unknown)
         {
             errorSignal(-1,"No video URL found in post");
             return;
@@ -122,7 +122,7 @@ void MediaStreamingConnection::responseReceivedComplete()
     }
     else
     {
-        startStreaming(currentUrl);
+        startStreaming({currentUrl,HtmlParser::MediaType::Unknown});
         //BOOST_ASSERT(false);
     }
 }
@@ -134,9 +134,10 @@ void MediaStreamingConnection::streamMedia(post* mediaPost)
     if(currentPost->postMedia && currentPost->postMedia->redditVideo)
     {
         currentUrl = currentPost->postMedia->redditVideo->dashUrl;
+        HtmlParser::MediaLink link{currentUrl,HtmlParser::MediaType::Video};
         boost::asio::post(strand,std::bind(
                                &MediaStreamingConnection::startStreaming,
-                               this->shared_from_base<MediaStreamingConnection>(),currentUrl));
+                               this->shared_from_base<MediaStreamingConnection>(),link));
     }
     else
     {
@@ -184,9 +185,9 @@ void MediaStreamingConnection::downloadUrl(const std::string& url)
     resolveHost();
 }
 
-void MediaStreamingConnection::startStreaming(const std::string& file)
+void MediaStreamingConnection::startStreaming(const HtmlParser::MediaLink& link)
 {   
-    streamingSignal(file);
+    streamingSignal(link);
 }
 
 void MediaStreamingConnection::streamAvailableHandler(const typename StreamingSignal::slot_type& slot)

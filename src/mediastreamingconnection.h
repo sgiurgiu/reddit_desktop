@@ -8,15 +8,8 @@
 #include "entities.h"
 #include <memory>
 #include <atomic>
-
 #include "redditconnection.h"
-
-struct AVFrame;
-struct AVCodecContext;
-struct AVStream;
-struct AVFormatContext;
-struct AVPacket;
-struct SwsContext;
+#include "htmlparser.h"
 
 using dummy_response = client_response<void*>;
 class MediaStreamingConnection : public RedditConnection<
@@ -32,7 +25,7 @@ public:
                              const std::string& userAgent);
     ~MediaStreamingConnection();
     void streamMedia(post* mediaPost);
-    using StreamingSignal = boost::signals2::signal<void(std::string file)>;
+    using StreamingSignal = boost::signals2::signal<void(HtmlParser::MediaLink)>;
     using ErrorSignal = boost::signals2::signal<void(int errorCode,const std::string&)>;
     void streamAvailableHandler(const typename StreamingSignal::slot_type& slot);
     void errorHandler(const typename ErrorSignal::slot_type& slot);
@@ -44,7 +37,7 @@ protected:
     virtual void onError(const boost::system::error_code& ec) override;
 
 private:
-    void startStreaming(const std::string& file);
+    void startStreaming(const HtmlParser::MediaLink& link);
     void downloadUrl(const std::string& url);
 private:
     std::string userAgent;

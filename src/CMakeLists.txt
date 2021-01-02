@@ -40,6 +40,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         resizableglimage.cpp
         redditcreatepostconnection.cpp
         redditsearchnamesconnection.cpp
+        userinformationwindow.cpp
         )
 
 add_executable(${EXECUTABLE_NAME}

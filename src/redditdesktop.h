@@ -10,6 +10,7 @@
 #include "loginwindow.h"
 #include "redditclient.h"
 #include "commentswindow.h"
+#include "userinformationwindow.h"
 
 class RedditDesktop : public std::enable_shared_from_this<RedditDesktop>
 {
@@ -83,6 +84,7 @@ private:
     bool shouldBlurPictures = true;
     RedditClient::RedditSearchNamesClientConnection searchNamesConnection;
     bool searchingSubreddits = false;
+    UserInformationWindow userInfoWindow;
 };
 
 

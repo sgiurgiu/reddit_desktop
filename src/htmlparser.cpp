@@ -282,44 +282,59 @@ std::string HtmlParser::lookupYoutubeVideoUrl(Node* node) const
     return "";
 }
 
-std::string HtmlParser::getVideoUrl(const std::string& domain) const
+HtmlParser::MediaLink HtmlParser::getMediaLink(const std::string& domain) const
 {
     auto output = gumbo_parse_with_options(&kGumboDefaultOptions,contents.c_str(),contents.size());
 
-    std::string url;
+    MediaLink link;
+    link.type = MediaType::Video;
     if(domain == "youtube.com" || domain == "www.youtube.com" || domain == "youtu.be")
     {
-        url = this->template lookupYoutubeVideoUrl<GumboNode>(output->root);
+        link.url = this->template lookupYoutubeVideoUrl<GumboNode>(output->root);
     }
     else if(domain == "streamable.com")
     {
-        url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:video:url");
+        link.url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:video:url");
     }
-    else if (domain == "streamja.com" || domain == "streamvi.com")
+    else if (domain == "streamja.com" || domain == "streamvi.com" || domain == "streamwo.com")
     {
-        url = this->template lookupVideoSourceVideoUrl<GumboNode>(output->root);
+        link.url = this->template lookupVideoSourceVideoUrl<GumboNode>(output->root);
     }
     else if (domain == "clippituser.tv" || domain == "www.clippituser.tv")
     {
-        url = this->template lookupDivPlayerContainerVideoUrl<GumboNode>(output->root);
+        link.url = this->template lookupDivPlayerContainerVideoUrl<GumboNode>(output->root);
     }
-    else if(domain.find("imgur") != domain.npos || domain.find("gfycat") != domain.npos ||
+    else if(domain.find("gfycat") != domain.npos ||
             domain.find("redgifs") != domain.npos)
     {
-        url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:video");
-        if(url.empty())
+        link.url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:video");
+        if(link.url.empty())
         {
-            url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:url");
+            link.url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:url");
         }
-        if(url.empty())
+        if(link.url.empty())
         {
-            url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:image");
+            link.url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:image");
+            link.type = MediaType::Image;
+        }
+    }
+    else if(domain.find("imgur") != domain.npos)
+    {
+        link.url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:video");
+
+        if(link.url.empty())
+        {
+            link.url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:image");
+            link.type = MediaType::Image;
         }
     }
 
-
     gumbo_destroy_output(&kGumboDefaultOptions,output);
-    return url;
+    if(link.url.empty())
+    {
+        link.type = MediaType::Unknown;
+    }
+    return link;
 }
 
 std::string HtmlParser::unescape(const std::string &input)

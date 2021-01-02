@@ -33,7 +33,7 @@ private:
                     int count, int* delays);
     void setPostMediaFrame();
     void loadPostImage();
-    void loadPostImage(std::string url);
+    void downloadPostImage(std::string url);
     void setupMediaContext(std::string file);
     void static mpvRenderUpdate(void* context);
     void static onMpvEvents(void* context);

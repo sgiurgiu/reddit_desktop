@@ -8,9 +8,9 @@ TEST(HtmlParserTest, ParseStreamableHtml)
     std::filesystem::path streamable_html(RDTEST_DATA_FOLDER);
     streamable_html /= "streamable.html";
     HtmlParser parser(streamable_html);
-    auto url = parser.getVideoUrl("streamable.com");
-    boost::url_view urlParts(url);
-    EXPECT_FALSE(url.empty());
+    auto url = parser.getMediaLink("streamable.com");
+    boost::url_view urlParts(url.url);
+    EXPECT_FALSE(url.url.empty());
     EXPECT_EQ(urlParts.encoded_host().to_string(),"cdn-cf-east.streamable.com");
     EXPECT_EQ(urlParts.encoded_path().to_string(),"/video/mp4/sh7m2g.mp4");
     EXPECT_EQ(urlParts.encoded_query().to_string(),"Expires=1608061320&Signature=Hr~3Vu0BrnNckKtaY8R-rqlTVwB00WKF1s0F6RKUiXu1Qx9dCJ5wvaM83d1IFuPDkSvGawrwUQEY"
@@ -25,9 +25,9 @@ TEST(HtmlParserTest, ParseStreamjaHtml)
     std::filesystem::path streamable_html(RDTEST_DATA_FOLDER);
     streamable_html /= "streamja.html";
     HtmlParser parser(streamable_html);
-    auto url = parser.getVideoUrl("streamja.com");
-    boost::url_view urlParts(url);
-    EXPECT_FALSE(url.empty());
+    auto url = parser.getMediaLink("streamja.com");
+    boost::url_view urlParts(url.url);
+    EXPECT_FALSE(url.url.empty());
     EXPECT_EQ(urlParts.encoded_host().to_string(),"tiger.cdnja.co");
     EXPECT_EQ(urlParts.encoded_path().to_string(),"/v/pa/pAvQ5.mp4");
     EXPECT_EQ(urlParts.encoded_query().to_string(),"secure=FXsFXIuHvvz7UJp8hVF1gA&expires=1607826600");
@@ -40,9 +40,9 @@ TEST(HtmlParserTest, ParseYoutubeHtml)
     std::filesystem::path streamable_html(RDTEST_DATA_FOLDER);
     streamable_html /= "youtube.html";
     HtmlParser parser(streamable_html);
-    auto url = parser.getVideoUrl("youtube.com");
-    boost::url_view urlParts(url);
-    EXPECT_FALSE(url.empty());
+    auto url = parser.getMediaLink("youtube.com");
+    boost::url_view urlParts(url.url);
+    EXPECT_FALSE(url.url.empty());
     EXPECT_EQ(urlParts.encoded_host().to_string(),"r3---sn-cxaaj5o5q5-t34e.googlevideo.com");
     EXPECT_EQ(urlParts.encoded_path().to_string(),"/videoplayback");
     EXPECT_EQ(urlParts.port().to_string(),"");
@@ -53,9 +53,9 @@ TEST(HtmlParserTest, ParseYoutu_beHtml)
     std::filesystem::path streamable_html(RDTEST_DATA_FOLDER);
     streamable_html /= "youtu.be.html";
     HtmlParser parser(streamable_html);
-    auto url = parser.getVideoUrl("youtu.be");
-    boost::url_view urlParts(url);
-    EXPECT_FALSE(url.empty());
+    auto url = parser.getMediaLink("youtu.be");
+    boost::url_view urlParts(url.url);
+    EXPECT_FALSE(url.url.empty());
     EXPECT_EQ(urlParts.encoded_host().to_string(),"r3---sn-cxaaj5o5q5-t34e.googlevideo.com");
     EXPECT_EQ(urlParts.encoded_path().to_string(),"/videoplayback");
     EXPECT_EQ(urlParts.port().to_string(),"");

@@ -19,6 +19,7 @@ const std::vector<std::string> mediaDomains ={
     "streamable.com",
     "streamja.com",
     "streamvi.com",
+    "streamwo.com",
     "v.redd.it",
     "youtube.com",
     "www.youtube.com",
@@ -104,9 +105,24 @@ void PostContentViewer::loadContent(post_ptr currentPost)
 
             loadingPostContent = true;
             auto mediaStreamingConnection = client->makeMediaStreamingClientConnection();
-            mediaStreamingConnection->streamAvailableHandler([self=shared_from_this()](std::string file) {
+            mediaStreamingConnection->streamAvailableHandler([self=shared_from_this()](HtmlParser::MediaLink link) {
                 if(self->stop) return;
-                boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setupMediaContext,self,file));
+                switch(link.type)
+                {
+                case HtmlParser::MediaType::Video:
+                    boost::asio::post(self->uiExecutor,
+                                      std::bind(&PostContentViewer::setupMediaContext,self,link.url));
+                    break;
+                case HtmlParser::MediaType::Image:
+                    boost::asio::post(self->uiExecutor,
+                                      std::bind(&PostContentViewer::downloadPostImage,self,link.url));
+                    break;
+                case HtmlParser::MediaType::Gif:
+                    break;
+                default:
+                    break;
+                }
+
             });
             mediaStreamingConnection->errorHandler([self=shared_from_this()](int /*errorCode*/,const std::string& str){
                 if(self->stop) return;
@@ -325,9 +341,9 @@ void PostContentViewer::loadPostImage()
     if(currentPost->domain == "imgur.com")
     {
         auto mediaStreamingConnection = client->makeMediaStreamingClientConnection();
-        mediaStreamingConnection->streamAvailableHandler([self=shared_from_this()](std::string file) {
+        mediaStreamingConnection->streamAvailableHandler([self=shared_from_this()](HtmlParser::MediaLink link) {
             if(self->stop) return;
-            self->loadPostImage(file);
+            self->downloadPostImage(link.url);
         });
         mediaStreamingConnection->errorHandler([self=shared_from_this()](int /*errorCode*/,const std::string& str){
             if(self->stop) return;
@@ -337,10 +353,10 @@ void PostContentViewer::loadPostImage()
     }
     else
     {
-        loadPostImage(currentPost->url);
+        downloadPostImage(currentPost->url);
     }
 }
-void PostContentViewer::loadPostImage(std::string url)
+void PostContentViewer::downloadPostImage(std::string url)
 {
     auto resourceConnection = client->makeResourceClientConnection();
     resourceConnection->connectionCompleteHandler(

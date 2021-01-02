@@ -56,21 +56,22 @@ void Utils::AddFont(const unsigned int* fontData, const unsigned int fontDataSiz
 
 void Utils::LoadFonts()
 {
-    AddFont(NotoSans_Black_ttf_compressed_data,NotoSans_Black_ttf_compressed_size,16.0f);
-    AddFont(NotoSans_BlackItalic_ttf_compressed_data,NotoSans_BlackItalic_ttf_compressed_size,16.0f);
-    AddFont(NotoSans_Bold_ttf_compressed_data,NotoSans_Bold_ttf_compressed_size,16.0f);
-    AddFont(NotoSans_BoldItalic_ttf_compressed_data,NotoSans_BoldItalic_ttf_compressed_size,16.0f);
-    AddFont(NotoSans_Italic_ttf_compressed_data,NotoSans_Italic_ttf_compressed_size,16.0f);
-    AddFont(NotoSans_Light_ttf_compressed_data,NotoSans_Light_ttf_compressed_size,16.0f);
-    AddFont(NotoSans_LightItalic_ttf_compressed_data,NotoSans_LightItalic_ttf_compressed_size,16.0f);
-    AddFont(NotoSans_Medium_ttf_compressed_data,NotoSans_Medium_ttf_compressed_size, 16.0f);
-    AddFont(NotoSans_MediumItalic_ttf_compressed_data,NotoSans_MediumItalic_ttf_compressed_size, 16.0f);
-    AddFont(NotoSans_Regular_ttf_compressed_data,NotoSans_Regular_ttf_compressed_size,16.0f);
-    AddFont(NotoSans_Thin_ttf_compressed_data,NotoSans_Thin_ttf_compressed_size,16.0f);
-    AddFont(NotoSans_ThinItalic_ttf_compressed_data,NotoSans_ThinItalic_ttf_compressed_size,16.0f);
+    float normalFontSize = 20.f;
+    AddFont(NotoSans_Black_ttf_compressed_data,NotoSans_Black_ttf_compressed_size,normalFontSize);
+    AddFont(NotoSans_BlackItalic_ttf_compressed_data,NotoSans_BlackItalic_ttf_compressed_size,normalFontSize);
+    AddFont(NotoSans_Bold_ttf_compressed_data,NotoSans_Bold_ttf_compressed_size,normalFontSize);
+    AddFont(NotoSans_BoldItalic_ttf_compressed_data,NotoSans_BoldItalic_ttf_compressed_size,normalFontSize);
+    AddFont(NotoSans_Italic_ttf_compressed_data,NotoSans_Italic_ttf_compressed_size,normalFontSize);
+    AddFont(NotoSans_Light_ttf_compressed_data,NotoSans_Light_ttf_compressed_size,normalFontSize);
+    AddFont(NotoSans_LightItalic_ttf_compressed_data,NotoSans_LightItalic_ttf_compressed_size,normalFontSize);
+    AddFont(NotoSans_Medium_ttf_compressed_data,NotoSans_Medium_ttf_compressed_size, normalFontSize);
+    AddFont(NotoSans_MediumItalic_ttf_compressed_data,NotoSans_MediumItalic_ttf_compressed_size, normalFontSize);
+    AddFont(NotoSans_Regular_ttf_compressed_data,NotoSans_Regular_ttf_compressed_size,normalFontSize);
+    AddFont(NotoSans_Thin_ttf_compressed_data,NotoSans_Thin_ttf_compressed_size,normalFontSize);
+    AddFont(NotoSans_ThinItalic_ttf_compressed_data,NotoSans_ThinItalic_ttf_compressed_size,normalFontSize);
     AddFont(NotoSans_Medium_ttf_compressed_data,NotoSans_Medium_ttf_compressed_size, 24.0f);
     AddFont(NotoSans_MediumItalic_ttf_compressed_data,NotoSans_MediumItalic_ttf_compressed_size, 24.0f);
-    AddFont(NotoMono_Regular_ttf_compressed_data,NotoMono_Regular_ttf_compressed_size, 16.0f);
+    AddFont(NotoMono_Regular_ttf_compressed_data,NotoMono_Regular_ttf_compressed_size, normalFontSize);
 }
 
 int Utils::GetFontIndex(Fonts font)
