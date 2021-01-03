@@ -1,4 +1,4 @@
-#include "redditclient.h"
+#include "redditclientproducer.h"
 #include <boost/beast/ssl.hpp>
 #include "redditloginconnection.h"
 #include <fmt/format.h>
@@ -32,8 +32,8 @@ void add_windows_root_certs(boost::asio::ssl::context &ctx)
 }
 #endif
 
-RedditClient::RedditClient(std::string_view authServer,std::string_view server, int clientThreadsCount):
-    authServer(authServer),server(server),ssl_context(boost::asio::ssl::context::tls_client),
+RedditClientProducer::RedditClientProducer(std::string_view authServer,std::string_view server, int clientThreadsCount):
+    authServer(std::move(authServer)),server(std::move(server)),ssl_context(boost::asio::ssl::context::tls_client),
     clientThreads(clientThreadsCount)
 {
     ssl_context.set_options(boost::asio::ssl::context::default_workarounds
@@ -43,34 +43,34 @@ RedditClient::RedditClient(std::string_view authServer,std::string_view server, 
     ssl_context.set_verify_mode(boost::asio::ssl::verify_peer);
     ssl_context.set_default_verify_paths();
 }
-RedditClient::~RedditClient()
+RedditClientProducer::~RedditClientProducer()
 {
 }
-void RedditClient::setUserAgent(const std::string& userAgent)
+void RedditClientProducer::setUserAgent(const std::string& userAgent)
 {
     this->userAgent = userAgent;
 }
-RedditClient::RedditLoginClientConnection RedditClient::makeLoginClientConnection()
+RedditClientProducer::RedditLoginClientConnection RedditClientProducer::makeLoginClientConnection()
 {
     return std::make_shared<RedditLoginConnection>(clientThreads.get_executor(),ssl_context,authServer,service);
 }
-RedditClient::RedditListingClientConnection RedditClient::makeListingClientConnection()
+RedditClientProducer::RedditListingClientConnection RedditClientProducer::makeListingClientConnection()
 {
     return std::make_shared<RedditListingConnection>(clientThreads.get_executor(),ssl_context,server,service,userAgent);
 }
-RedditClient::RedditResourceClientConnection RedditClient::makeResourceClientConnection()
+RedditClientProducer::RedditResourceClientConnection RedditClientProducer::makeResourceClientConnection()
 {
     return std::make_shared<RedditResourceConnection>(clientThreads.get_executor(),ssl_context,userAgent);
 }
-RedditClient::MediaStreamingClientConnection RedditClient::makeMediaStreamingClientConnection()
+RedditClientProducer::MediaStreamingClientConnection RedditClientProducer::makeMediaStreamingClientConnection()
 {
     return std::make_shared<MediaStreamingConnection>(clientThreads.get_executor(),ssl_context,userAgent);
 }
-RedditClient::RedditCreatePostClientConnection RedditClient::makeCreatePostClientConnection()
+RedditClientProducer::RedditCreatePostClientConnection RedditClientProducer::makeCreatePostClientConnection()
 {
     return std::make_shared<RedditCreatePostConnection>(clientThreads.get_executor(),ssl_context,server,service,userAgent);
 }
-RedditClient::RedditSearchNamesClientConnection RedditClient::makeRedditSearchNamesClientConnection()
+RedditClientProducer::RedditSearchNamesClientConnection RedditClientProducer::makeRedditSearchNamesClientConnection()
 {
     return std::make_shared<RedditSearchNamesConnection>(clientThreads.get_executor(),ssl_context,server,service,userAgent);
 }

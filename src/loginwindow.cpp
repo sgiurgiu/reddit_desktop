@@ -14,7 +14,7 @@ constexpr std::string_view LABEL_TEMPLATE = "XXXXXXXXXXX";
 constexpr std::string_view FIELD_TEMPLATE = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 }
 
-LoginWindow::LoginWindow(RedditClient* client,
+LoginWindow::LoginWindow(RedditClientProducer* client,
                          const boost::asio::any_io_executor& executor):
     client(client),loginConnection(client->makeLoginClientConnection()),uiExecutor(executor)
 {

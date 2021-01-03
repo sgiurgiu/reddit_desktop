@@ -48,8 +48,13 @@ void RedditResourceConnection::getResource(const std::string& url)
 
 void RedditResourceConnection::responseReceivedComplete()
 {
-    // Set a timeout on the operation
-    boost::beast::get_lowest_layer(stream.value()).expires_after(std::chrono::seconds(30));
+#ifdef REDDIT_DESKTOP_DEBUG
+        std::chrono::seconds timeout(120);
+#else
+        std::chrono::seconds timeout(30);
+#endif
+        boost::beast::get_lowest_layer(stream.value()).expires_after(timeout);
+
     using namespace std::placeholders;
     auto shutdownMethod = std::bind(&RedditResourceConnection::onShutdown,
                                     shared_from_base<RedditResourceConnection>(),_1);

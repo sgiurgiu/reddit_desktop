@@ -16,23 +16,16 @@
 
 #include "utils.h"
 
-MarkdownRenderer::MarkdownRenderer(const std::string& text):text(text)
+MarkdownRenderer::MarkdownRenderer(const std::string& textToRender):document(nullptr,cmark_node_deleter()),
+    text(textToRender)
 {
     auto parser = createParser();
 
     cmark_parser_feed(parser, text.c_str(), text.size());
-    document = cmark_parser_finish(parser);
+    document.reset(cmark_parser_finish(parser));
     if (parser)
         cmark_parser_free(parser);
 
-}
-
-MarkdownRenderer::~MarkdownRenderer()
-{
-    if(document)
-    {
-        cmark_node_free(document);
-    }
 }
 
 cmark_parser* MarkdownRenderer::createParser()
@@ -74,7 +67,7 @@ cmark_parser* MarkdownRenderer::createParser()
     return parser;
 }
 
-void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type)
+void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type) const
 {
     bool entering = (ev_type == CMARK_EVENT_ENTER);
     if(node->extension)
@@ -393,7 +386,7 @@ void MarkdownRenderer::cmakeStringDeleter(cmark_mem *, void *user_data)
         delete str;
     }
 }
-void MarkdownRenderer::renderNumberedListItem(const char* text)
+void MarkdownRenderer::renderNumberedListItem(const char* text) const
 {
     ImGuiWindow* window = ImGui::GetCurrentWindow();
     if (window->SkipItems)
@@ -420,7 +413,7 @@ void MarkdownRenderer::renderNumberedListItem(const char* text)
     ImGui::SameLine(0, style.FramePadding.x * 2.0f);
 }
 
-void MarkdownRenderer::renderCode(const char* text, bool addFramePadding)
+void MarkdownRenderer::renderCode(const char* text, bool addFramePadding) const
 {
     ImGuiWindow* window = ImGui::GetCurrentWindow();
     if (window->SkipItems)
@@ -435,14 +428,14 @@ void MarkdownRenderer::renderCode(const char* text, bool addFramePadding)
     window->DrawList->AddRectFilled(window->DC.CursorPos,window->DC.CursorPos + size , ImGui::GetColorU32(ImVec4(0.2f,0.2f,0.2f,0.5f)));
     ImGui::Text("%s",text);
 }
-void MarkdownRenderer::RenderMarkdown()
+void MarkdownRenderer::RenderMarkdown() const
 {
     if(document)
     {
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Regular)]);//Roboto medium
         cmark_event_type ev_type;
         cmark_node *cur;
-        cmark_iter *iter = cmark_iter_new(document);
+        cmark_iter *iter = cmark_iter_new(document.get());
         while ((ev_type = cmark_iter_next(iter)) != CMARK_EVENT_DONE)
         {
            cur = cmark_iter_get_node(iter);

@@ -27,7 +27,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         subredditwindow.cpp
         database.cpp
         loginwindow.cpp
-        redditclient.cpp
+        redditclientproducer.cpp
         redditloginconnection.cpp
         redditlistingconnection.cpp
         entities.cpp

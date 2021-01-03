@@ -6,7 +6,7 @@
 #include <memory>
 #include <boost/signals2.hpp>
 #include "entities.h"
-#include "redditclient.h"
+#include "redditclientproducer.h"
 #include "redditlistingconnection.h"
 #include "resizableglimage.h"
 #include "postcontentviewer.h"
@@ -16,7 +16,7 @@ class SubredditWindow : public std::enable_shared_from_this<SubredditWindow>
 public:
     SubredditWindow(int id, const std::string& subreddit,
                     const access_token& token,
-                    RedditClient* client,
+                    RedditClientProducer* client,
                     const boost::asio::any_io_executor& executor);
     void loadSubreddit();
     bool isWindowOpen() const {return windowOpen;}
@@ -26,8 +26,9 @@ public:
     void setFocused();
     ~SubredditWindow();
 private:
-    struct PostDisplay {
-        PostDisplay(post_ptr post):post(post)
+    struct PostDisplay
+    {
+        PostDisplay(post_ptr post):post{post}
         {}
         post_ptr post;
         ResizableGLImagePtr thumbnailPicture;
@@ -46,13 +47,14 @@ private:
     void showNewTextPostDialog();
     void showNewLinkPostDialog();
     void submitNewPost(const post_ptr& p);
+    void clearExistingPostsData();
 private:    
     int id;
     std::string subreddit;
     std::string subredditName;
     bool windowOpen = true;
     access_token token;
-    RedditClient* client;
+    RedditClientProducer* client;
     std::string windowName;
     std::string listingErrorMessage;
     posts_list posts;

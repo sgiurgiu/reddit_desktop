@@ -2,7 +2,7 @@
 #define POSTCONTENTVIEWER_H
 
 #include <boost/asio/io_context.hpp>
-#include "redditclient.h"
+#include "redditclientproducer.h"
 #include <memory>
 #include "entities.h"
 #include <SDL_video.h>
@@ -16,7 +16,7 @@ struct mpv_render_context;
 class PostContentViewer : public std::enable_shared_from_this<PostContentViewer>
 {
 public:
-    PostContentViewer(RedditClient* client,
+    PostContentViewer(RedditClientProducer* client,
                       const boost::asio::any_io_executor& uiExecutor
                       );
     ~PostContentViewer();
@@ -28,6 +28,7 @@ public:
         return currentPostSet;
     }
     std::vector<GLuint> getAndResetTextures();
+    GLuint getAndResetMediaFBO();
 private:
     void setPostImage(unsigned char* data, int width, int height, int channels);
     void setPostGif(unsigned char* data, int width, int height, int channels,
@@ -46,7 +47,7 @@ private:
     void setPostGalleryImage(unsigned char* data, int width, int height, int channels, int index);
     void setErrorMessage(std::string errorMessage);
 private:
-    RedditClient* client;
+    RedditClientProducer* client;
     const boost::asio::any_io_executor& uiExecutor;
     post_ptr currentPost;    
     std::string errorMessage;
@@ -57,7 +58,7 @@ private:
     boost::asio::io_context mpvEventIOContext;
     boost::asio::any_io_executor mpvEventIOContextExecutor;
     std::thread mvpEventThread;
-    unsigned int mediaFramebufferObject = 0;
+    GLuint mediaFramebufferObject = 0;
     struct MediaState {
         std::atomic_int mediaAudioVolume;
         std::atomic_bool paused;

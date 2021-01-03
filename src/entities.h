@@ -147,8 +147,8 @@ struct post
 };
 using post_ptr = std::shared_ptr<post>;
 struct comment;
-using comment_ptr = std::shared_ptr<comment>;
-using comments_list = std::vector<comment_ptr>;
+//using comment_ptr = std::shared_ptr<comment>;
+using comments_list = std::vector<comment>;
 struct comment
 {
     comment(){}
@@ -191,7 +191,7 @@ struct user_info
     bool isGold = false;
     int64_t coins = 0;
 };
-using user_info_ptr = std::shared_ptr<user_info>;
+//using user_info_ptr = std::shared_ptr<user_info>;
 struct subreddit
 {
     subreddit(){}
@@ -227,7 +227,29 @@ struct multireddit
     int64_t subscribers = 0;
     std::string path;
 };
-//using subreddit_ptr = std::shared_ptr<subreddit>;
 using subreddit_list = std::vector<subreddit>;
 using multireddit_list = std::vector<multireddit>;
+
+struct message
+{
+    message(){}
+    message(const nlohmann::json& json);
+    std::string body;
+    bool wasComment = false;
+    std::optional<std::string> firstMessage;
+    std::string name;
+    std::optional<std::string> firstMessageName;
+    uint64_t createdAt;
+    std::string humanReadableTimeDifference;
+    std::string author;
+    std::string subreddit;
+    std::string parentId;
+    std::string context;
+    std::string replies;
+    std::string id;
+    bool isNew = false;
+    std::string distinguished;
+    std::string subject;
+};
+
 #endif // ENTITIES_H

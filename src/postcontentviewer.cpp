@@ -10,6 +10,7 @@
 #include "macros.h"
 #include "utils.h"
 #include <iostream>
+#include <algorithm>
 
 namespace
 {
@@ -50,7 +51,7 @@ static void* get_proc_address_mpv(void *fn_ctx, const char *name)
 }
 }
 
-PostContentViewer::PostContentViewer(RedditClient* client,
+PostContentViewer::PostContentViewer(RedditClientProducer* client,
                                      const boost::asio::any_io_executor& uiExecutor
                                      ):
     client(client),uiExecutor(uiExecutor),
@@ -523,8 +524,7 @@ std::vector<GLuint> PostContentViewer::getAndResetTextures()
     std::vector<GLuint> textures;
     if(postPicture && postPicture->textureId > 0)
     {
-        textures.push_back(postPicture->textureId);
-        postPicture->textureId = 0;
+        textures.push_back(std::exchange(postPicture->textureId,0));
     }
     if(gif)
     {
@@ -532,8 +532,7 @@ std::vector<GLuint> PostContentViewer::getAndResetTextures()
         {
             if(img->img && img->img->textureId > 0)
             {
-                textures.push_back(img->img->textureId);
-                img->img->textureId = 0;
+                textures.push_back(std::exchange(img->img->textureId,0));
             }
         }
     }
@@ -543,13 +542,16 @@ std::vector<GLuint> PostContentViewer::getAndResetTextures()
         {
             if(img->textureId > 0)
             {
-                textures.push_back(img->textureId);
-                img->textureId = 0;
+                textures.push_back(std::exchange(img->textureId,0));
             }
         }
     }
 
     return textures;
+}
+GLuint PostContentViewer::getAndResetMediaFBO()
+{
+    return std::exchange(mediaFramebufferObject,0);
 }
 
 void PostContentViewer::showPostContent()

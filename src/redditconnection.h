@@ -82,7 +82,12 @@ private:
             return;
         }
         // Set a timeout on the operation
-        boost::beast::get_lowest_layer(stream.value()).expires_after(std::chrono::seconds(30));
+#ifdef REDDIT_DESKTOP_DEBUG
+        std::chrono::seconds timeout(120);
+#else
+        std::chrono::seconds timeout(30);
+#endif
+        boost::beast::get_lowest_layer(stream.value()).expires_after(timeout);
         using namespace std::placeholders;
         auto connectMethod = std::bind(&RedditConnection::onConnect,this->shared_from_this(),_1,_2);
 
@@ -123,7 +128,12 @@ protected:
 
     virtual void sendRequest()
     {
-        boost::beast::get_lowest_layer(stream.value()).expires_after(std::chrono::seconds(30));
+#ifdef REDDIT_DESKTOP_DEBUG
+        std::chrono::seconds timeout(120);
+#else
+        std::chrono::seconds timeout(30);
+#endif
+        boost::beast::get_lowest_layer(stream.value()).expires_after(timeout);
         using namespace std::placeholders;
         auto writeMethod = std::bind(&RedditConnection::onWrite,this->shared_from_this(),_1,_2);
         // Send the HTTP request to the remote host

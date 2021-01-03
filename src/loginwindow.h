@@ -1,13 +1,13 @@
 #ifndef LOGINWINDOW_H
 #define LOGINWINDOW_H
 
-#include "redditclient.h"
+#include "redditclientproducer.h"
 #include <boost/asio/io_context.hpp>
 
 class LoginWindow
 {
 public:
-    LoginWindow(RedditClient* client, const boost::asio::any_io_executor& executor);
+    LoginWindow(RedditClientProducer* client, const boost::asio::any_io_executor& executor);
     void setShowLoginWindow(bool flag);
     bool showLoginWindow();
     user getConfiguredUser() const
@@ -34,11 +34,11 @@ private:
     char appName[255] = { 0 };
     bool tested = false;
     bool testingInProgress = false;
-    RedditClient* client;
+    RedditClientProducer* client;
     std::string testingErrorMessage;
     user configuredUser;
     client_response<access_token> token;
-    RedditClient::RedditLoginClientConnection loginConnection;
+    RedditClientProducer::RedditLoginClientConnection loginConnection;
     const boost::asio::any_io_executor& uiExecutor;
 };
 

@@ -79,8 +79,8 @@ void RedditDesktop::loginSuccessful(client_response<access_token> token)
             }
             else
             {
-                auto info = std::make_shared<user_info>(response.data.json);
-                boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::loadUserInformation,self,info));
+                user_info info(response.data.json);
+                boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::loadUserInformation,self,std::move(info)));
             }
         }
      });
@@ -89,9 +89,9 @@ void RedditDesktop::loginSuccessful(client_response<access_token> token)
     //add front page window
     addSubredditWindow("");
 }
-void RedditDesktop::loadUserInformation(user_info_ptr info)
+void RedditDesktop::loadUserInformation(user_info info)
 {
-    info_user = info;
+    info_user = std::move(info);
 
     unsortedSubscribedSubreddits.clear();
     loadSubreddits("/subreddits/mine/subscriber?show=all&limit=100",current_access_token.data);
@@ -437,7 +437,8 @@ void RedditDesktop::showMainMenuBar()
             {
                 if(!userInfoWindow)
                 {
-                    userInfoWindow = std::make_unique<UserInformationWindow>(current_access_token.data,&client,uiExecutor);
+                    userInfoWindow = std::make_shared<UserInformationWindow>(current_access_token.data,&client,uiExecutor);
+                    userInfoWindow->loadMessages();
                 }
                 userInfoWindow->shouldShowWindow(true);
             }

@@ -1,5 +1,5 @@
-#ifndef REDDITCLIENT_H
-#define REDDITCLIENT_H
+#ifndef REDDITCLIENTPRODUCER_H
+#define REDDITCLIENTPRODUCER_H
 
 #include "entities.h"
 #include "redditloginconnection.h"
@@ -17,11 +17,11 @@
 #include <string>
 #include <vector>
 
-class RedditClient
+class RedditClientProducer
 {
 public:
-    RedditClient(std::string_view authServer,std::string_view server, int clientThreadsCount);
-    ~RedditClient();
+    RedditClientProducer(std::string_view authServer,std::string_view server, int clientThreadsCount);
+    ~RedditClientProducer();
     using RedditLoginClientConnection = std::shared_ptr<RedditLoginConnection>;
     using RedditListingClientConnection = std::shared_ptr<RedditListingConnection>;
     using RedditResourceClientConnection = std::shared_ptr<RedditResourceConnection>;

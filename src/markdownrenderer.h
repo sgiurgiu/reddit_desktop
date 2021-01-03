@@ -3,23 +3,30 @@
 
 #include <string>
 #include <cmark-gfm.h>
+#include <memory>
 
 class MarkdownRenderer
 {
 public:
-    MarkdownRenderer(const std::string& text);
-    ~MarkdownRenderer();
+    MarkdownRenderer(const std::string& textToRender);
     static void InitEngine();
     static void ReleaseEngine();
-    void RenderMarkdown();
+    void RenderMarkdown() const;
 private:
     cmark_parser* createParser();
-    void renderNode(cmark_node *node,cmark_event_type ev_type);
-    void renderCode(const char* text, bool addFramePadding);
-    void renderNumberedListItem(const char* text);
+    void renderNode(cmark_node *node,cmark_event_type ev_type) const;
+    void renderCode(const char* text, bool addFramePadding) const;
+    void renderNumberedListItem(const char* text) const;
     static void cmakeStringDeleter(cmark_mem *, void *user_data);
 private:
-    cmark_node *document;
+    struct cmark_node_deleter
+    {
+        void operator()(cmark_node* node)
+        {
+            cmark_node_free(node);
+        }
+    };
+    std::unique_ptr<cmark_node,cmark_node_deleter> document;
     std::string text;
 };
 

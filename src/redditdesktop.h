@@ -8,7 +8,7 @@
 
 #include "subredditwindow.h"
 #include "loginwindow.h"
-#include "redditclient.h"
+#include "redditclientproducer.h"
 #include "commentswindow.h"
 #include "userinformationwindow.h"
 
@@ -43,7 +43,7 @@ private:
     void setConnectionErrorMessage(std::string msg);
     void addSubredditWindow(std::string title);
     void loginSuccessful(client_response<access_token> token);
-    void loadUserInformation(user_info_ptr info);
+    void loadUserInformation(user_info info);
     void loadSubscribedSubreddits(subreddit_list srs);
     void loadSubreddits(const std::string& url, const access_token& token);
     void sortSubscribedSubreddits();
@@ -53,7 +53,7 @@ private:
     void setSearchResultsNames(names_list names);
 private:
     boost::asio::any_io_executor uiExecutor;
-    RedditClient client;
+    RedditClientProducer client;
     std::vector<std::shared_ptr<SubredditWindow>> subredditWindows;
     std::vector<std::shared_ptr<CommentsWindow>> commentsWindows;
     bool shouldQuit = false;
@@ -63,7 +63,7 @@ private:
     int appFrameHeight = 0;
     int appFrameWidth = 0;
     std::optional<user> current_user;
-    user_info_ptr info_user;
+    std::optional<user_info> info_user;
     LoginWindow loginWindow;
     client_response<access_token> current_access_token;
     bool showConnectionErrorDialog = false;
@@ -82,7 +82,7 @@ private:
     std::map<SubredditsSorting,std::string> subredditsSortMethod;
     SubredditsSorting currentSubredditsSorting = SubredditsSorting::None;
     bool shouldBlurPictures = true;
-    RedditClient::RedditSearchNamesClientConnection searchNamesConnection;
+    RedditClientProducer::RedditSearchNamesClientConnection searchNamesConnection;
     bool searchingSubreddits = false;
     std::shared_ptr<UserInformationWindow> userInfoWindow;
 };

@@ -386,7 +386,7 @@ comment::comment(const nlohmann::json& json)
             else if(child.contains("kind") && child["kind"].get<std::string>() == "t1" &&
                     child.contains("data") && child["data"].is_object())
             {
-                replies.emplace_back(std::make_unique<comment>(child["data"]));
+                replies.emplace_back(child["data"]);
             }
         }
     }
@@ -560,6 +560,71 @@ multireddit::multireddit(const nlohmann::json& json)
     if(json.contains("path") && json["path"].is_string())
     {
         path =json["path"].get<std::string>();
+    }
+}
+
+message::message(const nlohmann::json& json)
+{
+    if(json.contains("name") && json["name"].is_string())
+    {
+        name =json["name"].get<std::string>();
+    }
+    if(json.contains("body") && json["body"].is_string())
+    {
+        body =json["body"].get<std::string>();
+    }
+    if(json.contains("was_comment") && json["was_comment"].is_boolean())
+    {
+        wasComment = json["was_comment"].get<bool>();
+    }
+    if(json.contains("first_message") && json["first_message"].is_string())
+    {
+        firstMessage =json["first_message"].get<std::string>();
+    }
+    if(json.contains("first_message_name") && json["first_message_name"].is_string())
+    {
+        firstMessageName =json["first_message_name"].get<std::string>();
+    }
+    if(json.contains("created_utc") && json["created_utc"].is_number())
+    {
+        createdAt = json["created_utc"].get<uint64_t>();
+        humanReadableTimeDifference = Utils::getHumanReadableTimeAgo(createdAt);
+    }
+    if(json.contains("author") && json["author"].is_string())
+    {
+        author =json["author"].get<std::string>();
+    }
+    if(json.contains("subreddit") && json["subreddit"].is_string())
+    {
+        subreddit =json["subreddit"].get<std::string>();
+    }
+    if(json.contains("parent_id") && json["parent_id"].is_string())
+    {
+        parentId =json["parent_id"].get<std::string>();
+    }
+    if(json.contains("context") && json["context"].is_string())
+    {
+        context =json["context"].get<std::string>();
+    }
+    if(json.contains("replies") && json["replies"].is_string())
+    {
+        replies =json["replies"].get<std::string>();
+    }
+    if(json.contains("id") && json["id"].is_string())
+    {
+        id =json["id"].get<std::string>();
+    }
+    if(json.contains("new") && json["new"].is_boolean())
+    {
+        isNew = json["new"].get<bool>();
+    }
+    if(json.contains("distinguished") && json["distinguished"].is_string())
+    {
+        distinguished =json["distinguished"].get<std::string>();
+    }
+    if(json.contains("subject") && json["subject"].is_string())
+    {
+        subject =json["subject"].get<std::string>();
     }
 }
 

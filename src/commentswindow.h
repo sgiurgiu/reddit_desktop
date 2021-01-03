@@ -7,7 +7,7 @@
 #include <memory>
 #include <boost/signals2.hpp>
 #include "entities.h"
-#include "redditclient.h"
+#include "redditclientproducer.h"
 #include "redditlistingconnection.h"
 #include "utils.h"
 #include "postcontentviewer.h"
@@ -19,7 +19,7 @@ public:
     CommentsWindow(const std::string& postId,
                    const std::string& title,
                    const access_token& token,
-                   RedditClient* client,
+                   RedditClientProducer* client,
                    const boost::asio::any_io_executor& executor);
     ~CommentsWindow();
     void loadComments();
@@ -31,39 +31,39 @@ public:
     }
     void setFocused();
 private:
-    struct DisplayComment;
-    using DisplayCommentPtr = std::unique_ptr<DisplayComment>;
-    using DisplayCommentList = std::vector<DisplayCommentPtr>;
+    //struct DisplayComment;
+    //using DisplayCommentPtr = std::unique_ptr<DisplayComment>;
+    //using DisplayCommentList = std::vector<DisplayComment>;
     struct DisplayComment
     {
-        DisplayComment(comment_ptr comment):
-        comment(std::move(comment)),renderer(this->comment->body)
+        DisplayComment(comment cmt):
+        commentData(std::move(cmt)),renderer(this->commentData.body)
         {
-            for(auto&& c : this->comment->replies)
+            for(auto&& c : this->commentData.replies)
             {
-                replies.emplace_back(std::make_unique<DisplayComment>(std::move(c)));
+                replies.emplace_back(c);
             }
         }
-        comment_ptr comment;
+        comment commentData;
         MarkdownRenderer renderer;
-        DisplayCommentList replies;
+        std::vector<DisplayComment> replies;
     };
     void loadListingsFromConnection(const listing& listingResponse);
     void setErrorMessage(std::string errorMessage);
     void loadListingChildren(const nlohmann::json& children);
     void setComments(comments_list receivedComments);
     void setParentPost(post_ptr receivedParentPost);
-    void showComment(DisplayComment* c);
+    void showComment(const DisplayComment& c);
 private:
     std::string postId;
     std::string title;
     bool windowOpen = true;
     access_token token;
-    RedditClient* client;
+    RedditClientProducer* client;
     std::string windowName;
     std::string listingErrorMessage;
     bool willBeFocused = false;
-    DisplayCommentList comments;
+    std::vector<DisplayComment> comments;
     post_ptr parentPost;
     const boost::asio::any_io_executor& uiExecutor;
     std::shared_ptr<PostContentViewer> postContentViewer;

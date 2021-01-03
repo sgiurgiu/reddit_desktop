@@ -16,7 +16,7 @@ constexpr auto NEWLINK_POST_POPUP_TITLE = "New Link";
 }
 SubredditWindow::SubredditWindow(int id, const std::string& subreddit,
                                  const access_token& token,
-                                 RedditClient* client,
+                                 RedditClientProducer* client,
                                  const boost::asio::any_io_executor& executor):
     id(id),subreddit(subreddit),token(token),client(client),
     uiExecutor(executor)
@@ -25,10 +25,16 @@ SubredditWindow::SubredditWindow(int id, const std::string& subreddit,
 }
 SubredditWindow::~SubredditWindow()
 {
+    clearExistingPostsData();
+}
+void SubredditWindow::clearExistingPostsData()
+{
     std::vector<GLuint> textures;
+    std::vector<GLuint> fbos;
     textures.reserve(posts.size()*3);
+    fbos.reserve(posts.size());
     for(auto&& p : posts)
-    {        
+    {
         if(p.thumbnailPicture && p.thumbnailPicture->textureId > 0)
         {
             textures.push_back(p.thumbnailPicture->textureId);
@@ -44,9 +50,15 @@ SubredditWindow::~SubredditWindow()
             p.postContentViewer->stopPlayingMedia();
             auto postContentViewerTextures = p.postContentViewer->getAndResetTextures();
             std::move(postContentViewerTextures.begin(),postContentViewerTextures.end(),std::back_inserter(textures));
+            auto fbo = p.postContentViewer->getAndResetMediaFBO();
+            if(fbo > 0)
+            {
+                fbos.push_back(fbo);
+            }
         }
     }
     glDeleteTextures(textures.size(),textures.data());
+    glDeleteFramebuffers(fbos.size(), fbos.data());
 }
 void SubredditWindow::loadSubreddit()
 {
@@ -128,6 +140,7 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
         after = afterJson.get<std::string>();
     }
     listingErrorMessage.clear();    
+    clearExistingPostsData();
     posts = std::move(receivedPosts);
     scrollToTop = true;
     for(auto&& p : posts)
