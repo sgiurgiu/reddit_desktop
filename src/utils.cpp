@@ -136,7 +136,7 @@ ResizableGLImagePtr Utils::loadBlurredImage(unsigned char* data, int width, int 
 ResizableGLImagePtr Utils::loadImage(unsigned char* data, int width, int height, int channels)
 {
     if(!data) return ResizableGLImagePtr();
-    auto image = std::make_shared<ResizableGLImage>();
+    auto image = std::make_unique<ResizableGLImage>();
 
     //SDL_CreateTexture();
     //SDL_UpdateTexture()

@@ -91,21 +91,20 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
        {
            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,ec.message()));
        }
+       else if(response.status >= 400)
+       {
+           boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,std::move(response.body)));
+       }
        else
        {
-           if(response.status >= 400)
-           {
-               boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,std::move(response.body)));
-           }
-           else
-           {
-               self->loadListingsFromConnection(response.data);
-           }
+           boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::loadListingsFromConnection,
+                                                        self,std::move(response.data)));
        }
     });
 
     connection->list(target,token);
 }
+
 void SubredditWindow::setErrorMessage(std::string errorMessage)
 {
     listingErrorMessage = std::move(errorMessage);
@@ -121,11 +120,10 @@ void SubredditWindow::loadListingsFromConnection(const listing& listingResponse)
         {
             tmpPosts.emplace_back(std::make_shared<post>(child["data"]));
         }
-    }
-    boost::asio::post(uiExecutor,
-                      std::bind(&SubredditWindow::setListings,this,std::move(tmpPosts),
-                                std::move(listingResponse.json["data"]["before"]),
-                                std::move(listingResponse.json["data"]["after"])));
+    }    
+    setListings(std::move(tmpPosts),
+                std::move(listingResponse.json["data"]["before"]),
+                std::move(listingResponse.json["data"]["after"]));
 }
 void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json beforeJson,nlohmann::json afterJson)
 {

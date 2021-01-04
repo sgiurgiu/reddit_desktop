@@ -448,7 +448,7 @@ void PostContentViewer::setPostMediaFrame()
         glGenFramebuffers(1, &mediaFramebufferObject);
 
         glBindFramebuffer(GL_FRAMEBUFFER, mediaFramebufferObject);
-        postPicture = std::make_shared<ResizableGLImage>();
+        postPicture = std::make_unique<ResizableGLImage>();
         glGenTextures(1, &postPicture->textureId);
         glBindTexture(GL_TEXTURE_2D, postPicture->textureId);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (int)mediaState.width, (int)mediaState.height, 0,
@@ -553,7 +553,7 @@ GLuint PostContentViewer::getAndResetMediaFBO()
 
 void PostContentViewer::showPostContent()
 {
-    ResizableGLImagePtr display_image = postPicture;
+    ResizableGLImage* display_image = postPicture.get();
 
     if(gif)
     {
@@ -584,7 +584,7 @@ void PostContentViewer::showPostContent()
             gif->images[gif->currentImage]->displayed = true;
             gif->images[gif->currentImage]->lastDisplay = std::chrono::steady_clock::now();
         }
-        display_image = gif->images[gif->currentImage]->img;
+        display_image = gif->images[gif->currentImage]->img.get();
         display_image->resizedWidth = gif->width;
         display_image->resizedHeight = gif->height;
     }
@@ -595,7 +595,7 @@ void PostContentViewer::showPostContent()
         {
             gallery.currentImage = 0;
         }
-        display_image = gallery.images[gallery.currentImage];
+        display_image = gallery.images[gallery.currentImage].get();
     }
 
     if(display_image)

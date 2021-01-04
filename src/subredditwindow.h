@@ -28,7 +28,7 @@ public:
 private:
     struct PostDisplay
     {
-        PostDisplay(post_ptr post):post{post}
+        PostDisplay(post_ptr p):post(std::move(p))
         {}
         post_ptr post;
         ResizableGLImagePtr thumbnailPicture;
@@ -38,6 +38,7 @@ private:
         bool showingContent = false;
     };
     using posts_list = std::vector<PostDisplay>;
+
     void showWindowMenu();
     void loadSubredditListings(const std::string& target,const access_token& token);
     void loadListingsFromConnection(const listing& listingResponse);

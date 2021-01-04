@@ -94,8 +94,8 @@ struct reddit_video
 struct media
 {
     std::string type;
-    std::unique_ptr<reddit_video> redditVideo;
-    std::unique_ptr<oembed> oemEmbed;
+    std::optional<reddit_video> redditVideo;
+    std::optional<oembed> oemEmbed;
 };
 
 
@@ -140,7 +140,7 @@ struct post
     std::string author;
     std::string domain;
     std::string postHint;    
-    std::unique_ptr<media> postMedia;    
+    std::optional<media> postMedia;
     bool isGallery = false;
     std::vector<post_gallery_item> gallery;
     bool over18 = false;

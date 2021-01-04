@@ -337,8 +337,7 @@ void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type) con
         }
         else
         {
-            ImGui::PopFont();
-
+           ImGui::PopFont();
         }
     break;
     case CMARK_NODE_LINK:

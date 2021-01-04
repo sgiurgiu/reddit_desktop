@@ -10,9 +10,9 @@ std::string make_user_agent(const user& u)
 }
 
 namespace {
-    std::unique_ptr<reddit_video> makeRedditMediaObject(const nlohmann::json& json)
+    std::optional<reddit_video> makeRedditMediaObject(const nlohmann::json& json)
     {
-        auto redditMedia = std::make_unique<reddit_video>();
+        auto redditMedia = std::make_optional<reddit_video>();
         if(json.contains("bitrate_kbps") && json["bitrate_kbps"].is_number())
         {
             redditMedia->bitrate = json["bitrate_kbps"].get<int>();
@@ -55,9 +55,9 @@ namespace {
         }
         return redditMedia;
     }
-    std::unique_ptr<oembed> makeOemEmbedObject(const nlohmann::json& json)
+    std::optional<oembed> makeOemEmbedObject(const nlohmann::json& json)
     {
-        auto embed = std::make_unique<oembed>();
+        auto embed = std::make_optional<oembed>();
         if(json.contains("height") && json["height"].is_number())
         {
             embed->height = json["height"].get<int>();
@@ -101,10 +101,11 @@ namespace {
 
         return embed;
     }
-    std::unique_ptr<media> makeMediaObject(const nlohmann::json& json)
+    std::optional<media> makeMediaObject(const nlohmann::json& json)
     {
-        if(json.is_null() || !json.is_object()) return std::unique_ptr<media>();
-        auto m = std::make_unique<media>();
+        std::optional<media> m;
+        if(json.is_null() || !json.is_object()) return m;
+        m = media();
         if(json.contains("reddit_video"))
         {
             m->redditVideo = makeRedditMediaObject(json["reddit_video"]);

@@ -10,7 +10,7 @@ public:
     ResizableGLImage();
     ~ResizableGLImage();
     ResizableGLImage(const ResizableGLImage&)=delete;
-    ResizableGLImage& operator=(ResizableGLImage other)=delete;
+    ResizableGLImage& operator=(const ResizableGLImage&)=delete;
     ResizableGLImage (ResizableGLImage &&) noexcept;
     ResizableGLImage & operator=(ResizableGLImage &&) noexcept;
     GLuint textureId = 0;
@@ -23,6 +23,6 @@ public:
     float pictureRatio = 0.0f;
 };
 
-using ResizableGLImagePtr = std::shared_ptr<ResizableGLImage>;
+using ResizableGLImagePtr = std::unique_ptr<ResizableGLImage>;
 
 #endif // RESIZABLEGLIMAGE_H
