@@ -254,6 +254,11 @@ void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type) con
             }
 
             const char* endPrevLine = ImGui::GetFont()->CalcWordWrapPositionA( fontScale, text_start, text_end, widthLeft );
+            if(endPrevLine == text_start)
+            {
+                //render at least 1 character
+                endPrevLine++;
+            }
             if(nextWordFinish > endPrevLine)
             {
                 //if, for whatever reason, this would break in the middle of a word (what we consider a word)
@@ -275,6 +280,11 @@ void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type) con
                const char* text = endPrevLine;
                if( *text == ' ' ) { ++text; } // skip a space at start of line
                endPrevLine = ImGui::GetFont()->CalcWordWrapPositionA( fontScale, text, text_end, widthLeft );
+               if(endPrevLine == text)
+               {
+                   //render at least 1 character
+                   endPrevLine++;
+               }
                ImGui::TextUnformatted( text, endPrevLine );
             }
 
@@ -340,28 +350,42 @@ void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type) con
                 float fontScale = 1.f;
                 const char* text_start = text->c_str();
                 const char* text_end = text->c_str()+text->size();
-                const char* endPrevLine = ImGui::GetFont()->CalcWordWrapPositionA( fontScale, text_start, text_end, widthLeft );
-                if(endPrevLine < text_end) ImGui::NewLine();
-                ImVec4 color(0.5f,0.5f,1.f,1.f);
-                ImGui::TextColored(color,"%s",text->c_str());
-                //Underline it
+                while(text_start < text_end)
                 {
-                    auto rectMax = ImGui::GetItemRectMax();
-                    auto rectMin = ImGui::GetItemRectMin();
-                    rectMin.y = rectMax.y;
-                    ImGuiWindow* window = ImGui::GetCurrentWindow();
-                    window->DrawList->AddLine(rectMin,rectMax, ImGui::GetColorU32(color));
+                    const char* endPrevLine = ImGui::GetFont()->CalcWordWrapPositionA( fontScale, text_start, text_end, widthLeft );
+                    if(endPrevLine == text_start)
+                    {
+                        //render at least 1 character
+                        endPrevLine++;
+                    }
+                    ImVec4 color(0.5f,0.5f,1.f,1.f);
+                    ImGui::PushStyleColor(ImGuiCol_Text, color);
+                    ImGui::TextEx(text_start, endPrevLine, ImGuiTextFlags_NoWidthForLargeClippedText);
+                    ImGui::PopStyleColor();
+                    text_start = endPrevLine;
+                    //Underline it
+                    {
+                        auto rectMax = ImGui::GetItemRectMax();
+                        auto rectMin = ImGui::GetItemRectMin();
+                        rectMin.y = rectMax.y;
+                        ImGuiWindow* window = ImGui::GetCurrentWindow();
+                        window->DrawList->AddLine(rectMin,rectMax, ImGui::GetColorU32(color));
+                    }
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+                    }
+                    if(ImGui::IsItemClicked(ImGuiMouseButton_Left))
+                    {
+                        std::string url((const char*)node->as.link.url.data,node->as.link.url.len);
+                        Utils::openInBrowser(url);
+                    }
                 }
-                if (ImGui::IsItemHovered())
+
+                if(!(node->parent && node->parent->type == CMARK_NODE_TABLE_CELL))
                 {
-                    ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+                    ImGui::SameLine();
                 }
-                if(ImGui::IsItemClicked(ImGuiMouseButton_Left))
-                {
-                    std::string url((const char*)node->as.link.url.data,node->as.link.url.len);
-                    Utils::openInBrowser(url);
-                }
-                ImGui::SameLine();
             }
         }
     }

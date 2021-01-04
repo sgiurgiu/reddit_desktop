@@ -28,18 +28,18 @@ void UserInformationWindow::loadMoreUnreadMessages()
 }
 void UserInformationWindow::loadMoreAllMessages()
 {
-    loadMessages("inbox",&unreadMessages);
+    loadMessages("inbox",&allMessages);
 }
 void UserInformationWindow::loadMoreSentMessages()
 {
-    loadMessages("sent",&unreadMessages);
+    loadMessages("sent",&sentMessages);
 }
 void UserInformationWindow::loadMessages(const std::string& kind,Messages* messages)
 {
     std::string url = "/message/"+kind+"?count="+std::to_string(messages->count);
-    if(!unreadMessages.after.empty())
+    if(!messages->after.empty())
     {
-        url+= "&after="+unreadMessages.after;
+        url+= "&after="+messages->after;
     }
     auto connection = client->makeListingClientConnection();
     connection->connectionCompleteHandler([self=shared_from_this(),messages](const boost::system::error_code& ec,
@@ -80,7 +80,7 @@ void UserInformationWindow::loadListingsFromConnection(listing listingResponse,M
             for(const auto& child : data["children"])
             {
                 auto kind = child["kind"].get<std::string>();
-                if (kind == "t4")
+                if (kind == "t4" || kind == "t1")
                 {
                     messages->messages.emplace_back(child["data"]);
                 }
@@ -88,7 +88,8 @@ void UserInformationWindow::loadListingsFromConnection(listing listingResponse,M
             messages->count = messages->messages.size();
             if(messages->count > 0)
             {
-                messages->after = messages->messages.back().msg.id;
+                messages->before = messages->messages.front().msg.name;
+                messages->after = messages->messages.back().msg.name;
             }
         }
     }
@@ -116,6 +117,10 @@ void UserInformationWindow::showUserInfoWindow(int appFrameWidth,int appFrameHei
                 showMessage(msg);
                 ImGui::Separator();
             }
+            if(!unreadMessages.messages.empty() && ImGui::Button("Load More"))
+            {
+                loadMoreUnreadMessages();
+            }
             ImGui::EndTabItem();
         }
 
@@ -126,6 +131,10 @@ void UserInformationWindow::showUserInfoWindow(int appFrameWidth,int appFrameHei
                 showMessage(msg);
                 ImGui::Separator();
             }
+            if(!allMessages.messages.empty() && ImGui::Button("Load More"))
+            {
+                loadMoreAllMessages();
+            }
             ImGui::EndTabItem();
         }
 
@@ -135,6 +144,10 @@ void UserInformationWindow::showUserInfoWindow(int appFrameWidth,int appFrameHei
             {
                 showMessage(msg);
                 ImGui::Separator();
+            }
+            if(!sentMessages.messages.empty() && ImGui::Button("Load More"))
+            {
+                loadMoreSentMessages();
             }
             ImGui::EndTabItem();
         }

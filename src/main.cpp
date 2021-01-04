@@ -241,12 +241,16 @@ void ShowMarkdownWindow(bool *open)
 
     if(body.empty()) return;
 
+//    ImVec2 min(150,150);
+//    ImVec2 max(1000,1000);
+//    ImGui::SetNextWindowSizeConstraints(min,max);
+
     if(!ImGui::Begin("Markdown",open,ImGuiWindowFlags_None))
     {
         ImGui::End();
         return;
     }
-    ImGui::SetWindowFocus();
+    //ImGui::SetWindowFocus();
 
     MarkdownRenderer markdown(body);
     markdown.RenderMarkdown();

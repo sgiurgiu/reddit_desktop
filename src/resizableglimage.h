@@ -9,6 +9,10 @@ class ResizableGLImage
 public:
     ResizableGLImage();
     ~ResizableGLImage();
+    ResizableGLImage(const ResizableGLImage&)=delete;
+    ResizableGLImage& operator=(ResizableGLImage other)=delete;
+    ResizableGLImage (ResizableGLImage &&) noexcept;
+    ResizableGLImage & operator=(ResizableGLImage &&) noexcept;
     GLuint textureId = 0;
     int width = 0;
     int height = 0;

@@ -10,6 +10,7 @@
 #include "macros.h"
 #include "utils.h"
 #include <iostream>
+#include <fstream>
 #include <algorithm>
 
 namespace
@@ -724,6 +725,10 @@ void PostContentViewer::showPostContent()
 
     if(markdown)
     {
+        {
+            std::ofstream out("/tmp/test.txt");
+            out << currentPost->selfText;
+        }
         markdown->RenderMarkdown();
     }
     else if(!display_image && loadingPostContent)
