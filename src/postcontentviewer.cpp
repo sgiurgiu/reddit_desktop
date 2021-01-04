@@ -40,10 +40,6 @@ const std::vector<std::string> mediaExtensions = {
     ".avi",
     ".mkv"
 };
-}
-
-namespace
-{
 static void* get_proc_address_mpv(void *fn_ctx, const char *name)
 {
     UNUSED(fn_ctx);

@@ -22,7 +22,6 @@ ResizableGLImage::ResizableGLImage ( ResizableGLImage &&other) noexcept :
     isResized(std::exchange(other.isResized,false)),
     pictureRatio(std::exchange(other.pictureRatio,0.f))
 {
-
 }
 ResizableGLImage & ResizableGLImage::operator=( ResizableGLImage &&other) noexcept
 {

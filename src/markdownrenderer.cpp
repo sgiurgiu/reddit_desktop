@@ -232,6 +232,7 @@ void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type) con
         }
         else
         {
+            bool partOfCell = (node->parent && node->parent->type == CMARK_NODE_TABLE_CELL);
             float widthLeft = ImGui::GetContentRegionAvail().x;
             const char* text_start = text.c_str();
             const char* text_end = text.c_str()+text.size();
@@ -252,19 +253,20 @@ void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type) con
                     break;
                 }
             }
-
-            const char* endPrevLine = ImGui::GetFont()->CalcWordWrapPositionA( fontScale, text_start, text_end, widthLeft );
+            ImGuiWindow* window = ImGui::GetCurrentWindow();
+            const float wrap_width = ImGui::CalcWrapWidthForPos(window->DC.CursorPos, 0.f);
+            const char* endPrevLine = ImGui::GetFont()->CalcWordWrapPositionA( fontScale, text_start, text_end, wrap_width );
             if(endPrevLine == text_start)
             {
                 //render at least 1 character
                 endPrevLine++;
             }
-            if(nextWordFinish > endPrevLine)
+            if(!partOfCell && nextWordFinish > endPrevLine)
             {
                 //if, for whatever reason, this would break in the middle of a word (what we consider a word)
-                //just don't, make a new line and move on.
+                //just don't make a new line and move on.
                 endPrevLine = nextWordFinish;
-                ImGui::NewLine();
+                ImGui::Dummy(ImVec2(0.f,0.f));
                 ImGui::TextUnformatted( text_start, endPrevLine );
                 ImGui::SameLine(0.f,0.f);
             }
@@ -273,13 +275,13 @@ void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type) con
                 ImGui::TextUnformatted( text_start, endPrevLine );
             }
 
-
             widthLeft = ImGui::GetContentRegionAvail().x;
             while( endPrevLine < text_end )
             {
+               const float wrap_width = ImGui::CalcWrapWidthForPos(window->DC.CursorPos, 0.f);
                const char* text = endPrevLine;
                if( *text == ' ' ) { ++text; } // skip a space at start of line
-               endPrevLine = ImGui::GetFont()->CalcWordWrapPositionA( fontScale, text, text_end, widthLeft );
+               endPrevLine = ImGui::GetFont()->CalcWordWrapPositionA( fontScale, text, text_end, wrap_width );
                if(endPrevLine == text)
                {
                    //render at least 1 character
@@ -346,18 +348,28 @@ void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type) con
             auto text = static_cast<std::string*>(cmark_node_get_user_data(node));
             if(text)
             {
-                float widthLeft = ImGui::GetContentRegionAvail().x;
+                //float widthLeft = ImGui::GetContentRegionAvail().x;
                 float fontScale = 1.f;
                 const char* text_start = text->c_str();
                 const char* text_end = text->c_str()+text->size();
+                ImGuiWindow* window = ImGui::GetCurrentWindow();
+                int textBreakRetries = 0;
                 while(text_start < text_end)
                 {
-                    const char* endPrevLine = ImGui::GetFont()->CalcWordWrapPositionA( fontScale, text_start, text_end, widthLeft );
+                    const float wrap_width = ImGui::CalcWrapWidthForPos(window->DC.CursorPos, 0.f);
+                    const char* endPrevLine = ImGui::GetFont()->CalcWordWrapPositionA(fontScale, text_start, text_end, wrap_width );
                     if(endPrevLine == text_start)
                     {
+                        ImGui::Dummy(ImVec2(0.f,0.f));
+                        if(textBreakRetries<3)
+                        {
+                            textBreakRetries++;
+                            continue;
+                        }
+
                         //render at least 1 character
                         endPrevLine++;
-                    }
+                    }                    
                     ImVec4 color(0.5f,0.5f,1.f,1.f);
                     ImGui::PushStyleColor(ImGuiCol_Text, color);
                     ImGui::TextEx(text_start, endPrevLine, ImGuiTextFlags_NoWidthForLargeClippedText);
