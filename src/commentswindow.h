@@ -30,10 +30,13 @@ public:
         return postId;
     }
     void setFocused();
+    template<typename S>
+    void addOpenSubredditHandler(S slot)
+    {
+        openSubredditSignal.connect(slot);
+    }
+
 private:
-    //struct DisplayComment;
-    //using DisplayCommentPtr = std::unique_ptr<DisplayComment>;
-    //using DisplayCommentList = std::vector<DisplayComment>;
     struct DisplayComment
     {
         DisplayComment(comment cmt):
@@ -43,17 +46,29 @@ private:
             {
                 replies.emplace_back(c);
             }
+            updateButtonsText();
         }
         comment commentData;
         MarkdownRenderer renderer;
+        std::string upvoteButtonText;
+        std::string downvoteButtonText;
+        std::string saveButtonText;
+        std::string replyButtonText;
+        std::string moreRepliesButtonText;
+        std::string titleText;
         std::vector<DisplayComment> replies;
+        void updateButtonsText();
     };
     void loadListingsFromConnection(const listing& listingResponse);
     void setErrorMessage(std::string errorMessage);
     void loadListingChildren(const nlohmann::json& children);
     void setComments(comments_list receivedComments);
     void setParentPost(post_ptr receivedParentPost);
-    void showComment(const DisplayComment& c);
+    void showComment(DisplayComment& c);
+    void voteParentPost(post_ptr p, Voted vote);
+    void updatePostVote(post* p, Voted vote);
+    void voteComment(DisplayComment* c,Voted vote);
+    void updateCommentVote(DisplayComment* c,Voted vote);
 private:
     std::string postId;
     std::string title;
@@ -67,6 +82,12 @@ private:
     post_ptr parentPost;
     const boost::asio::any_io_executor& uiExecutor;
     std::shared_ptr<PostContentViewer> postContentViewer;
+    using OpenSubredditSignal = boost::signals2::signal<void(std::string subreddit)>;
+    OpenSubredditSignal openSubredditSignal;
+    std::string postUpvoteButtonText;
+    std::string postDownvoteButtonText;
+    std::string openLinkButtonText;
+    std::string commentButtonText;
 };
 
 #endif // COMMENTSWINDOW_H

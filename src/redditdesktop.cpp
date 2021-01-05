@@ -196,22 +196,41 @@ void RedditDesktop::sortSubscribedSubreddits()
 }
 void RedditDesktop::addSubredditWindow(std::string title)
 {    
-    subredditWindows.emplace_back(std::make_shared<SubredditWindow>(windowsCount++,title,current_access_token.data,&client,uiExecutor));
-    subredditWindows.back()->loadSubreddit();
-    subredditWindows.back()->showCommentsListener([this](const std::string& postId,const std::string& title){
-        auto it = std::find_if(commentsWindows.begin(),commentsWindows.end(),[&postId](const std::shared_ptr<CommentsWindow>& win){
-            return win->getPostId() == postId;
-        });
-        if(it == commentsWindows.end())
-        {
-            commentsWindows.emplace_back(std::make_shared<CommentsWindow>(postId,title,current_access_token.data,&client,uiExecutor));
-            commentsWindows.back()->loadComments();
-        }
-        else
-        {
-            (*it)->setFocused();
-        }
+    auto it = std::find_if(subredditWindows.begin(),subredditWindows.end(),
+                           [&title](const std::shared_ptr<SubredditWindow>& win){
+        return win->getSubreddit() == title || win->getTarget() == title;
     });
+    if(it != subredditWindows.end())
+    {
+        (*it)->setFocused();
+    }
+    else
+    {
+        subredditWindows.emplace_back(std::make_shared<SubredditWindow>(windowsCount++,
+                                                                        title,current_access_token.data,
+                                                                        &client,uiExecutor));
+        subredditWindows.back()->loadSubreddit();
+        subredditWindows.back()->showCommentsListener([this](const std::string& postId,const std::string& title){
+            auto it = std::find_if(commentsWindows.begin(),commentsWindows.end(),
+                                   [&postId](const std::shared_ptr<CommentsWindow>& win){
+                return win->getPostId() == postId;
+            });
+            if(it == commentsWindows.end())
+            {
+                commentsWindows.emplace_back(std::make_shared<CommentsWindow>(postId,title,
+                                                                              current_access_token.data,
+                                                                              &client,uiExecutor));
+                commentsWindows.back()->loadComments();
+                commentsWindows.back()->addOpenSubredditHandler([this](std::string subreddit){
+                    addSubredditWindow(subreddit);
+                });
+            }
+            else
+            {
+                (*it)->setFocused();
+            }
+        });
+    }
 }
 void RedditDesktop::setConnectionErrorMessage(std::string msg)
 {

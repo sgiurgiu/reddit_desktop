@@ -106,6 +106,12 @@ struct post_gallery_item
     std::string url;
 };
 
+enum class Voted
+{
+    DownVoted = -1,
+    NotVoted = 0,
+    UpVoted = 1
+};
 
 struct post
 {
@@ -144,6 +150,10 @@ struct post
     bool isGallery = false;
     std::vector<post_gallery_item> gallery;
     bool over18 = false;
+    bool locked = false;
+    bool clicked = false;
+    bool visited = false;
+    Voted voted = Voted::NotVoted;
 };
 using post_ptr = std::shared_ptr<post>;
 struct comment;
@@ -154,11 +164,13 @@ struct comment
     comment(){}
     comment(const nlohmann::json& json);
     std::string id;
+    std::string name;
     std::string body;
     bool hasMoreReplies = false;
     int ups = 0;
     int downs = 0;
     int score = 0;
+    Voted voted = Voted::NotVoted;
     std::string humanScore;
     std::string authorFullName;
     std::string author;

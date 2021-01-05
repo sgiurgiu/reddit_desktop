@@ -246,3 +246,30 @@ void Utils::openInBrowser(const std::string& url)
                     ShellExecuteA(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL);
 #endif
 }
+ImVec4 Utils::GetDownVoteColor()
+{
+    return ImVec4(0.58f,0.58f,0.96f,1.0f);
+}
+ImVec4 Utils::GetUpVoteColor()
+{
+    return ImVec4(1.0f,0.54f,0.0f,1.0f);
+}
+std::string Utils::CalculateScore(int& score,Voted originalVote,Voted newVote)
+{
+    if(originalVote != newVote)
+    {
+        switch(newVote)
+        {
+        case Voted::DownVoted:
+            score -= (originalVote == Voted::UpVoted) ? 2 : 1;
+            break;
+        case Voted::UpVoted:
+            score += (originalVote == Voted::DownVoted) ? 2 : 1;
+            break;
+        case Voted::NotVoted:
+            score += (originalVote == Voted::DownVoted) ? 1 : -1;
+            break;
+        }
+    }
+    return Utils::getHumanReadableNumber(score);
+}

@@ -5,6 +5,8 @@
 #include <memory>
 #include "resizableglimage.h"
 #include <stb_image.h>
+#include "imgui.h"
+#include "entities.h"
 
 class Utils
 {
@@ -57,6 +59,9 @@ public:
     static stbi_uc * decodeImageData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file);
     static stbi_uc * decodeGifData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file,int *count, int** delays);
     static void openInBrowser(const std::string& url);
+    static ImVec4 GetDownVoteColor();
+    static ImVec4 GetUpVoteColor();
+    static std::string CalculateScore(int& score,Voted originalVote,Voted newVote);
 private:
     static void AddFont(const unsigned int* fontData, const unsigned int fontDataSize, float fontSize);
 

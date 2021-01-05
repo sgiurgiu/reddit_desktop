@@ -41,6 +41,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         redditcreatepostconnection.cpp
         redditsearchnamesconnection.cpp
         userinformationwindow.cpp
+        redditvoteconnection.cpp
         )
 
 add_executable(${EXECUTABLE_NAME}

@@ -3,7 +3,6 @@
 #include "json.hpp"
 #include <charconv>
 #include "htmlparser.h"
-#include <fstream>
 
 RedditCreatePostConnection::RedditCreatePostConnection(const boost::asio::any_io_executor& executor,
                                                        boost::asio::ssl::context& ssl_context,
@@ -52,10 +51,6 @@ void RedditCreatePostConnection::responseReceivedComplete()
 {
     auto status = response.result_int();
     auto body = response.body();
-    {
-        std::ofstream out("/tmp/test.txt");
-        out << body;
-    }
     client_response<post_ptr> resp;
     for(const auto& h : response)
     {

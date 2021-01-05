@@ -122,32 +122,151 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
     parentPost = receivedParentPost;
     postContentViewer = std::make_shared<PostContentViewer>(client,uiExecutor);
     postContentViewer->loadContent(parentPost);
+    postUpvoteButtonText = fmt::format("{}##_up{}",reinterpret_cast<const char*>(ICON_FA_ARROW_UP),parentPost->name);
+    postDownvoteButtonText = fmt::format("{}##_down{}",reinterpret_cast<const char*>(ICON_FA_ARROW_DOWN),parentPost->name);
+    openLinkButtonText = fmt::format("{}##_openLink{}",
+                                       reinterpret_cast<const char*>(ICON_FA_EXTERNAL_LINK_SQUARE " Open Link"),
+                                       parentPost->name);
+    commentButtonText = fmt::format("Comment##{}_comment",parentPost->name);
 }
 
-void CommentsWindow::showComment(const DisplayComment& c)
+void CommentsWindow::showComment(DisplayComment& c)
 {
-    if(ImGui::TreeNodeEx(fmt::format("{} - {} points, {}",c.commentData.author,
-                                     c.commentData.humanScore,c.commentData.humanReadableTimeDifference).c_str(),ImGuiTreeNodeFlags_DefaultOpen))
+    if(ImGui::TreeNodeEx(c.titleText.c_str(),ImGuiTreeNodeFlags_DefaultOpen))
     {
         c.renderer.RenderMarkdown();
         ImGui::NewLine();
-        ImGui::Button(fmt::format("{}##{}_up",reinterpret_cast<const char*>(ICON_FA_ARROW_UP),c.commentData.id).c_str());ImGui::SameLine();
-        ImGui::Button(fmt::format("{}##{}_down",reinterpret_cast<const char*>(ICON_FA_ARROW_DOWN),c.commentData.id).c_str());ImGui::SameLine();
-        ImGui::Button(fmt::format("save##{}_save",c.commentData.id).c_str());ImGui::SameLine();
-        ImGui::Button(fmt::format("reply##{}_reply",c.commentData.id).c_str());
+
+        if(c.commentData.voted == Voted::UpVoted)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text,Utils::GetUpVoteColor());
+        }
+
+        if(ImGui::Button(c.upvoteButtonText.c_str()))
+        {
+            voteComment(&c,c.commentData.voted == Voted::UpVoted ? Voted::NotVoted : Voted::UpVoted);
+        }
+
+        if(c.commentData.voted == Voted::UpVoted)
+        {
+            ImGui::PopStyleColor(1);
+        }
+
+        ImGui::SameLine();
+
+        if(c.commentData.voted == Voted::DownVoted)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text,Utils::GetDownVoteColor());
+        }
+
+        if(ImGui::Button(c.downvoteButtonText.c_str()))
+        {
+            voteComment(&c,c.commentData.voted == Voted::DownVoted ? Voted::NotVoted : Voted::DownVoted);
+        }
+
+        if(c.commentData.voted == Voted::DownVoted)
+        {
+            ImGui::PopStyleColor(1);
+        }
+
+        ImGui::SameLine();
+        if(ImGui::Button(c.saveButtonText.c_str()))
+        {
+
+        }
+        ImGui::SameLine();
+        if(ImGui::Button(c.replyButtonText.c_str()))
+        {
+
+        }
         if(c.commentData.hasMoreReplies)
         {
             ImGui::SameLine();
-            ImGui::Button(fmt::format("more replies##{}_more_replies",c.commentData.id).c_str());
+            if(ImGui::Button(c.moreRepliesButtonText.c_str()))
+            {
+
+            }
         }
         ImGui::Dummy(ImVec2(0.0f, ImGui::GetFontSize()/2.f));
-        for(const auto& reply : c.replies)
+        for(auto&& reply : c.replies)
         {
             showComment(reply);
         }
         ImGui::TreePop();
     }
 }
+void CommentsWindow::DisplayComment::updateButtonsText()
+{
+    upvoteButtonText = fmt::format("{}##{}_up",reinterpret_cast<const char*>(ICON_FA_ARROW_UP),commentData.name);
+    downvoteButtonText = fmt::format("{}##{}_down",reinterpret_cast<const char*>(ICON_FA_ARROW_DOWN),commentData.name);
+    saveButtonText = fmt::format("save##{}_save",commentData.name);
+    replyButtonText = fmt::format("reply##{}_reply",commentData.name);
+    moreRepliesButtonText = fmt::format("more replies##{}_more_replies",commentData.name);
+    titleText = fmt::format("{} - {} points, {}",commentData.author,
+                            commentData.humanScore,commentData.humanReadableTimeDifference);
+}
+void CommentsWindow::voteParentPost(post_ptr p, Voted vote)
+{
+    listingErrorMessage.clear();
+    auto clientConnection = client->makeRedditVoteClientConnection();
+    clientConnection->connectionCompleteHandler(
+                [self=shared_from_this(),post=p.get(),voted=vote](const boost::system::error_code& ec,
+                                                const client_response<std::string>& response)
+    {
+        if(ec)
+        {
+            boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,self,ec.message()));
+        }
+        else if(response.status >= 400)
+        {
+            boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,self,std::move(response.body)));
+        }
+        else
+        {
+            boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::updatePostVote,self,post,voted));
+        }
+    });
+
+    clientConnection->vote(p->name,token,vote);
+}
+void CommentsWindow::updatePostVote(post* p, Voted vote)
+{
+    auto oldVoted = p->voted;
+    p->voted = vote;
+    p->humanScore = Utils::CalculateScore(p->score,oldVoted,vote);
+}
+void CommentsWindow::voteComment(DisplayComment* c,Voted vote)
+{
+    listingErrorMessage.clear();
+    auto clientConnection = client->makeRedditVoteClientConnection();
+    clientConnection->connectionCompleteHandler(
+                [self=shared_from_this(),c=c,voted=vote](const boost::system::error_code& ec,
+                                                const client_response<std::string>& response)
+    {
+        if(ec)
+        {
+            boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,self,ec.message()));
+        }
+        else if(response.status >= 400)
+        {
+            boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,self,std::move(response.body)));
+        }
+        else
+        {
+            boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::updateCommentVote,self,c,voted));
+        }
+    });
+
+    clientConnection->vote(c->commentData.name,token,vote);
+}
+void CommentsWindow::updateCommentVote(DisplayComment* c,Voted vote)
+{
+    auto oldVoted = c->commentData.voted;
+    c->commentData.voted = vote;
+    c->commentData.humanScore = Utils::CalculateScore(c->commentData.score,oldVoted,vote);
+    c->updateButtonsText();
+}
+
 void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
 {
     ImGui::SetNextWindowSize(ImVec2(appFrameWidth*0.6,appFrameHeight*0.8),ImGuiCond_FirstUseEver);
@@ -156,7 +275,6 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
         if(postContentViewer) postContentViewer->stopPlayingMedia();
         return;
     }
-
     if(!ImGui::Begin(windowName.c_str(),&windowOpen,ImGuiWindowFlags_None))
     {
         ImGui::End();
@@ -188,11 +306,57 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
 
         postContentViewer->showPostContent();
 
-        ImGui::Button(fmt::format("Comment##{}_comment",parentPost->id).c_str());
+        if(parentPost->voted == Voted::UpVoted)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text,Utils::GetUpVoteColor());
+        }
+        if(ImGui::Button(postUpvoteButtonText.c_str()))
+        {
+            voteParentPost(parentPost,parentPost->voted == Voted::UpVoted ? Voted::NotVoted : Voted::UpVoted);
+        }
+        if(parentPost->voted == Voted::UpVoted)
+        {
+            ImGui::PopStyleColor(1);
+        }
+        ImGui::SameLine();
+        ImGui::Text("%s",parentPost->humanScore.c_str());
+        ImGui::SameLine();
+        if(parentPost->voted == Voted::DownVoted)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text,Utils::GetDownVoteColor());
+        }
+        if(ImGui::Button(postDownvoteButtonText.c_str()))
+        {
+            voteParentPost(parentPost,parentPost->voted == Voted::DownVoted ? Voted::NotVoted : Voted::DownVoted);
+        }
+        if(parentPost->voted == Voted::DownVoted)
+        {
+            ImGui::PopStyleColor(1);
+        }
 
+        ImGui::SameLine();
+        ImGui::Button(commentButtonText.c_str());
+        if(!parentPost->url.empty())
+        {
+            ImGui::SameLine();
+
+            if(ImGui::Button(openLinkButtonText.c_str()))
+            {
+                Utils::openInBrowser(parentPost->url);
+            }
+        }
+        if(!parentPost->subreddit.empty())
+        {
+            ImGui::SameLine();
+            if(ImGui::Button("Subreddit##openSubredditWindow"))
+            {
+                openSubredditSignal(parentPost->subreddit);
+            }
+
+        }
         ImGui::Separator();
     }
-    for(const auto& c : comments)
+    for(auto&& c : comments)
     {
         showComment(c);
         ImGui::Separator();

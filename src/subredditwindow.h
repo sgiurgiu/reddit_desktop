@@ -21,10 +21,21 @@ public:
     void loadSubreddit();
     bool isWindowOpen() const {return windowOpen;}
     void showWindow(int appFrameWidth,int appFrameHeight);
-    using CommentsSignal = boost::signals2::signal<void(const std::string& id,const std::string& title)>;
-    void showCommentsListener(const typename CommentsSignal::slot_type& slot);
+    template<typename S>
+    void showCommentsListener(S slot)
+    {
+        commentsSignal.connect(slot);
+    }
     void setFocused();
     ~SubredditWindow();
+    std::string getSubreddit() const
+    {
+        return subreddit;
+    }
+    std::string getTarget() const
+    {
+        return target;
+    }
 private:
     struct PostDisplay
     {
@@ -36,6 +47,12 @@ private:
         bool shouldShowUnblurredImage = false;
         std::shared_ptr<PostContentViewer> postContentViewer;
         bool showingContent = false;
+        std::string upvoteButtonText;
+        std::string downvoteButtonText;
+        std::string showContentButtonText;
+        std::string openLinkButtonText;
+
+        void updateShowContentText();
     };
     using posts_list = std::vector<PostDisplay>;
 
@@ -49,7 +66,10 @@ private:
     void showNewLinkPostDialog();
     void submitNewPost(const post_ptr& p);
     void clearExistingPostsData();
+    void votePost(post_ptr p,Voted voted);
+    void updatePostVote(post* p,Voted voted);
 private:    
+    using CommentsSignal = boost::signals2::signal<void(const std::string& id,const std::string& title)>;
     int id;
     std::string subreddit;
     std::string subredditName;

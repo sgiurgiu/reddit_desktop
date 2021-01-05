@@ -8,7 +8,7 @@
 #include "mediastreamingconnection.h"
 #include "redditcreatepostconnection.h"
 #include "redditsearchnamesconnection.h"
-
+#include "redditvoteconnection.h"
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <thread>
@@ -28,12 +28,14 @@ public:
     using MediaStreamingClientConnection = std::shared_ptr<MediaStreamingConnection>;
     using RedditCreatePostClientConnection = std::shared_ptr<RedditCreatePostConnection>;
     using RedditSearchNamesClientConnection = std::shared_ptr<RedditSearchNamesConnection>;
+    using RedditVoteClientConnection = std::shared_ptr<RedditVoteConnection>;
     RedditLoginClientConnection makeLoginClientConnection();
     RedditListingClientConnection makeListingClientConnection();
     RedditResourceClientConnection makeResourceClientConnection();
     MediaStreamingClientConnection makeMediaStreamingClientConnection();
     RedditCreatePostClientConnection makeCreatePostClientConnection();
     RedditSearchNamesClientConnection makeRedditSearchNamesClientConnection();
+    RedditVoteClientConnection makeRedditVoteClientConnection();
     void setUserAgent(const std::string& userAgent);
 
 private:
@@ -43,6 +45,7 @@ private:
     boost::asio::ssl::context ssl_context;
     boost::asio::thread_pool clientThreads;
     std::string userAgent;
+    boost::asio::any_io_executor executor;
 };
 
 #endif // REDDITCLIENT_H

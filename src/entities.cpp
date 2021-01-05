@@ -321,6 +321,24 @@ post::post(const nlohmann::json& json)
             if(postMedia) break;
         }
     }
+    if(json.contains("locked") && json["locked"].is_boolean())
+    {
+        locked = json["locked"].get<bool>();
+    }
+    if(json.contains("clicked") && json["clicked"].is_boolean())
+    {
+        clicked = json["clicked"].get<bool>();
+    }
+    if(json.contains("visited") && json["visited"].is_boolean())
+    {
+        visited = json["visited"].get<bool>();
+    }
+    if(json.contains("likes") && !json["likes"].is_null() &&
+            json["likes"].is_boolean())
+    {
+        auto likes = json["likes"].get<bool>();
+        voted = likes ? Voted::UpVoted : Voted::DownVoted;
+    }
 
     //if(isVideo || (postHint != "self" && postHint!="link" && !postHint.empty()))
     {
@@ -333,6 +351,10 @@ comment::comment(const nlohmann::json& json)
     if(json.contains("id") && json["id"].is_string())
     {
         id =json["id"].get<std::string>();
+    }
+    if(json.contains("name") && json["name"].is_string())
+    {
+        name =json["name"].get<std::string>();
     }
     if(json.contains("body") && json["body"].is_string())
     {
@@ -363,6 +385,13 @@ comment::comment(const nlohmann::json& json)
     if(json["downs"].is_number())
     {
         downs = json["downs"].get<int>();
+    }
+
+    if(json.contains("likes") && !json["likes"].is_null() &&
+            json["likes"].is_boolean())
+    {
+        auto likes = json["likes"].get<bool>();
+        voted = likes ? Voted::UpVoted : Voted::DownVoted;
     }
 
     if(json.contains("replies") && json["replies"].is_object())

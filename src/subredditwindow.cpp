@@ -147,6 +147,12 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
         {
             subredditName = p.post->subredditName;
         }
+        p.upvoteButtonText = fmt::format("{}##_up{}",reinterpret_cast<const char*>(ICON_FA_ARROW_UP),p.post->name);
+        p.downvoteButtonText = fmt::format("{}##_down{}",reinterpret_cast<const char*>(ICON_FA_ARROW_DOWN),p.post->name);
+        p.openLinkButtonText = fmt::format("{}##openLink{}",
+                                           reinterpret_cast<const char*>(ICON_FA_EXTERNAL_LINK_SQUARE " Open Link"),
+                                           p.post->name);
+        p.updateShowContentText();
 
         if(!p.post->thumbnail.empty() && p.post->thumbnail != "self" &&
                 p.post->thumbnail != "default")
@@ -167,6 +173,13 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
         }
     }
 }
+void SubredditWindow::PostDisplay::updateShowContentText()
+{
+    showContentButtonText = fmt::format("{}##showContent{}",
+                                          reinterpret_cast<const char*>(
+                                              showingContent ? ICON_FA_MINUS_SQUARE_O:ICON_FA_PLUS_SQUARE_O),
+                                          post->name);
+}
 void SubredditWindow::setPostThumbnail(PostDisplay* p,unsigned char* data, int width, int height, int channels)
 {
     ((void)channels);
@@ -178,6 +191,36 @@ void SubredditWindow::setPostThumbnail(PostDisplay* p,unsigned char* data, int w
         p->blurredThumbnailPicture = std::move(blurredImage);
     }
     stbi_image_free(data);    
+}
+void SubredditWindow::votePost(post_ptr p,Voted voted)
+{
+    listingErrorMessage.clear();
+    auto clientConnection = client->makeRedditVoteClientConnection();
+    clientConnection->connectionCompleteHandler(
+                [self=shared_from_this(),post=p.get(),voted=voted](const boost::system::error_code& ec,
+                                                const client_response<std::string>& response)
+    {
+        if(ec)
+        {
+            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,ec.message()));
+        }
+        else if(response.status >= 400)
+        {
+            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,std::move(response.body)));
+        }
+        else
+        {
+            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::updatePostVote,self,post,voted));
+        }
+    });
+
+    clientConnection->vote(p->name,token,voted);
+}
+void SubredditWindow::updatePostVote(post* p,Voted voted)
+{
+    auto oldVoted = p->voted;
+    p->voted = voted;
+    p->humanScore = Utils::CalculateScore(p->score,oldVoted,voted);
 }
 void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
 {
@@ -236,7 +279,8 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
     }
     if(upvotesButtonsIdent == 0.f)
     {
-        auto upvotesButtonsWidth = ImGui::CalcTextSize(reinterpret_cast<const char*>(ICON_FA_ARROW_UP)).x  + (ImGui::GetStyle().FramePadding.x);
+        std::string btnText = posts.empty() ? reinterpret_cast<const char*>(ICON_FA_ARROW_UP) : posts.front().upvoteButtonText;
+        auto upvotesButtonsWidth = ImGui::CalcTextSize(btnText.c_str()).x  + (ImGui::GetStyle().FramePadding.x);
         upvotesButtonsIdent = (maxScoreWidth - upvotesButtonsWidth) / 2.f - (ImGui::GetStyle().FramePadding.x);
     }
 
@@ -245,13 +289,43 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::BeginGroup();
         ImGui::PushStyleColor(ImGuiCol_Button,ImVec4(1.0f,1.0f,1.0f,0.0f));
         ImGui::Dummy(ImVec2(upvotesButtonsIdent/2.f,0.f));ImGui::SameLine();
-        ImGui::Button(reinterpret_cast<const char*>(ICON_FA_ARROW_UP));
+
+        if(p.post->voted == Voted::UpVoted)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text,Utils::GetUpVoteColor());
+        }
+
+        if(ImGui::Button(p.upvoteButtonText.c_str()))
+        {
+            votePost(p.post,p.post->voted == Voted::UpVoted ? Voted::NotVoted : Voted::UpVoted);
+        }
+
+        if(p.post->voted == Voted::UpVoted)
+        {
+            ImGui::PopStyleColor(1);
+        }
+
         auto scoreIdent = (maxScoreWidth - ImGui::CalcTextSize(p.post->humanScore.c_str()).x)/2.f;
         ImGui::Dummy(ImVec2(scoreIdent,0.f));ImGui::SameLine();
         ImGui::Text("%s",p.post->humanScore.c_str());
         if(ImGui::GetItemRectSize().x > maxScoreWidth) maxScoreWidth = ImGui::GetItemRectSize().x;
         ImGui::Dummy(ImVec2(upvotesButtonsIdent/2.f,0.f));ImGui::SameLine();
-        ImGui::Button(reinterpret_cast<const char*>(ICON_FA_ARROW_DOWN));        
+
+        if(p.post->voted == Voted::DownVoted)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text,Utils::GetDownVoteColor());
+        }
+
+        if(ImGui::Button(p.downvoteButtonText.c_str()))
+        {
+            votePost(p.post,p.post->voted == Voted::DownVoted ? Voted::NotVoted : Voted::DownVoted);
+        }
+
+        if(p.post->voted == Voted::DownVoted)
+        {
+            ImGui::PopStyleColor(1);
+        }
+
         ImGui::PopStyleColor(1);
         ImGui::EndGroup();
 
@@ -325,29 +399,29 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         auto normalPositionY = ImGui::GetCursorPosY();
         auto desiredPositionY = height - ImGui::GetFrameHeightWithSpacing();
         if(normalPositionY < desiredPositionY) ImGui::SetCursorPosY(desiredPositionY);
-        if(ImGui::Button(fmt::format("{}##showContent{}",
-                                     reinterpret_cast<const char*>(
-                                         p.showingContent ? ICON_FA_MINUS_SQUARE_O:ICON_FA_PLUS_SQUARE_O),
-                                     p.post->id).c_str()))
+
+        if(ImGui::Button(p.showContentButtonText.c_str()))
         {
             p.showingContent = !p.showingContent;
+            p.updateShowContentText();
             if(!p.showingContent && p.postContentViewer)
             {
                 p.postContentViewer->stopPlayingMedia();
             }
         }
+
         ImGui::SameLine();
+
         if(ImGui::Button(p.post->commentsText.c_str()))
         {
             commentsSignal(p.post->id,p.post->title);
         }
+
         if(!p.post->url.empty())
         {
             ImGui::SameLine();
 
-            if(ImGui::Button(fmt::format("{}##openLink{}",
-                                         reinterpret_cast<const char*>(ICON_FA_EXTERNAL_LINK_SQUARE " Open"),
-                                         p.post->id).c_str()))
+            if(ImGui::Button(p.openLinkButtonText.c_str()))
             {
                 Utils::openInBrowser(p.post->url);
             }
@@ -561,11 +635,6 @@ void SubredditWindow::showWindowMenu()
 
         ImGui::EndMenuBar();
     }
-}
-
-void SubredditWindow::showCommentsListener(const typename CommentsSignal::slot_type& slot)
-{
-    commentsSignal.connect(slot);
 }
 void SubredditWindow::setFocused()
 {
