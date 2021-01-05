@@ -225,6 +225,11 @@ void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type) con
     {
         std::string text((const char*)node->as.literal.data,node->as.literal.len);
         text.erase(std::remove(text.begin(),text.end(),'\n'),text.end());
+        if(text.empty())
+        {
+            ImGui::Dummy(ImVec2(0.f,0.f));
+            break;
+        }
         if(node->parent && node->parent->type == CMARK_NODE_LINK)
         {
             cmark_node_set_user_data(node->parent,new std::string(text));

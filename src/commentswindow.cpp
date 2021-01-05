@@ -202,8 +202,14 @@ void CommentsWindow::DisplayComment::updateButtonsText()
     saveButtonText = fmt::format("save##{}_save",commentData.name);
     replyButtonText = fmt::format("reply##{}_reply",commentData.name);
     moreRepliesButtonText = fmt::format("more replies##{}_more_replies",commentData.name);
+#ifdef REDDIT_DESKTOP_DEBUG
+    titleText = fmt::format("{} - {} points, {} ({})",commentData.author,
+                            commentData.humanScore,commentData.humanReadableTimeDifference,
+                            commentData.name);
+#else
     titleText = fmt::format("{} - {} points, {}",commentData.author,
                             commentData.humanScore,commentData.humanReadableTimeDifference);
+#endif
 }
 void CommentsWindow::voteParentPost(post_ptr p, Voted vote)
 {
