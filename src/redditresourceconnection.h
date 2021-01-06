@@ -26,9 +26,6 @@ public:
 protected:
     virtual void responseReceivedComplete();
     virtual void onWrite(const boost::system::error_code& ec,std::size_t bytesTransferred) override;
-    virtual void onRead(const boost::system::error_code& ec,std::size_t bytesTransferred) override;
-private:
-    void onShutdown(const boost::system::error_code&);
 
 private:
     boost::beast::http::response_parser<resource_response_body> parser;

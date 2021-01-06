@@ -23,8 +23,6 @@ public:
     void login(const user& user);
 protected:
     virtual void responseReceivedComplete();
-private:
-    void onShutdown(const boost::system::error_code&);
 
 };
 

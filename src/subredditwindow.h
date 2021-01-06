@@ -69,7 +69,7 @@ private:
     void votePost(post_ptr p,Voted voted);
     void updatePostVote(post* p,Voted voted);
 private:    
-    using CommentsSignal = boost::signals2::signal<void(const std::string& id,const std::string& title)>;
+    using CommentsSignal = boost::signals2::signal<void(std::string id,std::string title)>;
     int id;
     std::string subreddit;
     std::string subredditName;
@@ -81,6 +81,7 @@ private:
     posts_list posts;
     std::string target;
     const boost::asio::any_io_executor& uiExecutor;
+    RedditClientProducer::RedditListingClientConnection listingConnection;
     float maxScoreWidth = 0.f;
     float upvotesButtonsIdent = 0.f;
     CommentsSignal commentsSignal;
@@ -98,5 +99,7 @@ private:
     bool newLinkPostDialog = false;
     bool showingLinkPostDialog = false;
 };
+
+using SubredditWindowPtr = std::shared_ptr<SubredditWindow>;
 
 #endif // SUBREDDITWINDOW_H

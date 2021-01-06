@@ -83,26 +83,32 @@ void SubredditWindow::loadSubreddit()
 }
 void SubredditWindow::loadSubredditListings(const std::string& target,const access_token& token)
 {
-    auto connection = client->makeListingClientConnection();
-    connection->connectionCompleteHandler([self=shared_from_this()](const boost::system::error_code& ec,
-                                const client_response<listing>& response)
-    {
-       if(ec)
-       {
-           boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,ec.message()));
-       }
-       else if(response.status >= 400)
-       {
-           boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,std::move(response.body)));
-       }
-       else
-       {
-           boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::loadListingsFromConnection,
-                                                        self,std::move(response.data)));
-       }
-    });
 
-    connection->list(target,token);
+    if(!listingConnection)
+    {
+        listingConnection = client->makeListingClientConnection();
+        listingConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
+                                    const client_response<listing>& response)
+        {
+            auto self = weak.lock();
+            if(!self) return;
+           if(ec)
+           {
+               boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,ec.message()));
+           }
+           else if(response.status >= 400)
+           {
+               boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,std::move(response.body)));
+           }
+           else
+           {
+               boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::loadListingsFromConnection,
+                                                            self,std::move(response.data)));
+           }
+        });
+    }
+
+    listingConnection->list(target,token);
 }
 
 void SubredditWindow::setErrorMessage(std::string errorMessage)

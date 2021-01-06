@@ -252,7 +252,7 @@ void ShowMarkdownWindow(bool *open)
     }
     //ImGui::SetWindowFocus();
 
-    MarkdownRenderer markdown(body);
+    MarkdownRenderer markdown("tt ~~spoiler~~ text");
     markdown.RenderMarkdown();
 
     ImGui::End();

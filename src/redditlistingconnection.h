@@ -24,10 +24,8 @@ public:
     void list(const std::string& target, const access_token& token);
 protected:
     virtual void responseReceivedComplete();
-    virtual void sendRequest();
 private:
     std::string userAgent;
-    bool connected = false;
 };
 
 #endif // REDDITLISTING_H

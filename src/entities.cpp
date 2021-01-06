@@ -374,9 +374,13 @@ comment::comment(const nlohmann::json& json)
     {
         authorFullName = json["author_fullname"].get<std::string>();
     }
-    if(json["author"].is_string())
+    if(json.contains("author") && json["author"].is_string())
     {
         author = json["author"].get<std::string>();
+    }
+    if(json.contains("link_id") && json["link_id"].is_string())
+    {
+        linkId = json["link_id"].get<std::string>();
     }
     if(json["ups"].is_number())
     {
@@ -385,6 +389,10 @@ comment::comment(const nlohmann::json& json)
     if(json["downs"].is_number())
     {
         downs = json["downs"].get<int>();
+    }
+    if(json.contains("parent_id") && json["parent_id"].is_string())
+    {
+        parentId =json["parent_id"].get<std::string>();
     }
 
     if(json.contains("likes") && !json["likes"].is_null() &&
@@ -409,15 +417,51 @@ comment::comment(const nlohmann::json& json)
         if(!children.is_array()) return;
         for(const auto& child: children)
         {
-            if(child.contains("kind") && child["kind"].get<std::string>() == "more")
+            if(child.contains("kind") && child["kind"].get<std::string>() == "more" &&
+               child.contains("data") && child["data"].is_object())
             {
-                hasMoreReplies = true;
+                unloadedChildren = std::make_optional<unloaded_children>(child["data"]);
+                if(unloadedChildren->count <= 0)
+                {
+                    unloadedChildren.reset();
+                }
             }
             else if(child.contains("kind") && child["kind"].get<std::string>() == "t1" &&
                     child.contains("data") && child["data"].is_object())
             {
                 replies.emplace_back(child["data"]);
             }
+        }
+    }
+}
+
+unloaded_children::unloaded_children(const nlohmann::json& json)
+{
+    if(json.contains("id") && json["id"].is_string())
+    {
+        id =json["id"].get<std::string>();
+    }
+    if(json.contains("name") && json["name"].is_string())
+    {
+        name =json["name"].get<std::string>();
+    }
+    if(json.contains("parent_id") && json["parent_id"].is_string())
+    {
+        parentId =json["parent_id"].get<std::string>();
+    }
+    if(json.contains("count") && json["count"].is_number())
+    {
+        count = json["count"].get<int>();
+    }
+    if(json.contains("depth") && json["depth"].is_number())
+    {
+        depth = json["depth"].get<int>();
+    }
+    if(json.contains("children") && json["children"].is_array())
+    {
+        for(const auto& child:json["children"])
+        {
+            children.emplace_back(child.get<std::string>());
         }
     }
 }

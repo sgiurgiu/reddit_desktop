@@ -16,6 +16,9 @@
 
 #include "utils.h"
 
+#include "cmark_extensions/reddit_extensions.h"
+#include "cmark_extensions/spoiler.h"
+
 MarkdownRenderer::MarkdownRenderer(const std::string& textToRender):document(nullptr,cmark_node_deleter()),
     text(textToRender)
 {
@@ -39,6 +42,11 @@ cmark_parser* MarkdownRenderer::createParser()
         auto autolink = cmark_find_syntax_extension("autolink");
         auto tagfilter = cmark_find_syntax_extension("tagfilter");
         auto tasklist = cmark_find_syntax_extension("tasklist");
+        auto spoiler = cmark_find_syntax_extension("spoiler");
+        if(spoiler)
+        {
+            cmark_parser_attach_syntax_extension(parser, spoiler);
+        }
         if(footnotes)
         {
             cmark_parser_attach_syntax_extension(parser, footnotes);
@@ -491,6 +499,7 @@ void MarkdownRenderer::RenderMarkdown() const
 }
 void MarkdownRenderer::InitEngine()
 {
+    //reddit_extensions_ensure_registered();
     cmark_gfm_core_extensions_ensure_registered();
 }
 void MarkdownRenderer::ReleaseEngine()

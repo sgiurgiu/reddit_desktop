@@ -31,10 +31,11 @@ void RedditResourceConnection::getResource(const std::string& url)
     {
         target+="?"+urlParts.encoded_query().to_string();
     }
+    request.clear();
     request.version(11);
     request.method(boost::beast::http::verb::get);
     request.target(target);
-    request.set(boost::beast::http::field::connection, "close");
+    request.set(boost::beast::http::field::connection, "keep-alive");
     request.set(boost::beast::http::field::host, host);
     request.set(boost::beast::http::field::accept, "*/*");
     request.set(boost::beast::http::field::user_agent, userAgent);    
@@ -43,53 +44,10 @@ void RedditResourceConnection::getResource(const std::string& url)
     response.body().clear();
     parser.get().body().clear();
     parser.get().clear();
-    resolveHost();
+    performRequest();
 }
 
 void RedditResourceConnection::responseReceivedComplete()
-{
-#ifdef REDDIT_DESKTOP_DEBUG
-        std::chrono::seconds timeout(120);
-#else
-        std::chrono::seconds timeout(30);
-#endif
-        boost::beast::get_lowest_layer(stream.value()).expires_after(timeout);
-
-    using namespace std::placeholders;
-    auto shutdownMethod = std::bind(&RedditResourceConnection::onShutdown,
-                                    shared_from_base<RedditResourceConnection>(),_1);
-
-    // Gracefully close the stream
-    stream->async_shutdown(shutdownMethod);
-}
-void RedditResourceConnection::onWrite(const boost::system::error_code& ec,std::size_t bytesTransferred)
-{
-    boost::ignore_unused(bytesTransferred);
-
-    if(ec)
-    {
-        onError(ec);
-        return;
-    }
-    response.clear();
-
-    using namespace std::placeholders;
-    auto readMethod = std::bind(&RedditResourceConnection::onRead,this->shared_from_base<RedditResourceConnection>(),_1,_2);
-    boost::beast::http::async_read(stream.value(), buffer, parser, readMethod);
-}
-
-void RedditResourceConnection::onRead(const boost::system::error_code& ec,std::size_t bytesTransferred)
-{
-    boost::ignore_unused(bytesTransferred);
-    if(ec)
-    {
-        onError(ec);
-        return;
-    }
-
-    responseReceivedComplete();
-}
-void RedditResourceConnection::onShutdown(const boost::system::error_code&)
 {
     auto status = response.result_int();
     resource_response resp;
@@ -110,3 +68,19 @@ void RedditResourceConnection::onShutdown(const boost::system::error_code&)
     }
     signal({},resp);
 }
+void RedditResourceConnection::onWrite(const boost::system::error_code& ec,std::size_t bytesTransferred)
+{
+    boost::ignore_unused(bytesTransferred);
+
+    if(ec)
+    {
+        onError(ec);
+        return;
+    }
+    response.clear();
+
+    using namespace std::placeholders;
+    auto readMethod = std::bind(&RedditResourceConnection::onRead,this->shared_from_base<RedditResourceConnection>(),_1,_2);
+    boost::beast::http::async_read(stream.value(), buffer, parser, readMethod);
+}
+

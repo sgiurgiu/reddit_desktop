@@ -156,8 +156,20 @@ struct post
     Voted voted = Voted::NotVoted;
 };
 using post_ptr = std::shared_ptr<post>;
+
+struct unloaded_children
+{
+    unloaded_children(){}
+    unloaded_children(const nlohmann::json& json);
+    std::string id;
+    std::string name;
+    std::string parentId;
+    int count = 0;
+    int depth = 0;
+    std::vector<std::string> children;
+};
+
 struct comment;
-//using comment_ptr = std::shared_ptr<comment>;
 using comments_list = std::vector<comment>;
 struct comment
 {
@@ -165,8 +177,10 @@ struct comment
     comment(const nlohmann::json& json);
     std::string id;
     std::string name;
+    std::string linkId;
     std::string body;
-    bool hasMoreReplies = false;
+    std::string parentId;
+    std::optional<unloaded_children> unloadedChildren;
     int ups = 0;
     int downs = 0;
     int score = 0;

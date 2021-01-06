@@ -12,12 +12,13 @@ RedditVoteConnection::RedditVoteConnection(const boost::asio::any_io_executor& e
 }
 void RedditVoteConnection::vote(const std::string& id,const access_token& token, Voted vote)
 {
+    request.clear();
     request.version(11);
     request.method(boost::beast::http::verb::post);
     request.target("/api/vote");
     request.set(boost::beast::http::field::host, host);
     request.set(boost::beast::http::field::accept, "*/*");
-    request.set(boost::beast::http::field::connection, "close");
+    request.set(boost::beast::http::field::connection, "keep-alive");
     request.set(boost::beast::http::field::user_agent, userAgent);
     request.set(boost::beast::http::field::authorization,fmt::format("Bearer {}",token.token));
     request.set(boost::beast::http::field::content_type, "application/x-www-form-urlencoded");
@@ -27,7 +28,15 @@ void RedditVoteConnection::vote(const std::string& id,const access_token& token,
     this->id = id;
     request.prepare_payload();
     response.body().clear();
-    resolveHost();
+
+    if(connected)
+    {
+        sendRequest();
+    }
+    else
+    {
+        resolveHost();
+    }
 }
 
 void RedditVoteConnection::responseReceivedComplete()

@@ -67,6 +67,7 @@ void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::
            status == boost::beast::http::status::see_other ||
            status == boost::beast::http::status::found)
         {
+            connected = false;
             stream.emplace(strand, ssl_context);
             currentUrl = location;
             downloadUrl(currentUrl);
@@ -169,10 +170,11 @@ void MediaStreamingConnection::downloadUrl(const std::string& url)
         if(!query.empty()) target+="&gl=US&hl=en&has_verified=1&bpctr=9999999999";
         else target+="?gl=US&hl=en&has_verified=1&bpctr=9999999999";
     }
+    request.clear();
     request.version(11);
     request.method(boost::beast::http::verb::get);
     request.target(target);
-    request.set(boost::beast::http::field::connection, "close");
+    request.set(boost::beast::http::field::connection, "keep-alive");
     request.set(boost::beast::http::field::host, host);
     request.set(boost::beast::http::field::accept, "*/*");
     request.set(boost::beast::http::field::user_agent, userAgent);
@@ -182,7 +184,14 @@ void MediaStreamingConnection::downloadUrl(const std::string& url)
     buffer.clear();
     responseParser.emplace();
     responseParser->body_limit(std::numeric_limits<uint64_t>::max());
-    resolveHost();
+    if(connected)
+    {
+        sendRequest();
+    }
+    else
+    {
+        resolveHost();
+    }
 }
 
 void MediaStreamingConnection::startStreaming(const HtmlParser::MediaLink& link)

@@ -51,11 +51,12 @@ private:
     void setUserMultis(multireddit_list multis);
     void searchSubreddits();
     void setSearchResultsNames(names_list names);
+    void addCommentsWindow(std::string postId,std::string title);
 private:
     boost::asio::any_io_executor uiExecutor;
     RedditClientProducer client;
-    std::vector<std::shared_ptr<SubredditWindow>> subredditWindows;
-    std::vector<std::shared_ptr<CommentsWindow>> commentsWindows;
+    std::vector<SubredditWindowPtr> subredditWindows;
+    std::vector<CommentsWindowPtr> commentsWindows;
     bool shouldQuit = false;
     bool openSubredditWindow = false;
     char selectedSubreddit[100] = { 0 };

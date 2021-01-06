@@ -25,11 +25,8 @@ public:
     void search(const std::string& query, const access_token& token);
 protected:
     virtual void responseReceivedComplete();
-    virtual void sendRequest();
 private:
     std::string userAgent;
-    bool connected = false;
-
 };
 
 #endif // REDDITSEARCHNAMESCONNECTION_H

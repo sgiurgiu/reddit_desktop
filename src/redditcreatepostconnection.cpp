@@ -15,12 +15,13 @@ RedditCreatePostConnection::RedditCreatePostConnection(const boost::asio::any_io
 void RedditCreatePostConnection::createPost(const post_ptr& p,bool sendReplies,
                                             const access_token& token)
 {
+    request.clear();
     request.version(11);
     request.method(boost::beast::http::verb::post);
     request.target("/api/submit");
     request.set(boost::beast::http::field::host, host);
     request.set(boost::beast::http::field::accept, "*/*");
-    request.set(boost::beast::http::field::connection, "close");
+    request.set(boost::beast::http::field::connection, "keep-alive");
     request.set(boost::beast::http::field::user_agent, userAgent);
     request.set(boost::beast::http::field::authorization,fmt::format("Bearer {}",token.token));
     request.set(boost::beast::http::field::content_type, "application/x-www-form-urlencoded");
@@ -40,11 +41,18 @@ void RedditCreatePostConnection::createPost(const post_ptr& p,bool sendReplies,
                                      p->postHint,url,title,p->subreddit,sendReplies,p->over18);
     }
 
-
     this->p = p;
     request.prepare_payload();
+    response.clear();
     response.body().clear();
-    resolveHost();
+    if(connected)
+    {
+        sendRequest();
+    }
+    else
+    {
+        resolveHost();
+    }
 }
 
 void RedditCreatePostConnection::responseReceivedComplete()

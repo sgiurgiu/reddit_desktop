@@ -11,10 +11,31 @@
 #include <boost/process/search_path.hpp>
 #include <chrono>
 #include <iostream>
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wvla"
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#endif
+
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4100 ) //TODO: find out warning numbers of MSVC
+#endif
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #define IIR_GAUSS_BLUR_IMPLEMENTATION
 #include "iir_gauss_blur.h"
+
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 void Utils::AddFont(const unsigned int* fontData, const unsigned int fontDataSize, float fontSize)
 {
@@ -26,9 +47,11 @@ void Utils::AddFont(const unsigned int* fontData, const unsigned int fontDataSiz
     ImFontConfig emojiConfig;
     emojiConfig.MergeMode = true;
     emojiConfig.GlyphMinAdvanceX = fontSize; // Use if you want to make the icon monospaced
-    static const ImWchar emoji_icon_ranges[] = { 0x231A, 0x26CF,
+    /*
+     static const ImWchar emoji_icon_ranges[] = { 0x231A, 0x26CF,
                                                 // 0x26D1, 0x1F251,
                                                  0 };
+    */
     static const ImWchar romanian_ranges[] = { 0x0100, 0x017F,
                                                0x0180, 0x024F,
                                                0 };

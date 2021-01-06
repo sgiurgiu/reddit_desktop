@@ -82,12 +82,7 @@ private:
             return;
         }
         // Set a timeout on the operation
-#ifdef REDDIT_DESKTOP_DEBUG
-        std::chrono::seconds timeout(120);
-#else
-        std::chrono::seconds timeout(30);
-#endif
-        boost::beast::get_lowest_layer(stream.value()).expires_after(timeout);
+        boost::beast::get_lowest_layer(stream.value()).expires_after(streamTimeout);
         using namespace std::placeholders;
         auto connectMethod = std::bind(&RedditConnection::onConnect,this->shared_from_this(),_1,_2);
 
@@ -102,11 +97,23 @@ private:
             onError(ec);
             return;
         }
+        connected = true;
         sendRequest();
     }
 
 
 protected:
+    void performRequest()
+    {
+        if(connected)
+        {
+            sendRequest();
+        }
+        else
+        {
+            resolveHost();
+        }
+    }
     template<typename Derived>
     std::shared_ptr<Derived> shared_from_base()
     {
@@ -128,12 +135,7 @@ protected:
 
     virtual void sendRequest()
     {
-#ifdef REDDIT_DESKTOP_DEBUG
-        std::chrono::seconds timeout(120);
-#else
-        std::chrono::seconds timeout(30);
-#endif
-        boost::beast::get_lowest_layer(stream.value()).expires_after(timeout);
+        boost::beast::get_lowest_layer(stream.value()).expires_after(streamTimeout);
         using namespace std::placeholders;
         auto writeMethod = std::bind(&RedditConnection::onWrite,this->shared_from_this(),_1,_2);
         // Send the HTTP request to the remote host
@@ -184,6 +186,12 @@ protected:
     using parser_t = boost::beast::http::response_parser<typename Response::body_type>;
     std::optional<parser_t> responseParser;
     bool isSsl = true;
+    bool connected = false;
+#ifdef REDDIT_DESKTOP_DEBUG
+    std::chrono::seconds streamTimeout{120};
+#else
+    std::chrono::seconds streamTimeout{30};
+#endif
 };
 
 #endif // REDDITCONNECTION_H

@@ -419,7 +419,7 @@ void PostContentViewer::setupMediaContext(std::string file)
     double vol = mediaState.mediaAudioVolume;
     mpv_set_property(mpv,"volume",MPV_FORMAT_DOUBLE,&vol);
     mpv_observe_property(mpv, 0, "volume", MPV_FORMAT_DOUBLE);
-
+    //TODO: figure out a way to pass these to a std::function bound to a shared_from_this or weak_from_this
     mpv_set_wakeup_callback(mpv, &PostContentViewer::onMpvEvents, this);
     mpv_render_context_set_update_callback(mpv_gl, &PostContentViewer::mpvRenderUpdate, this);
     std::cout << "playing URL:"<<file<<std::endl;

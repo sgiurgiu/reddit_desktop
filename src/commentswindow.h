@@ -59,9 +59,11 @@ private:
         std::vector<DisplayComment> replies;
         void updateButtonsText();
     };
-    void loadListingsFromConnection(const listing& listingResponse);
+    void loadListingsFromConnection(const listing& listingResponse,
+                                    std::shared_ptr<CommentsWindow> self);
     void setErrorMessage(std::string errorMessage);
-    void loadListingChildren(const nlohmann::json& children);
+    void loadListingChildren(const nlohmann::json& children,
+                             std::shared_ptr<CommentsWindow> self);
     void setComments(comments_list receivedComments);
     void setParentPost(post_ptr receivedParentPost);
     void showComment(DisplayComment& c);
@@ -69,6 +71,8 @@ private:
     void updatePostVote(post* p, Voted vote);
     void voteComment(DisplayComment* c,Voted vote);
     void updateCommentVote(DisplayComment* c,Voted vote);
+    void setupListingConnection();
+    void setUnloadedComments(std::optional<unloaded_children> children);
 private:
     std::string postId;
     std::string title;
@@ -82,12 +86,20 @@ private:
     post_ptr parentPost;
     const boost::asio::any_io_executor& uiExecutor;
     std::shared_ptr<PostContentViewer> postContentViewer;
+    RedditClientProducer::RedditListingClientConnection listingConnection;
+    RedditClientProducer::RedditVoteClientConnection postVotingConnection;
+    RedditClientProducer::RedditVoteClientConnection commentVotingConnection;
     using OpenSubredditSignal = boost::signals2::signal<void(std::string subreddit)>;
     OpenSubredditSignal openSubredditSignal;
     std::string postUpvoteButtonText;
     std::string postDownvoteButtonText;
     std::string openLinkButtonText;
     std::string commentButtonText;
+    std::string moreRepliesButtonText;
+    std::vector<DisplayComment*> loadingMoreRepliesComments;
+    std::optional<unloaded_children> unloadedPostComments;
 };
+
+using CommentsWindowPtr = std::shared_ptr<CommentsWindow>;
 
 #endif // COMMENTSWINDOW_H

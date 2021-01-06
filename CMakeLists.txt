@@ -6,7 +6,7 @@ project(reddit_desktop LANGUAGES C CXX
     )
 
 option(ENABLE_TESTS "Build tests" ON)
-
+option(ASAN_ENABLE "Build with sanitization on" OFF)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
 SET(REDDITDESKTOP_VERSION_MAJOR "0")

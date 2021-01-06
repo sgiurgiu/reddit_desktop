@@ -26,30 +26,19 @@ void RedditListingConnection::list(const std::string& target, const access_token
     {
         raw_json_target+="&raw_json=1";
     }
-
+    request.clear();
     request.version(11);
     request.method(boost::beast::http::verb::get);
     request.target(raw_json_target);
+    request.set(boost::beast::http::field::connection, "keep-alive");
     request.set(boost::beast::http::field::host, host);
-    request.set(boost::beast::http::field::accept, "*/*");
+    request.set(boost::beast::http::field::accept, "application/json");
     request.set(boost::beast::http::field::user_agent, userAgent);
     request.set(boost::beast::http::field::authorization,fmt::format("Bearer {}",token.token));
     request.prepare_payload();
+    response.clear();
     response.body().clear();
-    if(connected)
-    {
-        sendRequest();
-    }
-    else
-    {
-        resolveHost();
-    }
-}
-
-void RedditListingConnection::sendRequest()
-{
-    connected = true;
-    RedditConnection::sendRequest();
+    performRequest();
 }
 
 void RedditListingConnection::responseReceivedComplete()

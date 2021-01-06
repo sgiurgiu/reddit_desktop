@@ -42,6 +42,8 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         redditsearchnamesconnection.cpp
         userinformationwindow.cpp
         redditvoteconnection.cpp
+        cmark_extensions/reddit_extensions.c
+        cmark_extensions/spoiler.c
         )
 
 add_executable(${EXECUTABLE_NAME}
@@ -54,6 +56,9 @@ add_executable(${EXECUTABLE_NAME}
     ${BOOST_URL_SRC}
     ${GUMBO_PARSER_SRCS}
     )
+
+#Disable warnings for glad and gumbo, they're thousands and I really don't care about them
+set_source_files_properties(${GLAD_SRCS} ${GUMBO_PARSER_SRCS} PROPERTIES COMPILE_FLAGS "-w")
 
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE  OpenGL::GL SDL2::SDL2)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${CMAKE_DL_LIBS} Threads::Threads )
@@ -76,7 +81,13 @@ target_include_directories(${EXECUTABLE_NAME} PRIVATE
 
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLAD BOOST_ASIO_NO_DEPRECATED)
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "$<$<CONFIG:Debug>:REDDIT_DESKTOP_DEBUG>")
-target_compile_options(${EXECUTABLE_NAME} PUBLIC $<$<AND:$<CONFIG:Debug>,$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:-Wall -pedantic -Wextra -fsanitize=undefined,address>)
+if(ASAN_ENABLE)
+    target_compile_options(${EXECUTABLE_NAME} PUBLIC $<$<AND:$<CONFIG:Debug>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-Wall -pedantic -Wextra -fsanitize=undefined,address -fno-omit-frame-pointer>)
+    target_link_options(${EXECUTABLE_NAME} PUBLIC $<$<AND:$<CONFIG:Debug>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-fsanitize=undefined,address>)
+else()
+    target_compile_options(${EXECUTABLE_NAME} PUBLIC $<$<AND:$<CONFIG:Debug>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-Wall -pedantic -Wextra>)
+endif(ASAN_ENABLE)
+
 add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "$<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>")
