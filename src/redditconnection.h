@@ -25,7 +25,7 @@ public:
         host(host),service(service)
     {
         stream.emplace(strand, ssl_context);
-        responseParser.emplace();
+        responseParser.reset();
     }
     virtual ~RedditConnection()
     {
@@ -105,7 +105,7 @@ private:
 protected:
     void performRequest()
     {
-        if(connected)
+        if(boost::beast::get_lowest_layer(stream.value()).socket().is_open())
         {
             sendRequest();
         }
@@ -122,7 +122,16 @@ protected:
 
     virtual void onError(const boost::system::error_code& ec)
     {
-        signal(ec,{});
+        if(boost::beast::http::error::end_of_stream == ec)
+        {
+            connected = false;
+            stream.emplace(strand, ssl_context);
+            resolveHost();
+        }
+        else
+        {
+            signal(ec,{});
+        }
     }
 
     void resolveHost()
