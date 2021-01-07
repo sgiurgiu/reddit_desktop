@@ -55,8 +55,10 @@ private:
         std::string saveButtonText;
         std::string replyButtonText;
         std::string moreRepliesButtonText;
+        std::string spinnerIdText;
         std::string titleText;
         std::vector<DisplayComment> replies;
+        bool loadingUnloadedReplies = false;
         void updateButtonsText();
     };
     void loadListingsFromConnection(const listing& listingResponse,
@@ -96,8 +98,10 @@ private:
     std::string openLinkButtonText;
     std::string commentButtonText;
     std::string moreRepliesButtonText;
+    std::string loadingSpinnerIdText;
     std::vector<DisplayComment*> loadingMoreRepliesComments;
     std::optional<unloaded_children> unloadedPostComments;
+    bool loadingUnloadedReplies = false;
 };
 
 using CommentsWindowPtr = std::shared_ptr<CommentsWindow>;

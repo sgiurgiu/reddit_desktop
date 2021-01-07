@@ -7,6 +7,7 @@
 #include "macros.h"
 #include <iostream>
 #include "database.h"
+#include "spinner/spinner.h"
 
 CommentsWindow::CommentsWindow(const std::string& postId,
                                const std::string& title,
@@ -55,7 +56,8 @@ void CommentsWindow::setupListingConnection()
 void CommentsWindow::loadComments()
 {    
     setupListingConnection();
-    listingConnection->list("/comments/"+postId+"?depth=5&limit=50&threaded=true&sort=confidence",token);
+    //depth=15&limit=100&threaded=true&
+    listingConnection->list("/comments/"+postId+"?sort=confidence",token);
 }
 void CommentsWindow::setErrorMessage(std::string errorMessage)
 {
@@ -158,6 +160,7 @@ void CommentsWindow::setUnloadedComments(std::optional<unloaded_children> childr
 {
     unloadedPostComments = std::move(children);
     moreRepliesButtonText = fmt::format("load {} more comments##post_more_replies",unloadedPostComments->count);
+    loadingSpinnerIdText = fmt::format("##spinner_loading{}",unloadedPostComments->id);
 }
 void CommentsWindow::setComments(comments_list receivedComments)
 {
@@ -178,6 +181,7 @@ void CommentsWindow::setComments(comments_list receivedComments)
             {
                 comments.emplace_back(std::move(cmt));
             }
+            loadingUnloadedReplies = false;
         }
         else
         {
@@ -192,6 +196,7 @@ void CommentsWindow::setComments(comments_list receivedComments)
                 {
                     (*it)->replies.emplace_back(std::move(cmt));
                 }
+                (*it)->loadingUnloadedReplies = false;
                 loadingMoreRepliesComments.erase(it);
             }
             else
@@ -226,8 +231,8 @@ void CommentsWindow::showComment(DisplayComment& c)
     if(ImGui::TreeNodeEx(c.titleText.c_str(),ImGuiTreeNodeFlags_DefaultOpen))
     {
         c.renderer.RenderMarkdown();
-        ImGui::NewLine();
-
+        //ImGui::NewLine();
+        ImGui::Dummy(ImVec2(0.0f, ImGui::GetFontSize()/2.f));
         if(c.commentData.voted == Voted::UpVoted)
         {
             ImGui::PushStyleColor(ImGuiCol_Text,Utils::GetUpVoteColor());
@@ -242,9 +247,7 @@ void CommentsWindow::showComment(DisplayComment& c)
         {
             ImGui::PopStyleColor(1);
         }
-
         ImGui::SameLine();
-
         if(c.commentData.voted == Voted::DownVoted)
         {
             ImGui::PushStyleColor(ImGuiCol_Text,Utils::GetDownVoteColor());
@@ -270,9 +273,14 @@ void CommentsWindow::showComment(DisplayComment& c)
         {
 
         }
+
+        for(auto&& reply : c.replies)
+        {
+            showComment(reply);
+        }
         if(c.commentData.unloadedChildren)
         {
-            ImGui::SameLine();
+            ImGui::Dummy(ImVec2(0.0f, ImGui::GetFontSize()/2.f));
             if(ImGui::Button(c.moreRepliesButtonText.c_str()))
             {
                 std::string commaSeparator;
@@ -286,12 +294,13 @@ void CommentsWindow::showComment(DisplayComment& c)
                                         "&sort=confidence&limit_children=false"+
                                         "&children="+children,token);
                 c.commentData.unloadedChildren.reset();
+                c.loadingUnloadedReplies = true;
             }
         }
-        ImGui::Dummy(ImVec2(0.0f, ImGui::GetFontSize()/2.f));
-        for(auto&& reply : c.replies)
+        else if(c.loadingUnloadedReplies)
         {
-            showComment(reply);
+            ImGui::Dummy(ImVec2(0.0f, ImGui::GetFontSize()/2.f));
+            ImGui::Spinner(c.spinnerIdText.c_str(),ImGui::GetFontSize() * 0.75f,1,ImGui::GetColorU32(ImGuiCol_ButtonActive));
         }
         ImGui::TreePop();
     }
@@ -305,6 +314,7 @@ void CommentsWindow::DisplayComment::updateButtonsText()
     if(commentData.unloadedChildren)
     {
         moreRepliesButtonText = fmt::format("load {} more comments##{}_more_replies",commentData.unloadedChildren->count,commentData.name);
+        spinnerIdText = fmt::format("##spinner_loading{}",commentData.unloadedChildren->id);
     }
 #ifdef REDDIT_DESKTOP_DEBUG
     titleText = fmt::format("{} - {} points, {} ({})",commentData.author,
@@ -482,6 +492,12 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
         }
         ImGui::Separator();
     }
+
+    if(comments.empty())
+    {
+        ImGui::Spinner("###spinner_loading_comments",50.f,1,ImGui::GetColorU32(ImGuiCol_ButtonActive));
+    }
+
     for(auto&& c : comments)
     {
         showComment(c);
@@ -500,6 +516,11 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
                                 "&sort=confidence&limit_children=false"+
                                 "&children="+children,token);
         unloadedPostComments.reset();
+        loadingUnloadedReplies = true;
+    }
+    else if(loadingUnloadedReplies)
+    {
+        ImGui::Spinner(loadingSpinnerIdText.c_str(),ImGui::GetFontSize() * 0.75f,1,ImGui::GetColorU32(ImGuiCol_ButtonActive));
     }
 
     ImGui::End();

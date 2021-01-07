@@ -21,11 +21,9 @@ public:
                      boost::asio::ssl::context& ssl_context,const std::string& host,
                      const std::string& service):
         ssl_context(ssl_context),strand(boost::asio::make_strand(executor)),
-        resolver(strand),
-        host(host),service(service)
+        resolver(strand),stream(std::make_optional<stream_t>(strand, ssl_context)),
+        host(host),service(service),responseParser(std::make_optional<parser_t>())
     {
-        stream.emplace(strand, ssl_context);
-        responseParser.reset();
     }
     virtual ~RedditConnection()
     {
@@ -124,6 +122,7 @@ protected:
     {
         if(boost::beast::http::error::end_of_stream == ec)
         {
+            //we got the connection closed on us, reconnect
             connected = false;
             stream.emplace(strand, ssl_context);
             resolveHost();
@@ -185,7 +184,8 @@ protected:
     boost::asio::ssl::context& ssl_context;
     boost::asio::strand<boost::asio::any_io_executor> strand;
     boost::asio::ip::tcp::resolver resolver;
-    std::optional<boost::beast::ssl_stream<boost::beast::tcp_stream>> stream;
+    using stream_t = boost::beast::ssl_stream<boost::beast::tcp_stream>;
+    std::optional<stream_t> stream;
     boost::beast::flat_buffer buffer; // (Must persist between reads)
     std::string host;
     std::string service;

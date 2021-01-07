@@ -201,26 +201,30 @@ void SubredditWindow::setPostThumbnail(PostDisplay* p,unsigned char* data, int w
 void SubredditWindow::votePost(post_ptr p,Voted voted)
 {
     listingErrorMessage.clear();
-    auto clientConnection = client->makeRedditVoteClientConnection();
-    clientConnection->connectionCompleteHandler(
-                [self=shared_from_this(),post=p.get(),voted=voted](const boost::system::error_code& ec,
-                                                const client_response<std::string>& response)
+    if(!voteConnection)
     {
-        if(ec)
+        voteConnection = client->makeRedditVoteClientConnection();
+        voteConnection->connectionCompleteHandler(
+                    [weak=weak_from_this(),post=p.get(),voted=voted](const boost::system::error_code& ec,
+                                                    const client_response<std::string>& response)
         {
-            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,ec.message()));
-        }
-        else if(response.status >= 400)
-        {
-            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,std::move(response.body)));
-        }
-        else
-        {
-            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::updatePostVote,self,post,voted));
-        }
-    });
-
-    clientConnection->vote(p->name,token,voted);
+            auto self = weak.lock();
+            if(!self) return;
+            if(ec)
+            {
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,ec.message()));
+            }
+            else if(response.status >= 400)
+            {
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,std::move(response.body)));
+            }
+            else
+            {
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::updatePostVote,self,post,voted));
+            }
+        });
+    }
+    voteConnection->vote(p->name,token,voted);
 }
 void SubredditWindow::updatePostVote(post* p,Voted voted)
 {

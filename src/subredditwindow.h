@@ -82,6 +82,7 @@ private:
     std::string target;
     const boost::asio::any_io_executor& uiExecutor;
     RedditClientProducer::RedditListingClientConnection listingConnection;
+    RedditClientProducer::RedditVoteClientConnection voteConnection;
     float maxScoreWidth = 0.f;
     float upvotesButtonsIdent = 0.f;
     CommentsSignal commentsSignal;

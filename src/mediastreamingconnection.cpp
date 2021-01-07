@@ -109,8 +109,8 @@ void MediaStreamingConnection::responseReceivedComplete()
     {
         HtmlParser htmlParser(responseParser->get().body());
         auto videoUrl = htmlParser.getMediaLink(currentPost->domain);
-        boost::system::error_code ec;
-        stream->shutdown(ec);
+        //boost::system::error_code ec;
+        //stream->shutdown(ec);
         if(videoUrl.type == HtmlParser::MediaType::Unknown)
         {
             errorSignal(-1,"No video URL found in post");

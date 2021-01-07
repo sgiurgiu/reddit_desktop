@@ -15,8 +15,8 @@
 class RedditDesktop : public std::enable_shared_from_this<RedditDesktop>
 {
 public:
-    RedditDesktop(boost::asio::io_context& context);
-
+    RedditDesktop(boost::asio::any_io_executor uiExecutor);
+    ~RedditDesktop();
     void loginCurrentUser();
     void showDesktop();
     void closeWindow();
@@ -69,8 +69,19 @@ private:
     client_response<access_token> current_access_token;
     bool showConnectionErrorDialog = false;
     std::string connectionErrorMessage;
-    subreddit_list subscribedSubreddits;
-    subreddit_list unsortedSubscribedSubreddits;
+    struct DisplayedSubredditItem
+    {
+        DisplayedSubredditItem(subreddit sr):
+            sr(std::move(sr))
+        {}
+        subreddit sr;
+        bool selected = false;
+    };
+    using DisplayedSubredditsList = std::vector<DisplayedSubredditItem>;
+    DisplayedSubredditsList subscribedSubreddits;
+    DisplayedSubredditsList unsortedSubscribedSubreddits;
+    bool frontPageSubredditSelected = false;
+    bool allSubredditSelected = false;
     multireddit_list userMultis;
     names_list searchedNamesList;
     float topPosAfterMenuBar = 0.0f;

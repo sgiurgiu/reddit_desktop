@@ -69,6 +69,7 @@ void PostContentViewer::loadContent(post_ptr currentPost)
     if(!currentPost->selfText.empty())
     {
         markdown = std::make_unique<MarkdownRenderer>(currentPost->selfText);
+        loadingPostContent = false;
     }
     if(currentPost->isGallery && !currentPost->gallery.empty())
     {
@@ -100,7 +101,6 @@ void PostContentViewer::loadContent(post_ptr currentPost)
     {
         if(isMediaPost)
         {
-
             loadingPostContent = true;
             auto mediaStreamingConnection = client->makeMediaStreamingClientConnection();
             mediaStreamingConnection->streamAvailableHandler([self=shared_from_this()](HtmlParser::MediaLink link) {
@@ -140,12 +140,6 @@ PostContentViewer::~PostContentViewer()
 {
     stopPlayingMedia();
     Database::getInstance()->setMediaAudioVolume(mediaState.mediaAudioVolume);
-    mpvEventIOContextExecutor = boost::asio::any_io_executor();
-    mpvEventIOContext.stop();
-    if(mvpEventThread.joinable())
-    {
-        mvpEventThread.join();
-    }
     if(mpv_gl)
     {
         mpv_render_context_free(mpv_gl);
@@ -155,7 +149,14 @@ PostContentViewer::~PostContentViewer()
     {
         mpv_detach_destroy(mpv);
         mpv = nullptr;
-    }    
+    }
+    mpvEventIOContextExecutor = boost::asio::any_io_executor();
+    mpvEventIOContext.stop();
+    if(mvpEventThread.joinable())
+    {
+        mvpEventThread.join();
+    }
+
     if(mediaFramebufferObject > 0)
     {
         glDeleteFramebuffers(1, &mediaFramebufferObject);
@@ -490,6 +491,8 @@ void PostContentViewer::setPostMediaFrame()
 void PostContentViewer::setPostGif(unsigned char* data, int width, int height, int channels,
                 int count, int* delays)
 {
+    loadingPostContent = false;
+    if(!data || width <= 0 || height <= 0 || count <= 0) return;
     auto gif = std::make_unique<post_gif>();
     gif->width = width;
     gif->height = height;
@@ -504,7 +507,6 @@ void PostContentViewer::setPostGif(unsigned char* data, int width, int height, i
     free(delays);
     stbi_image_free(data);
     this->gif = std::move(gif);
-    loadingPostContent = false;
 }
 
 void PostContentViewer::setPostImage(unsigned char* data, int width, int height, int channels)
@@ -555,7 +557,7 @@ void PostContentViewer::showPostContent()
 {
     ResizableGLImage* display_image = postPicture.get();
 
-    if(gif)
+    if(gif && !gif->images.empty())
     {
         if(gif->images[gif->currentImage]->displayed)
         {
@@ -721,16 +723,11 @@ void PostContentViewer::showPostContent()
 
     if(markdown)
     {
-        {
-            std::ofstream out("/tmp/test.txt");
-            out << currentPost->selfText;
-        }
         markdown->RenderMarkdown();
     }
     else if(!display_image && loadingPostContent)
     {
-        constexpr std::string_view id = "###spinner_loading_data";
-        ImGui::Spinner(id.data(),50.f,1,ImGui::GetColorU32(ImGuiCol_ButtonActive));
+        ImGui::Spinner("###spinner_loading_data",50.f,1,ImGui::GetColorU32(ImGuiCol_ButtonActive));
     }
 
 }

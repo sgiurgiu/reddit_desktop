@@ -134,7 +134,9 @@ int main(int /*argc*/, char** /*argv*/)
     //io.Fonts->AddFontDefault();
     Utils::LoadFonts();
 
+    MarkdownRenderer::InitEngine();
     runMainLoop(window,io);
+    MarkdownRenderer::ReleaseEngine();
 
     {
         int x,y,w,h;
@@ -162,10 +164,15 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
     bool show_markdown_window = false;
 #endif
     boost::asio::io_context uiContext;
-    auto desktop = std::make_shared<RedditDesktop>(uiContext);
+    //auto executor = uiContext.get_executor();
+    //auto executor = ;
+    auto desktop = std::make_shared<RedditDesktop>(
+                boost::asio::require(uiContext.get_executor(),
+                                     boost::asio::execution::outstanding_work.tracked)
+                );
 
     desktop->loginCurrentUser();
-    MarkdownRenderer::InitEngine();
+
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     // Main loop
     bool done = false;
@@ -220,9 +227,9 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
             done = desktop->quitSelected();
         }
     }
-    desktop->closeWindow();
-    uiContext.run();
-    MarkdownRenderer::ReleaseEngine();
+    //desktop->closeWindow();
+    //uiContext.run();
+
 }
 
 #ifdef REDDIT_DESKTOP_DEBUG
