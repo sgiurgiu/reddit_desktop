@@ -272,7 +272,6 @@ std::string HtmlParser::lookupYoutubeVideoUrl(Node* node) const
         }
     }
 
-
     GumboVector* children = &node->v.element.children;
     for (unsigned int i = 0; i < children->length; ++i)
     {

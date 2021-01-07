@@ -16,7 +16,6 @@ class RedditDesktop : public std::enable_shared_from_this<RedditDesktop>
 {
 public:
     RedditDesktop(boost::asio::any_io_executor uiExecutor);
-    ~RedditDesktop();
     void loginCurrentUser();
     void showDesktop();
     void closeWindow();

@@ -163,13 +163,9 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
     bool show_demo_window = true;
     bool show_markdown_window = false;
 #endif
-    boost::asio::io_context uiContext;
-    //auto executor = uiContext.get_executor();
-    //auto executor = ;
-    auto desktop = std::make_shared<RedditDesktop>(
-                boost::asio::require(uiContext.get_executor(),
-                                     boost::asio::execution::outstanding_work.tracked)
-                );
+    boost::asio::io_context uiContext;    
+    auto work = boost::asio::make_work_guard(uiContext);
+    auto desktop = std::make_shared<RedditDesktop>(uiContext.get_executor());
 
     desktop->loginCurrentUser();
 
@@ -227,9 +223,8 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
             done = desktop->quitSelected();
         }
     }
-    //desktop->closeWindow();
-    //uiContext.run();
-
+    work.reset();
+    uiContext.run();
 }
 
 #ifdef REDDIT_DESKTOP_DEBUG

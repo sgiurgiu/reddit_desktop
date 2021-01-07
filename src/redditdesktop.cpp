@@ -27,10 +27,6 @@ RedditDesktop::RedditDesktop(boost::asio::any_io_executor executor):
     current_user = Database::getInstance()->getRegisteredUser();
     shouldBlurPictures= Database::getInstance()->getBlurNSFWPictures();
 }
-RedditDesktop::~RedditDesktop()
-{
-    //uiExecutor = boost::asio::any_io_executor();
-}
 void RedditDesktop::loginCurrentUser()
 {
     if(!current_user)

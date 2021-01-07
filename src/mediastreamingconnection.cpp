@@ -180,6 +180,7 @@ void MediaStreamingConnection::downloadUrl(const std::string& url)
     request.set(boost::beast::http::field::user_agent, userAgent);
     request.prepare_payload();
     response.clear();
+    response.body().clear();
     buffer.consume(buffer.size());
     buffer.clear();
     responseParser.emplace();
