@@ -73,8 +73,9 @@ private:
     void updatePostVote(post* p, Voted vote);
     void voteComment(DisplayComment* c,Voted vote);
     void updateCommentVote(DisplayComment* c,Voted vote);
-    void setupListingConnection();
+    void setupListingConnections();
     void setUnloadedComments(std::optional<unloaded_children> children);
+    void loadUnloadedChildren(const std::optional<unloaded_children>& children);
 private:
     std::string postId;
     std::string title;
@@ -91,6 +92,7 @@ private:
     RedditClientProducer::RedditListingClientConnection listingConnection;
     RedditClientProducer::RedditVoteClientConnection postVotingConnection;
     RedditClientProducer::RedditVoteClientConnection commentVotingConnection;
+    RedditClientProducer::RedditMoreChildrenClientConnection moreChildrenConnection;
     using OpenSubredditSignal = boost::signals2::signal<void(std::string subreddit)>;
     OpenSubredditSignal openSubredditSignal;
     std::string postUpvoteButtonText;

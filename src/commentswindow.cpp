@@ -23,39 +23,47 @@ CommentsWindow::~CommentsWindow()
 {
     if(postContentViewer) postContentViewer->stopPlayingMedia();
 }
-void CommentsWindow::setupListingConnection()
+void CommentsWindow::setupListingConnections()
 {
-    if(listingConnection) return;
+    if(moreChildrenConnection && listingConnection) return;
 
-    listingConnection = client->makeListingClientConnection();
-    listingConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
-                                const client_response<listing>& response)
+    auto completeHandler = [weak=weak_from_this()](const boost::system::error_code& ec,
+            const client_response<listing>& response)
     {
         auto self = weak.lock();
         if(!self || !self->windowOpen) return;
         if(ec)
         {
-           boost::asio::post(self->uiExecutor,
-                             std::bind(&CommentsWindow::setErrorMessage,self,ec.message()));
+            boost::asio::post(self->uiExecutor,
+                     std::bind(&CommentsWindow::setErrorMessage,self,ec.message()));
         }
         else
         {
-           if(response.status >= 400)
-           {
+            if(response.status >= 400)
+            {
                 boost::asio::post(self->uiExecutor,
-                                  std::bind(&CommentsWindow::setErrorMessage,self,response.body));
-           }
-           else
-           {
+                              std::bind(&CommentsWindow::setErrorMessage,self,response.body));
+            }
+            else
+            {
                 self->loadListingsFromConnection(std::move(response.data),self);
-           }
+            }
         }
-    });
-
+    };
+    if(!moreChildrenConnection)
+    {
+        moreChildrenConnection = client->makeRedditMoreChildrenClientConnection();
+        moreChildrenConnection->connectionCompleteHandler(completeHandler);
+    }
+    if(!listingConnection)
+    {
+        listingConnection = client->makeListingClientConnection();
+        listingConnection->connectionCompleteHandler(completeHandler);
+    }
 }
 void CommentsWindow::loadComments()
 {    
-    setupListingConnection();
+    setupListingConnections();
     //depth=15&limit=100&threaded=true&
     listingConnection->list("/comments/"+postId+"?sort=confidence",token);
 }
@@ -158,6 +166,7 @@ void CommentsWindow::loadListingChildren(const nlohmann::json& children,
 }
 void CommentsWindow::setUnloadedComments(std::optional<unloaded_children> children)
 {
+    if(!children || children->count <= 0 || children->children.empty()) return;
     unloadedPostComments = std::move(children);
     moreRepliesButtonText = fmt::format("load {} more comments##post_more_replies",unloadedPostComments->count);
     loadingSpinnerIdText = fmt::format("##spinner_loading{}",unloadedPostComments->id);
@@ -206,6 +215,12 @@ void CommentsWindow::setComments(comments_list receivedComments)
             }
         }
     }
+}
+void CommentsWindow::loadUnloadedChildren(const std::optional<unloaded_children>& children)
+{
+   setupListingConnections();
+   if(!children) return;
+   moreChildrenConnection->list(children.value(),parentPost->name,token);
 }
 void CommentsWindow::setParentPost(post_ptr receivedParentPost)
 {
@@ -283,16 +298,8 @@ void CommentsWindow::showComment(DisplayComment& c)
             ImGui::Dummy(ImVec2(0.0f, ImGui::GetFontSize()/2.f));
             if(ImGui::Button(c.moreRepliesButtonText.c_str()))
             {
-                std::string commaSeparator;
-                std::string children;
-                for(const auto& child:c.commentData.unloadedChildren->children)
-                {
-                    children+=std::exchange(commaSeparator,"%2C")+child;
-                }
+                loadUnloadedChildren(c.commentData.unloadedChildren);
                 loadingMoreRepliesComments.push_back(&c);
-                listingConnection->list("/api/morechildren?link_id="+parentPost->name+
-                                        "&sort=confidence&limit_children=false"+
-                                        "&children="+children,token);
                 c.commentData.unloadedChildren.reset();
                 c.loadingUnloadedReplies = true;
             }
@@ -506,15 +513,7 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
 
     if(unloadedPostComments && ImGui::Button(moreRepliesButtonText.c_str()))
     {
-        std::string commaSeparator;
-        std::string children;
-        for(const auto& child:unloadedPostComments->children)
-        {
-            children+=std::exchange(commaSeparator,"%2C")+child;
-        }
-        listingConnection->list("/api/morechildren?link_id="+parentPost->name+
-                                "&sort=confidence&limit_children=false"+
-                                "&children="+children,token);
+        loadUnloadedChildren(unloadedPostComments);
         unloadedPostComments.reset();
         loadingUnloadedReplies = true;
     }

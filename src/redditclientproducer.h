@@ -9,6 +9,7 @@
 #include "redditcreatepostconnection.h"
 #include "redditsearchnamesconnection.h"
 #include "redditvoteconnection.h"
+#include "redditmorechildrenconnection.h"
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <thread>
@@ -29,6 +30,7 @@ public:
     using RedditCreatePostClientConnection = std::shared_ptr<RedditCreatePostConnection>;
     using RedditSearchNamesClientConnection = std::shared_ptr<RedditSearchNamesConnection>;
     using RedditVoteClientConnection = std::shared_ptr<RedditVoteConnection>;
+    using RedditMoreChildrenClientConnection = std::shared_ptr<RedditMoreChildrenConnection>;
     RedditLoginClientConnection makeLoginClientConnection();
     RedditListingClientConnection makeListingClientConnection();
     RedditResourceClientConnection makeResourceClientConnection();
@@ -36,6 +38,7 @@ public:
     RedditCreatePostClientConnection makeCreatePostClientConnection();
     RedditSearchNamesClientConnection makeRedditSearchNamesClientConnection();
     RedditVoteClientConnection makeRedditVoteClientConnection();
+    RedditMoreChildrenClientConnection makeRedditMoreChildrenClientConnection();
     void setUserAgent(const std::string& userAgent);
 
 private:

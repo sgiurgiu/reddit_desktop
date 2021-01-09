@@ -42,6 +42,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         redditsearchnamesconnection.cpp
         userinformationwindow.cpp
         redditvoteconnection.cpp
+        redditmorechildrenconnection.cpp
         cmark_extensions/reddit_extensions.c
         cmark_extensions/spoiler.c
         )

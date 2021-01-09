@@ -78,3 +78,8 @@ RedditClientProducer::RedditVoteClientConnection RedditClientProducer::makeReddi
 {
     return std::make_shared<RedditVoteConnection>(executor,ssl_context,server,service,userAgent);
 }
+RedditClientProducer::RedditMoreChildrenClientConnection RedditClientProducer::makeRedditMoreChildrenClientConnection()
+{
+    return std::make_shared<RedditMoreChildrenConnection>(executor,ssl_context,server,service,userAgent);
+}
+
