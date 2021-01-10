@@ -13,3 +13,6 @@
 [submodule "external/gumbo-parser"]
 	path = external/gumbo-parser
 	url = https://github.com/google/gumbo-parser.git
+[submodule "external/md4c"]
+	path = external/md4c
+	url = https://github.com/mity/md4c.git

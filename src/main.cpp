@@ -161,7 +161,7 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
 {
 #ifdef REDDIT_DESKTOP_DEBUG
     bool show_demo_window = true;
-    bool show_markdown_window = false;
+    bool show_markdown_window = true;
 #endif
     boost::asio::io_context uiContext;    
     auto work = boost::asio::make_work_guard(uiContext);
@@ -254,7 +254,7 @@ void ShowMarkdownWindow(bool *open)
     }
     //ImGui::SetWindowFocus();
 
-    MarkdownRenderer markdown("tt ~~spoiler~~ text");
+    MarkdownRenderer markdown(body);
     markdown.RenderMarkdown();
 
     ImGui::End();

@@ -2,8 +2,10 @@
 #define MARKDOWNRENDERER_H
 
 #include <string>
-#include <cmark-gfm.h>
 #include <memory>
+#include <vector>
+
+#include "markdown/markdownnode.h"
 
 class MarkdownRenderer
 {
@@ -12,22 +14,19 @@ public:
     static void InitEngine();
     static void ReleaseEngine();
     void RenderMarkdown() const;
+    MarkdownNode* GetDocument() const;
+    MarkdownNode* GetCurrentNode() const;
+    void SetCurrentNode(MarkdownNode*);
 private:
     cmark_parser* createParser();
     void renderNode(cmark_node *node,cmark_event_type ev_type) const;
     void renderCode(const char* text, bool addFramePadding) const;
     void renderNumberedListItem(const char* text) const;
-    static void cmakeStringDeleter(cmark_mem *, void *user_data);
+
 private:
-    struct cmark_node_deleter
-    {
-        void operator()(cmark_node* node)
-        {
-            cmark_node_free(node);
-        }
-    };
-    std::unique_ptr<cmark_node,cmark_node_deleter> document;
     std::string text;
+    std::unique_ptr<MarkdownNode> document;
+    MarkdownNode* currentNode = nullptr;
 };
 
 #endif // MARKDOWNRENDERER_H

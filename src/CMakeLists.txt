@@ -21,6 +21,39 @@ set(SQLITE_SRC sqlite/sqlite3.c)
 
 file(GLOB_RECURSE GUMBO_PARSER_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/../external/gumbo-parser/src/*.c")
 
+set(MD4C_SRC ../external/md4c/src/md4c.c)
+
+set (MARKDOWN_RENDERER_SRCS
+    markdown/markdownnode.cpp
+    markdown/markdownnodeblockquote.cpp
+    markdown/markdownnodeblockunorderedlist.cpp
+    markdown/markdownnodeblockorderedlist.cpp
+    markdown/markdownnodeblocklistitem.cpp
+    markdown/markdownnodethematicbreak.cpp
+    markdown/markdownnodehead.cpp
+    markdown/markdownnodeblockcode.cpp
+    markdown/markdownnodeblockhtml.cpp
+    markdown/markdownnodeblockparagraph.cpp
+    markdown/markdownnodetable.cpp
+    markdown/markdownnodetableheader.cpp
+    markdown/markdownnodetablebody.cpp
+    markdown/markdownnodetablerow.cpp
+    markdown/markdownnodetablecellhead.cpp
+    markdown/markdownnodetablecell.cpp
+    markdown/markdownnodeemphasis.cpp
+    markdown/markdownnodestrong.cpp
+    markdown/markdownnodeunderline.cpp
+    markdown/markdownnodelink.cpp
+    markdown/markdownnodeimage.cpp
+    markdown/markdownnodecode.cpp
+    markdown/markdownnodestrike.cpp
+    markdown/markdownnodebreak.cpp
+    markdown/markdownnodesoftbreak.cpp
+    markdown/markdownnodetexthtml.cpp
+    markdown/markdownnodetextentity.cpp
+    markdown/markdownnodetext.cpp
+    markdown/markdownnodedocument.cpp)
+
 set(REDDIT_DESKTOP_SRCS main.cpp
         utils.cpp
         redditdesktop.cpp
@@ -43,8 +76,6 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         userinformationwindow.cpp
         redditvoteconnection.cpp
         redditmorechildrenconnection.cpp
-        cmark_extensions/reddit_extensions.c
-        cmark_extensions/spoiler.c
         )
 
 add_executable(${EXECUTABLE_NAME}
@@ -56,6 +87,8 @@ add_executable(${EXECUTABLE_NAME}
     ${SQLITE_SRC}
     ${BOOST_URL_SRC}
     ${GUMBO_PARSER_SRCS}
+    ${MD4C_SRC}
+    ${MARKDOWN_RENDERER_SRCS}
     )
 
 #Disable warnings for glad and gumbo, they're thousands and I really don't care about them
@@ -64,7 +97,6 @@ set_source_files_properties(${GLAD_SRCS} ${GUMBO_PARSER_SRCS} PROPERTIES COMPILE
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE  OpenGL::GL SDL2::SDL2)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${CMAKE_DL_LIBS} Threads::Threads )
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${Boost_LIBRARIES} OpenSSL::SSL)
-target_link_libraries(${EXECUTABLE_NAME} PRIVATE libcmark-gfm-extensions_static libcmark-gfm_static)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE PkgConfig::MPV)
 target_include_directories(${EXECUTABLE_NAME} PRIVATE
     "imgui"
@@ -73,10 +105,7 @@ target_include_directories(${EXECUTABLE_NAME} PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/stb/"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/url/include"
     ${Boost_INCLUDE_DIRS}
-    "${CMAKE_CURRENT_SOURCE_DIR}/../external/cmark-gfm/src"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../external/cmark-gfm/extensions"
-    "${CMAKE_BINARY_DIR}/external/cmark-gfm/src"
-    "${CMAKE_BINARY_DIR}/external/cmark-gfm/extensions"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../external/md4c/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/gumbo-parser/src/"
     )
 

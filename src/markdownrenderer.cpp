@@ -1,80 +1,281 @@
 #include "markdownrenderer.h"
-
-
-#include <cmark-gfm-extension_api.h>
-#include <cmark-gfm-core-extensions.h>
-#include <syntax_extension.h>
-#include <parser.h>
-#include <registry.h>
-#include <strikethrough.h>
-#include <table.h>
 #include <fmt/format.h>
-
 #include <imgui.h>
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui_internal.h>
-
 #include "utils.h"
+#include <md4c.h>
 
-#include "cmark_extensions/reddit_extensions.h"
-#include "cmark_extensions/spoiler.h"
+#include "markdown/markdownnodeblockcode.h"
+#include "markdown/markdownnodeblockhtml.h"
+#include "markdown/markdownnodeblocklistitem.h"
+#include "markdown/markdownnodeblockorderedlist.h"
+#include "markdown/markdownnodeblockparagraph.h"
+#include "markdown/markdownnodeblockquote.h"
+#include "markdown/markdownnodeblockunorderedlist.h"
+#include "markdown/markdownnodebreak.h"
+#include "markdown/markdownnodecode.h"
+#include "markdown/markdownnodeemphasis.h"
+#include "markdown/markdownnodehead.h"
+#include "markdown/markdownnodeimage.h"
+#include "markdown/markdownnodelink.h"
+#include "markdown/markdownnodesoftbreak.h"
+#include "markdown/markdownnodestrong.h"
+#include "markdown/markdownnodetable.h"
+#include "markdown/markdownnodetablebody.h"
+#include "markdown/markdownnodetablecell.h"
+#include "markdown/markdownnodetablecellhead.h"
+#include "markdown/markdownnodetableheader.h"
+#include "markdown/markdownnodetablerow.h"
+#include "markdown/markdownnodetext.h"
+#include "markdown/markdownnodetextentity.h"
+#include "markdown/markdownnodetexthtml.h"
+#include "markdown/markdownnodethematicbreak.h"
+#include "markdown/markdownnodeunderline.h"
+#include "markdown/markdownnodedocument.h"
+#include "markdown/markdownnodestrike.h"
 
-MarkdownRenderer::MarkdownRenderer(const std::string& textToRender):document(nullptr,cmark_node_deleter()),
-    text(textToRender)
+namespace
 {
-    auto parser = createParser();
 
-    cmark_parser_feed(parser, text.c_str(), text.size());
-    document.reset(cmark_parser_finish(parser));
-    if (parser)
-        cmark_parser_free(parser);
-
-}
-
-cmark_parser* MarkdownRenderer::createParser()
+int enter_block_callback(MD_BLOCKTYPE type, void* detail, void* userdata)
 {
-    int options = CMARK_OPT_DEFAULT | CMARK_OPT_UNSAFE | CMARK_OPT_FOOTNOTES | CMARK_OPT_STRIKETHROUGH_DOUBLE_TILDE;
-    auto parser = cmark_parser_new(options);
+    //static const MD_CHAR* head[6] = { "<h1>", "<h2>", "<h3>", "<h4>", "<h5>", "<h6>" };
+    MarkdownRenderer* r = (MarkdownRenderer*) userdata;
+    auto currentNode = r->GetCurrentNode();
+    if(!currentNode) return -1;
+    std::unique_ptr<MarkdownNode> newNode;
+
+    switch(type)
     {
-        auto footnotes = cmark_find_syntax_extension("footnotes");
-        auto table = cmark_find_syntax_extension("table");
-        auto strikethrough = cmark_find_syntax_extension("strikethrough");
-        auto autolink = cmark_find_syntax_extension("autolink");
-        auto tagfilter = cmark_find_syntax_extension("tagfilter");
-        auto tasklist = cmark_find_syntax_extension("tasklist");
-        auto spoiler = cmark_find_syntax_extension("spoiler");
-        if(spoiler)
-        {
-            cmark_parser_attach_syntax_extension(parser, spoiler);
-        }
-        if(footnotes)
-        {
-            cmark_parser_attach_syntax_extension(parser, footnotes);
-        }
-        if(table)
-        {
-            cmark_parser_attach_syntax_extension(parser, table);
-        }
-        if(strikethrough)
-        {
-            cmark_parser_attach_syntax_extension(parser, strikethrough);
-        }
-        if(autolink)
-        {
-            cmark_parser_attach_syntax_extension(parser, autolink);
-        }
-        if(tagfilter)
-        {
-            cmark_parser_attach_syntax_extension(parser, tagfilter);
-        }
-        if(tasklist)
-        {
-            cmark_parser_attach_syntax_extension(parser, tasklist);
-        }
+        case MD_BLOCK_DOC:      /* noop */ break;
+        case MD_BLOCK_QUOTE:    //RENDER_VERBATIM(r, "<blockquote>\n");
+            newNode = std::make_unique<MarkdownNodeBlockQuote>();
+        break;
+        case MD_BLOCK_UL:       //RENDER_VERBATIM(r, "<ul>\n");
+            newNode = std::make_unique<MarkdownNodeBlockUnorderedList>();
+        break;
+        case MD_BLOCK_OL:       //render_open_ol_block(r, (const MD_BLOCK_OL_DETAIL*)detail);
+            newNode = std::make_unique<MarkdownNodeBlockOrderedList>((const MD_BLOCK_OL_DETAIL*)detail);
+        break;
+        case MD_BLOCK_LI:       //render_open_li_block(r, (const MD_BLOCK_LI_DETAIL*)detail);
+            newNode = std::make_unique<MarkdownNodeBlockListItem>((const MD_BLOCK_LI_DETAIL*)detail);
+        break;
+        case MD_BLOCK_HR:       //RENDER_VERBATIM(r, (r->flags & MD_HTML_FLAG_XHTML) ? "<hr />\n" : "<hr>\n");
+            newNode = std::make_unique<MarkdownNodeThematicBreak>();
+        break;
+        case MD_BLOCK_H:        //RENDER_VERBATIM(r, head[((MD_BLOCK_H_DETAIL*)detail)->level - 1]);
+            newNode = std::make_unique<MarkdownNodeHead>((const MD_BLOCK_H_DETAIL*)detail);
+        break;
+        case MD_BLOCK_CODE:     //render_open_code_block(r, (const MD_BLOCK_CODE_DETAIL*) detail);
+            newNode = std::make_unique<MarkdownNodeBlockCode>((const MD_BLOCK_CODE_DETAIL*)detail);
+        break;
+        case MD_BLOCK_HTML:     /* noop */ break;
+        case MD_BLOCK_P:        //RENDER_VERBATIM(r, "<p>");
+            newNode = std::make_unique<MarkdownNodeBlockParagraph>();
+        break;
+        case MD_BLOCK_TABLE:    //RENDER_VERBATIM(r, "<table>\n");
+            newNode = std::make_unique<MarkdownNodeTable>();
+        break;
+        case MD_BLOCK_THEAD:    //RENDER_VERBATIM(r, "<thead>\n");
+            newNode = std::make_unique<MarkdownNodeTableHeader>();
+        break;
+        case MD_BLOCK_TBODY:    //RENDER_VERBATIM(r, "<tbody>\n");
+            newNode = std::make_unique<MarkdownNodeTableBody>();
+        break;
+        case MD_BLOCK_TR:       //RENDER_VERBATIM(r, "<tr>\n");
+            newNode = std::make_unique<MarkdownNodeTableRow>();
+        break;
+        case MD_BLOCK_TH:       //render_open_td_block(r, "th", (MD_BLOCK_TD_DETAIL*)detail);
+            newNode = std::make_unique<MarkdownNodeTableCellHead>((const MD_BLOCK_TD_DETAIL*)detail);
+        break;
+        case MD_BLOCK_TD:       //render_open_td_block(r, "td", (MD_BLOCK_TD_DETAIL*)detail);
+            newNode = std::make_unique<MarkdownNodeTableCell>((const MD_BLOCK_TD_DETAIL*)detail);
+        break;
     }
-    return parser;
+
+    if(newNode)
+    {
+        r->SetCurrentNode(newNode.get());
+        currentNode->AddChild(std::move(newNode));
+    }
+
+    return 0;
 }
 
+int leave_block_callback(MD_BLOCKTYPE , void* , void* userdata)
+{
+    //static const MD_CHAR* head[6] = { "</h1>\n", "</h2>\n", "</h3>\n", "</h4>\n", "</h5>\n", "</h6>\n" };
+    MarkdownRenderer* r = (MarkdownRenderer*) userdata;
+    auto currentNode = r->GetCurrentNode();
+    if(!currentNode) return -1;
+    r->SetCurrentNode(currentNode->GetParent());
+
+    /*switch(type)
+    {
+        case MD_BLOCK_DOC:      break;
+        case MD_BLOCK_QUOTE:    RENDER_VERBATIM(r, "</blockquote>\n"); break;
+        case MD_BLOCK_UL:       RENDER_VERBATIM(r, "</ul>\n"); break;
+        case MD_BLOCK_OL:       RENDER_VERBATIM(r, "</ol>\n"); break;
+        case MD_BLOCK_LI:       RENDER_VERBATIM(r, "</li>\n"); break;
+        case MD_BLOCK_HR:       break;
+        case MD_BLOCK_H:        RENDER_VERBATIM(r, head[((MD_BLOCK_H_DETAIL*)detail)->level - 1]); break;
+        case MD_BLOCK_CODE:     RENDER_VERBATIM(r, "</code></pre>\n"); break;
+        case MD_BLOCK_HTML:     break;
+        case MD_BLOCK_P:        RENDER_VERBATIM(r, "</p>\n"); break;
+        case MD_BLOCK_TABLE:    RENDER_VERBATIM(r, "</table>\n"); break;
+        case MD_BLOCK_THEAD:    RENDER_VERBATIM(r, "</thead>\n"); break;
+        case MD_BLOCK_TBODY:    RENDER_VERBATIM(r, "</tbody>\n"); break;
+        case MD_BLOCK_TR:       RENDER_VERBATIM(r, "</tr>\n"); break;
+        case MD_BLOCK_TH:       RENDER_VERBATIM(r, "</th>\n"); break;
+        case MD_BLOCK_TD:       RENDER_VERBATIM(r, "</td>\n"); break;
+    }*/
+
+    return 0;
+}
+
+int enter_span_callback(MD_SPANTYPE type, void* detail, void* userdata)
+{
+    MarkdownRenderer* r = (MarkdownRenderer*) userdata;
+    auto currentNode = r->GetCurrentNode();
+    if(!currentNode) return -1;
+    std::unique_ptr<MarkdownNode> newNode;
+
+    switch(type)
+    {
+        case MD_SPAN_EM:                //RENDER_VERBATIM(r, "<em>");
+            newNode = std::make_unique<MarkdownNodeEmphasis>();
+        break;
+        case MD_SPAN_STRONG:            //RENDER_VERBATIM(r, "<strong>");
+            newNode = std::make_unique<MarkdownNodeStrong>();
+        break;
+        case MD_SPAN_U:                 //RENDER_VERBATIM(r, "<u>");
+            newNode = std::make_unique<MarkdownNodeUnderline>();
+        break;
+        case MD_SPAN_A:                 //render_open_a_span(r, (MD_SPAN_A_DETAIL*) detail);
+            newNode = std::make_unique<MarkdownNodeLink>((const MD_SPAN_A_DETAIL*) detail);
+        break;
+        case MD_SPAN_IMG:               //render_open_img_span(r, (MD_SPAN_IMG_DETAIL*) detail);
+            newNode = std::make_unique<MarkdownNodeImage>((const MD_SPAN_IMG_DETAIL*) detail);
+        break;
+        case MD_SPAN_CODE:              //RENDER_VERBATIM(r, "<code>");
+            newNode = std::make_unique<MarkdownNodeCode>();
+        break;
+        case MD_SPAN_DEL:               //RENDER_VERBATIM(r, "<del>");
+            newNode = std::make_unique<MarkdownNodeStrike>();
+        break;
+        default:
+        break;
+        /*
+        case MD_SPAN_LATEXMATH:         RENDER_VERBATIM(r, "<x-equation>"); break;
+        case MD_SPAN_LATEXMATH_DISPLAY: RENDER_VERBATIM(r, "<x-equation type=\"display\">"); break;
+        case MD_SPAN_WIKILINK:          render_open_wikilink_span(r, (MD_SPAN_WIKILINK_DETAIL*) detail); break;
+        */
+    }
+
+    if(newNode)
+    {
+        r->SetCurrentNode(newNode.get());
+        currentNode->AddChild(std::move(newNode));
+    }
+
+    return 0;
+}
+
+
+int leave_span_callback(MD_SPANTYPE , void* , void* userdata)
+{
+    MarkdownRenderer* r = (MarkdownRenderer*) userdata;
+    auto currentNode = r->GetCurrentNode();
+    if(!currentNode) return -1;
+    r->SetCurrentNode(currentNode->GetParent());
+
+    /*switch(type)
+    {
+        case MD_SPAN_EM:                RENDER_VERBATIM(r, "</em>"); break;
+        case MD_SPAN_STRONG:            RENDER_VERBATIM(r, "</strong>"); break;
+        case MD_SPAN_U:                 RENDER_VERBATIM(r, "</u>"); break;
+        case MD_SPAN_A:                 RENDER_VERBATIM(r, "</a>"); break;
+        case MD_SPAN_IMG:               break;
+        case MD_SPAN_CODE:              RENDER_VERBATIM(r, "</code>"); break;
+        case MD_SPAN_DEL:               RENDER_VERBATIM(r, "</del>"); break;
+        case MD_SPAN_LATEXMATH:
+        case MD_SPAN_LATEXMATH_DISPLAY: RENDER_VERBATIM(r, "</x-equation>"); break;
+        case MD_SPAN_WIKILINK:          RENDER_VERBATIM(r, "</x-wikilink>"); break;
+    }*/
+
+    return 0;
+}
+
+int text_callback(MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size, void* userdata)
+{
+    MarkdownRenderer* r = (MarkdownRenderer*) userdata;
+    auto currentNode = r->GetCurrentNode();
+    if(!currentNode) return -1;
+    std::unique_ptr<MarkdownNode> newNode;
+
+    switch(type)
+    {
+        case MD_TEXT_NULLCHAR:  render_utf8_codepoint(r, 0x0000, render_verbatim);
+        break;
+        case MD_TEXT_BR:        RENDER_VERBATIM(r, (r->image_nesting_level == 0
+                                        ? ((r->flags & MD_HTML_FLAG_XHTML) ? "<br />\n" : "<br>\n")
+                                        : " "));
+        break;
+        case MD_TEXT_SOFTBR:    RENDER_VERBATIM(r, (r->image_nesting_level == 0 ? "\n" : " "));
+        break;
+        case MD_TEXT_HTML:      render_verbatim(r, text, size);
+        break;
+        case MD_TEXT_ENTITY:    render_entity(r, text, size, render_html_escaped);
+        break;
+        default:                render_html_escaped(r, text, size);
+        break;
+    }
+
+    if(newNode)
+    {
+        currentNode->AddChild(std::move(newNode));
+    }
+
+    return 0;
+}
+
+}
+
+MarkdownRenderer::MarkdownRenderer(const std::string& textToRender):text(textToRender)
+{
+    MD_PARSER parser = {
+            0,
+            MD_DIALECT_GITHUB,
+            enter_block_callback,
+            leave_block_callback,
+            enter_span_callback,
+            leave_span_callback,
+            text_callback,
+            nullptr,
+            nullptr
+        };
+    document = std::make_unique<MarkdownNodeDocument>();
+    currentNode = document.get();
+    int parseResult = md_parse(text.c_str(), text.size(), &parser, (void*) this);
+    if(parseResult)
+    {
+        document.reset();
+        currentNode = nullptr;
+    }
+}
+MarkdownNode* MarkdownRenderer::GetDocument() const
+{
+    return document.get();
+}
+MarkdownNode* MarkdownRenderer::GetCurrentNode() const
+{
+    return currentNode;
+}
+void MarkdownRenderer::SetCurrentNode(MarkdownNode* node)
+{
+    currentNode = node;
+}
 void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type) const
 {
     bool entering = (ev_type == CMARK_EVENT_ENTER);
@@ -414,26 +615,13 @@ void MarkdownRenderer::renderNode(cmark_node *node,cmark_event_type ev_type) con
         }
     }
     break;
-    case CMARK_NODE_IMAGE:
-    break;
-    case CMARK_NODE_FOOTNOTE_DEFINITION:
-    break;
-    case CMARK_NODE_FOOTNOTE_REFERENCE:
-    break;
     default:
         assert(false);
         break;
     }
 }
 
-void MarkdownRenderer::cmakeStringDeleter(cmark_mem *, void *user_data)
-{
-    if(user_data)
-    {
-        auto str = static_cast<std::string*>(user_data);
-        delete str;
-    }
-}
+
 void MarkdownRenderer::renderNumberedListItem(const char* text) const
 {
     ImGuiWindow* window = ImGui::GetCurrentWindow();
@@ -481,15 +669,7 @@ void MarkdownRenderer::RenderMarkdown() const
     if(document)
     {
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Regular)]);//Roboto medium
-        cmark_event_type ev_type;
-        cmark_node *cur;
-        cmark_iter *iter = cmark_iter_new(document.get());
-        while ((ev_type = cmark_iter_next(iter)) != CMARK_EVENT_DONE)
-        {
-           cur = cmark_iter_get_node(iter);
-           renderNode(cur, ev_type);
-        }
-        cmark_iter_free(iter);
+
         ImGui::PopFont();        
     }
     else
@@ -499,10 +679,7 @@ void MarkdownRenderer::RenderMarkdown() const
 }
 void MarkdownRenderer::InitEngine()
 {
-    //reddit_extensions_ensure_registered();
-    cmark_gfm_core_extensions_ensure_registered();
 }
 void MarkdownRenderer::ReleaseEngine()
 {
-    cmark_release_plugins();
 }
