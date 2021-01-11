@@ -8,6 +8,10 @@ class MarkdownNodeBlockQuote : public MarkdownNode
 public:
     MarkdownNodeBlockQuote();
     void Render() override;
+    NodeType GetNodeType() const override
+    {
+        return NodeType::BlockQuote;
+    }
 };
 
 #endif // MARKDOWNNODEBLOCKQUOTE_H

@@ -6,3 +6,7 @@ MarkdownNodeImage::MarkdownNodeImage(const MD_SPAN_IMG_DETAIL* detail):
 {
 
 }
+void MarkdownNodeImage::Render()
+{
+
+}

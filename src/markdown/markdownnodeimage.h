@@ -9,6 +9,10 @@ class MarkdownNodeImage : public MarkdownNode
 public:
     MarkdownNodeImage(const MD_SPAN_IMG_DETAIL*);
     void Render() override;
+    NodeType GetNodeType() const override
+    {
+        return NodeType::Image;
+    }
 private:
     std::string src;
     std::string title;

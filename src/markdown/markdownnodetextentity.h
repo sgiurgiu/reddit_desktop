@@ -6,8 +6,14 @@
 class MarkdownNodeTextEntity : public MarkdownNode
 {
 public:
-    MarkdownNodeTextEntity();
+    MarkdownNodeTextEntity(const char* text,size_t size);
     void Render() override;
+    NodeType GetNodeType() const override
+    {
+        return NodeType::TextEntity;
+    }
+private:
+    std::string text;
 };
 
 #endif // MARKDOWNNODETEXTENTITY_H

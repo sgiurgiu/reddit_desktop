@@ -8,6 +8,10 @@ class MarkdownNodeStrike : public MarkdownNode
 public:
     MarkdownNodeStrike();
     void Render() override;
+    NodeType GetNodeType() const override
+    {
+        return NodeType::Strike;
+    }
 };
 
 #endif // MARKDOWNNODESTRIKE_H

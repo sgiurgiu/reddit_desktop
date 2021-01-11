@@ -6,8 +6,14 @@
 class MarkdownNodeTextHtml : public MarkdownNode
 {
 public:
-    MarkdownNodeTextHtml();
+    MarkdownNodeTextHtml(const char* text,size_t size);
     void Render() override;
+    NodeType GetNodeType() const override
+    {
+        return NodeType::TextHtml;
+    }
+private:
+    std::string text;
 };
 
 #endif // MARKDOWNNODETEXTHTML_H

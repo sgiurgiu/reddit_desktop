@@ -8,6 +8,10 @@ class MarkdownNodeThematicBreak : public MarkdownNode
 public:
     MarkdownNodeThematicBreak();
     void Render() override;
+    NodeType GetNodeType() const override
+    {
+        return NodeType::ThematicBreak;
+    }
 };
 
 #endif // MARKDOWNNODETHEMATICBREAK_H

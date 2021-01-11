@@ -17,11 +17,6 @@ public:
     MarkdownNode* GetDocument() const;
     MarkdownNode* GetCurrentNode() const;
     void SetCurrentNode(MarkdownNode*);
-private:
-    cmark_parser* createParser();
-    void renderNode(cmark_node *node,cmark_event_type ev_type) const;
-    void renderCode(const char* text, bool addFramePadding) const;
-    void renderNumberedListItem(const char* text) const;
 
 private:
     std::string text;

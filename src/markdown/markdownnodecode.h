@@ -8,6 +8,10 @@ class MarkdownNodeCode : public MarkdownNode
 public:
     MarkdownNodeCode();
     void Render() override;
+    NodeType GetNodeType() const override
+    {
+        return NodeType::Code;
+    }
 };
 
 #endif // MARKDOWNNODECODE_H

@@ -9,6 +9,10 @@ class MarkdownNodeLink : public MarkdownNode
 public:
     MarkdownNodeLink(const MD_SPAN_A_DETAIL*);
     void Render() override;
+    NodeType GetNodeType() const override
+    {
+        return NodeType::Link;
+    }
 private:
     std::string href;
     std::string title;
