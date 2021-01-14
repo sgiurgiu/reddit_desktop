@@ -66,7 +66,7 @@ void RedditDesktop::refreshLoginToken()
 void RedditDesktop::loginSuccessful(client_response<access_token> token)
 {
     current_access_token = token;
-    loginTokenRefreshTimer.expires_after(std::chrono::seconds(std::min(current_access_token.data.expires,5*60)));
+    loginTokenRefreshTimer.expires_after(std::chrono::seconds(std::min(current_access_token.data.expires,10*60)));
     loginTokenRefreshTimer.async_wait([weak=weak_from_this()](const boost::system::error_code& ec){
         auto self = weak.lock();
         if(self && !ec)
@@ -75,9 +75,10 @@ void RedditDesktop::loginSuccessful(client_response<access_token> token)
         }
     });
 
+    loadUserInformation();
+
     if(loggedInFirstTime)
     {
-        loadUserInformation();
         //add front page window
         addSubredditWindow("");
         loggedInFirstTime = false;
@@ -90,9 +91,11 @@ void RedditDesktop::loginSuccessful(client_response<access_token> token)
 void RedditDesktop::loadUserInformation()
 {
     auto userInformationConnection = client.makeListingClientConnection();
-    userInformationConnection->connectionCompleteHandler([self=shared_from_this()](const boost::system::error_code& ec,
+    userInformationConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
                                                  const client_response<listing>& response)
      {
+        auto self = weak.lock();
+        if(!self) return;
         if(ec)
         {
             boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,ec.message()));
@@ -115,7 +118,6 @@ void RedditDesktop::loadUserInformation()
 void RedditDesktop::updateUserInformation(user_info info)
 {
     info_user = std::move(info);
-
     unsortedSubscribedSubreddits.clear();
     loadSubreddits("/subreddits/mine/subscriber?show=all&limit=100",current_access_token.data);
     loadMultis("/api/multi/mine",current_access_token.data);
@@ -123,9 +125,11 @@ void RedditDesktop::updateUserInformation(user_info info)
 void RedditDesktop::loadMultis(const std::string& url, const access_token& token)
 {
     auto multisConnection = client.makeListingClientConnection();
-    multisConnection->connectionCompleteHandler([self=shared_from_this()](const boost::system::error_code& ec,
+    multisConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
                                                  const client_response<listing>& response)
      {
+        auto self = weak.lock();
+        if(!self) return;
         if(ec)
         {
             boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,ec.message()));
@@ -162,7 +166,7 @@ void RedditDesktop::loadSubscribedSubreddits(subreddit_list srs)
     {
         auto url = fmt::format("/subreddits/mine/subscriber?show=all&limit=100&after={}&count={}",srs.back().name,srs.size());
         loadSubreddits(url,current_access_token.data);
-    }    
+    }
     std::move(srs.begin(), srs.end(), std::back_inserter(unsortedSubscribedSubreddits));
     subscribedSubreddits = unsortedSubscribedSubreddits;
     sortSubscribedSubreddits();
@@ -170,9 +174,11 @@ void RedditDesktop::loadSubscribedSubreddits(subreddit_list srs)
 void RedditDesktop::loadSubreddits(const std::string& url, const access_token& token)
 {
     auto subscribedSubredditsConnection = client.makeListingClientConnection();
-    subscribedSubredditsConnection->connectionCompleteHandler([self=shared_from_this()](const boost::system::error_code& ec,
+    subscribedSubredditsConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
                                                  const client_response<listing>& response)
      {
+        auto self = weak.lock();
+        if(!self) return;
         if(ec)
         {
             boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,ec.message()));
@@ -392,6 +398,7 @@ void RedditDesktop::showSubredditsTab()
 {
     if(ImGui::Button(reinterpret_cast<const char*>(ICON_FA_REFRESH)))
     {
+        //this clear is just for show, to tell the user that we're working, doing something
         subscribedSubreddits.clear();
         unsortedSubscribedSubreddits.clear();
         frontPageSubredditSelected = false;

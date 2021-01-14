@@ -581,6 +581,12 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
             {
                 Utils::openInBrowser(parentPost->url);
             }
+            if(ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted(parentPost->url.c_str());
+                ImGui::EndTooltip();
+            }
         }
         if(!parentPost->subreddit.empty())
         {
@@ -588,6 +594,12 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
             if(ImGui::Button("Subreddit##openSubredditWindow"))
             {
                 openSubredditSignal(parentPost->subreddit);
+            }
+            if(ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted(parentPost->subreddit.c_str());
+                ImGui::EndTooltip();
             }
         }
         ImGui::Separator();

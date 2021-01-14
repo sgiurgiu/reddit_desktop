@@ -62,6 +62,9 @@ void MarkdownNodeLink::Render()
             if (ImGui::IsItemHovered())
             {
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted(href.c_str());
+                ImGui::EndTooltip();
             }
             if(ImGui::IsItemClicked(ImGuiMouseButton_Left))
             {

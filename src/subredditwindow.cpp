@@ -433,6 +433,12 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             {
                 Utils::openInBrowser(p.post->url);
             }
+            if(ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted(p.post->url.c_str());
+                ImGui::EndTooltip();
+            }
         }
         if(p.showingContent)
         {
