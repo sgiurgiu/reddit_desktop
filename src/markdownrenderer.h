@@ -10,14 +10,15 @@
 class MarkdownRenderer
 {
 public:
+    MarkdownRenderer();
     MarkdownRenderer(const std::string& textToRender);
-    static void InitEngine();
-    static void ReleaseEngine();
     void RenderMarkdown() const;
     MarkdownNode* GetDocument() const;
     MarkdownNode* GetCurrentNode() const;
     void SetCurrentNode(MarkdownNode*);
-
+    void SetText(const std::string& textToRender);
+private:
+    void ParseCurrentText();
 private:
     std::string text;
     std::unique_ptr<MarkdownNode> document;

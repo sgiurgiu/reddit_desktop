@@ -35,7 +35,10 @@ public:
     {
         openSubredditSignal.connect(slot);
     }
-
+    void setAccessToken(const access_token& token)
+    {
+        this->token = token;
+    }
 private:
     struct DisplayComment
     {
@@ -56,17 +59,30 @@ private:
         std::string replyButtonText;
         std::string moreRepliesButtonText;
         std::string spinnerIdText;
+        std::string replyIdText;
+        std::string saveReplyButtonText;
         std::string titleText;
+        std::string postReplyPreviewCheckboxId;
+        std::string liveReplyPreviewText;
         std::vector<DisplayComment> replies;
         bool loadingUnloadedReplies = false;
+        char postReplyTextBuffer[1000] = {0};
+        bool postingReply = false;
+        bool showingReplyArea = false;
+        bool showingPreview = false;
+        MarkdownRenderer previewRenderer;
+        ImVec2 postReplyTextFieldSize;
+        ImVec2 postReplyPreviewSize = {0,1};
+
         void updateButtonsText();
     };
     void loadListingsFromConnection(const listing& listingResponse,
                                     std::shared_ptr<CommentsWindow> self);
     void setErrorMessage(std::string errorMessage);
     void loadListingChildren(const nlohmann::json& children,
-                             std::shared_ptr<CommentsWindow> self);
-    void setComments(comments_list receivedComments);
+                             std::shared_ptr<CommentsWindow> self,
+                             bool append);
+    void setComments(comments_list receivedComments, bool append);
     void setParentPost(post_ptr receivedParentPost);
     void showComment(DisplayComment& c);
     void voteParentPost(post_ptr p, Voted vote);
@@ -91,19 +107,29 @@ private:
     std::shared_ptr<PostContentViewer> postContentViewer;
     RedditClientProducer::RedditListingClientConnection listingConnection;
     RedditClientProducer::RedditVoteClientConnection postVotingConnection;
-    RedditClientProducer::RedditVoteClientConnection commentVotingConnection;
     RedditClientProducer::RedditMoreChildrenClientConnection moreChildrenConnection;
+    RedditClientProducer::RedditCreateCommentClientConnection createCommentConnection;
+
     using OpenSubredditSignal = boost::signals2::signal<void(std::string subreddit)>;
     OpenSubredditSignal openSubredditSignal;
     std::string postUpvoteButtonText;
     std::string postDownvoteButtonText;
     std::string openLinkButtonText;
     std::string commentButtonText;
+    std::string postCommentTextFieldId;
     std::string moreRepliesButtonText;
     std::string loadingSpinnerIdText;
+    std::string postCommentPreviewCheckboxId;
     std::vector<DisplayComment*> loadingMoreRepliesComments;
     std::optional<unloaded_children> unloadedPostComments;
     bool loadingUnloadedReplies = false;
+    char postCommentTextBuffer[1000] = {0};
+    bool postingComment = false;
+    bool showingPostPreview = false;
+    bool loadingInitialComments = true;
+    MarkdownRenderer postPreviewRenderer;
+    ImVec2 postCommentTextFieldSize;
+    ImVec2 postCommentPreviewSize = {0,1};
 };
 
 using CommentsWindowPtr = std::shared_ptr<CommentsWindow>;

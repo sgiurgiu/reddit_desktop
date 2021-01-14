@@ -8,6 +8,7 @@
 #include <iostream>
 #include "database.h"
 #include "spinner/spinner.h"
+#include "resizableinputtextmultiline.h"
 
 CommentsWindow::CommentsWindow(const std::string& postId,
                                const std::string& title,
@@ -60,6 +61,43 @@ void CommentsWindow::setupListingConnections()
         listingConnection = client->makeListingClientConnection();
         listingConnection->connectionCompleteHandler(completeHandler);
     }
+    if(!createCommentConnection)
+    {
+        createCommentConnection = client->makeRedditCreateCommentClientConnection();
+        createCommentConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
+                                   const client_response<listing>& response)
+       {
+           auto self = weak.lock();
+           if(!self || !self->windowOpen) return;
+           if(ec)
+           {
+               boost::asio::post(self->uiExecutor,
+                        std::bind(&CommentsWindow::setErrorMessage,self,ec.message()));
+           }
+           else
+           {
+               if(response.status >= 400)
+               {
+                   boost::asio::post(self->uiExecutor,
+                                 std::bind(&CommentsWindow::setErrorMessage,self,response.body));
+               }
+               else
+               {
+                   if(response.data.json.contains("json") && response.data.json["json"].is_object())
+                   {
+                       const auto& respJson = response.data.json["json"];
+                       if(respJson.contains("data") && respJson["data"].is_object() &&
+                               respJson["data"].contains("things") && respJson["data"]["things"].is_array())
+                       {
+                          auto& things = respJson["data"]["things"];
+                          self->loadListingChildren(things,self,false);
+                       }
+                   }
+               }
+           }
+       });
+    }
+
 }
 void CommentsWindow::loadComments()
 {    
@@ -75,6 +113,7 @@ void CommentsWindow::loadListingsFromConnection(const listing& listingResponse,
                                                 std::shared_ptr<CommentsWindow> self)
 {
     if(!windowOpen) return;
+    loadingInitialComments = false;
     if(listingResponse.json.is_array())
     {
         for(const auto& child:listingResponse.json)
@@ -91,7 +130,7 @@ void CommentsWindow::loadListingsFromConnection(const listing& listingResponse,
             {
                 continue;
             }
-            self->loadListingChildren(child["data"]["children"],self);
+            self->loadListingChildren(child["data"]["children"],self,true);
         }
     }
     else if (listingResponse.json.is_object())
@@ -111,7 +150,7 @@ void CommentsWindow::loadListingsFromConnection(const listing& listingResponse,
                     for(const auto& childrenArray : elem)
                     {
                         if(!childrenArray.is_array()) continue;
-                        self->loadListingChildren(childrenArray,self);
+                        self->loadListingChildren(childrenArray,self,true);
                     }
                 }
             }
@@ -119,7 +158,8 @@ void CommentsWindow::loadListingsFromConnection(const listing& listingResponse,
     }
 }
 void CommentsWindow::loadListingChildren(const nlohmann::json& children,
-                                         std::shared_ptr<CommentsWindow> self)
+                                         std::shared_ptr<CommentsWindow> self,
+                                         bool append)
 {
     if(!windowOpen || !children.is_array()) return;
     comments_list comments;
@@ -153,7 +193,7 @@ void CommentsWindow::loadListingChildren(const nlohmann::json& children,
     }
     if(!comments.empty())
     {
-        boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setComments,self,std::move(comments)));
+        boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setComments,self,std::move(comments), append));
     }
     if(pp)
     {
@@ -171,8 +211,11 @@ void CommentsWindow::setUnloadedComments(std::optional<unloaded_children> childr
     moreRepliesButtonText = fmt::format("load {} more comments##post_more_replies",unloadedPostComments->count);
     loadingSpinnerIdText = fmt::format("##spinner_loading{}",unloadedPostComments->id);
 }
-void CommentsWindow::setComments(comments_list receivedComments)
+void CommentsWindow::setComments(comments_list receivedComments, bool append)
 {
+    loadingInitialComments = false;
+    postingComment = false;
+    std::fill_n(postCommentTextBuffer, sizeof(postCommentTextBuffer), '\0');
     listingErrorMessage.clear();
     if(receivedComments.empty()) return;
     if(comments.empty())
@@ -188,7 +231,14 @@ void CommentsWindow::setComments(comments_list receivedComments)
             comments.reserve(comments.size() + receivedComments.size());
             for(auto&& cmt : receivedComments)
             {
-                comments.emplace_back(std::move(cmt));
+                if(append)
+                {
+                    comments.emplace_back(std::move(cmt));
+                }
+                else
+                {
+                    comments.insert(comments.begin(),std::move(cmt));
+                }
             }
             loadingUnloadedReplies = false;
         }
@@ -203,9 +253,18 @@ void CommentsWindow::setComments(comments_list receivedComments)
                 (*it)->replies.reserve((*it)->replies.size() + receivedComments.size());
                 for(auto&& cmt : receivedComments)
                 {
-                    (*it)->replies.emplace_back(std::move(cmt));
+                    if(append)
+                    {
+                        (*it)->replies.emplace_back(std::move(cmt));
+                    }
+                    else
+                    {
+                        (*it)->replies.insert((*it)->replies.begin(),std::move(cmt));
+                    }
                 }
                 (*it)->loadingUnloadedReplies = false;
+                (*it)->postingReply = false;
+                std::fill_n((*it)->postReplyTextBuffer, sizeof((*it)->postReplyTextBuffer), '\0');
                 loadingMoreRepliesComments.erase(it);
             }
             else
@@ -238,7 +297,9 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
     openLinkButtonText = fmt::format("{}##_openLink{}",
                                        reinterpret_cast<const char*>(ICON_FA_EXTERNAL_LINK_SQUARE " Open Link"),
                                        parentPost->name);
-    commentButtonText = fmt::format("Comment##{}_comment",parentPost->name);
+    commentButtonText = fmt::format("Save##{}_comment",parentPost->name);
+    postCommentTextFieldId = fmt::format("##{}_postComment",parentPost->name);
+    postCommentPreviewCheckboxId = fmt::format("Show Preview##{}_postCommentPreview",parentPost->name);
 }
 
 void CommentsWindow::showComment(DisplayComment& c)
@@ -286,7 +347,40 @@ void CommentsWindow::showComment(DisplayComment& c)
         ImGui::SameLine();
         if(ImGui::Button(c.replyButtonText.c_str()))
         {
+            c.showingReplyArea = !c.showingReplyArea;
+        }
+        if(c.showingReplyArea)
+        {
 
+            if(ResizableInputTextMultiline::InputText(c.replyIdText.c_str(),c.postReplyTextBuffer,sizeof(c.postReplyTextBuffer),
+                                      &c.postReplyTextFieldSize) && c.showingPreview)
+            {
+                c.previewRenderer.SetText(c.postReplyTextBuffer);
+            }
+
+            if(ImGui::Button(c.saveReplyButtonText.c_str()) && !c.postingReply)
+            {
+                c.showingReplyArea = false;
+                c.postingReply = true;
+                loadingMoreRepliesComments.push_back(&c);
+                createCommentConnection->createComment(c.commentData.name,std::string(c.postReplyTextBuffer),token);
+            }
+            ImGui::SameLine();
+            if(ImGui::Checkbox(c.postReplyPreviewCheckboxId.c_str(),&c.showingPreview))
+            {
+                c.previewRenderer.SetText(c.postReplyTextBuffer);
+            }
+            if(c.showingPreview)
+            {
+                if(ImGui::BeginChild(c.liveReplyPreviewText.c_str(),c.postReplyPreviewSize,true))
+                {
+                    c.previewRenderer.RenderMarkdown();
+                    auto endPos = ImGui::GetCursorPos();
+                    c.postReplyPreviewSize.y = endPos.y + ImGui::GetTextLineHeight();
+
+                }
+                ImGui::EndChild();
+            }
         }
 
         for(auto&& reply : c.replies)
@@ -318,11 +412,15 @@ void CommentsWindow::DisplayComment::updateButtonsText()
     downvoteButtonText = fmt::format("{}##{}_down",reinterpret_cast<const char*>(ICON_FA_ARROW_DOWN),commentData.name);
     saveButtonText = fmt::format("save##{}_save",commentData.name);
     replyButtonText = fmt::format("reply##{}_reply",commentData.name);
+    replyIdText = fmt::format("##{}comment_reply",commentData.name);
+    saveReplyButtonText = fmt::format("Save##{}save_comment_reply",commentData.name);
     if(commentData.unloadedChildren)
     {
         moreRepliesButtonText = fmt::format("load {} more comments##{}_more_replies",commentData.unloadedChildren->count,commentData.name);
         spinnerIdText = fmt::format("##spinner_loading{}",commentData.unloadedChildren->id);
     }
+    postReplyPreviewCheckboxId = fmt::format("Show Preview##{}_postReplyPreview",commentData.name);
+    liveReplyPreviewText = fmt::format("Live Preview##{}_commentLivePreview",commentData.name);
 #ifdef REDDIT_DESKTOP_DEBUG
     titleText = fmt::format("{} - {} points, {} ({})",commentData.author,
                             commentData.humanScore,commentData.humanReadableTimeDifference,
@@ -369,29 +467,26 @@ void CommentsWindow::updatePostVote(post* p, Voted vote)
 void CommentsWindow::voteComment(DisplayComment* c,Voted vote)
 {
     listingErrorMessage.clear();
-    if(!commentVotingConnection)
+    auto commentVotingConnection = client->makeRedditVoteClientConnection();
+    commentVotingConnection->connectionCompleteHandler(
+                [weak=weak_from_this(),c=c,voted=vote](const boost::system::error_code& ec,
+                                                const client_response<std::string>& response)
     {
-        commentVotingConnection = client->makeRedditVoteClientConnection();
-        commentVotingConnection->connectionCompleteHandler(
-                    [weak=weak_from_this(),c=c,voted=vote](const boost::system::error_code& ec,
-                                                    const client_response<std::string>& response)
+        auto self = weak.lock();
+        if(!self) return;
+        if(ec)
         {
-            auto self = weak.lock();
-            if(!self) return;
-            if(ec)
-            {
-                boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,self,ec.message()));
-            }
-            else if(response.status >= 400)
-            {
-                boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,self,std::move(response.body)));
-            }
-            else
-            {
-                boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::updateCommentVote,self,c,voted));
-            }
-        });
-    }
+            boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,self,ec.message()));
+        }
+        else if(response.status >= 400)
+        {
+            boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,self,std::move(response.body)));
+        }
+        else
+        {
+            boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::updateCommentVote,self,c,voted));
+        }
+    });
 
     commentVotingConnection->vote(c->commentData.name,token,vote);
 }
@@ -477,8 +572,7 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
             ImGui::PopStyleColor(1);
         }
 
-        ImGui::SameLine();
-        ImGui::Button(commentButtonText.c_str());
+        ImGui::SameLine();        
         if(!parentPost->url.empty())
         {
             ImGui::SameLine();
@@ -495,12 +589,38 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
             {
                 openSubredditSignal(parentPost->subreddit);
             }
-
         }
         ImGui::Separator();
+        if(ResizableInputTextMultiline::InputText(postCommentTextFieldId.c_str(),postCommentTextBuffer,sizeof(postCommentTextBuffer),
+                                  &postCommentTextFieldSize) && showingPostPreview)
+        {
+            postPreviewRenderer.SetText(postCommentTextBuffer);
+        }
+        if(ImGui::Button(commentButtonText.c_str()) && !postingComment)
+        {
+            postingComment = true;
+            createCommentConnection->createComment(parentPost->name,std::string(postCommentTextBuffer),token);
+        }
+        ImGui::SameLine();
+        if(ImGui::Checkbox(postCommentPreviewCheckboxId.c_str(),&showingPostPreview))
+        {
+            postPreviewRenderer.SetText(postCommentTextBuffer);
+        }
+        if(showingPostPreview)
+        {
+            if(ImGui::BeginChild("Live Preview##commentLivePreview",postCommentPreviewSize,true))
+            {
+                postPreviewRenderer.RenderMarkdown();
+                auto endPos = ImGui::GetCursorPos();
+                postCommentPreviewSize.y = endPos.y + ImGui::GetTextLineHeight();
+
+            }
+            ImGui::EndChild();
+        }
+        ImGui::NewLine();
     }
 
-    if(comments.empty())
+    if(loadingInitialComments)
     {
         ImGui::Spinner("###spinner_loading_comments",50.f,1,ImGui::GetColorU32(ImGuiCol_ButtonActive));
     }

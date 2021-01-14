@@ -5,7 +5,7 @@
 #include <memory>
 #include <map>
 #include <boost/asio/io_context.hpp>
-
+#include <boost/asio/steady_timer.hpp>
 #include "subredditwindow.h"
 #include "loginwindow.h"
 #include "redditclientproducer.h"
@@ -15,7 +15,8 @@
 class RedditDesktop : public std::enable_shared_from_this<RedditDesktop>
 {
 public:
-    RedditDesktop(boost::asio::any_io_executor uiExecutor);
+    RedditDesktop(boost::asio::io_context& uiContext);
+
     void loginCurrentUser();
     void showDesktop();
     void closeWindow();
@@ -42,7 +43,7 @@ private:
     void setConnectionErrorMessage(std::string msg);
     void addSubredditWindow(std::string title);
     void loginSuccessful(client_response<access_token> token);
-    void loadUserInformation(user_info info);
+    void updateUserInformation(user_info info);
     void loadSubscribedSubreddits(subreddit_list srs);
     void loadSubreddits(const std::string& url, const access_token& token);
     void sortSubscribedSubreddits();
@@ -51,6 +52,9 @@ private:
     void searchSubreddits();
     void setSearchResultsNames(names_list names);
     void addCommentsWindow(std::string postId,std::string title);
+    void refreshLoginToken();
+    void loadUserInformation();
+    void updateWindowsTokenData();
 private:
     boost::asio::any_io_executor uiExecutor;
     RedditClientProducer client;
@@ -96,6 +100,8 @@ private:
     RedditClientProducer::RedditSearchNamesClientConnection searchNamesConnection;
     bool searchingSubreddits = false;
     std::shared_ptr<UserInformationWindow> userInfoWindow;
+    bool loggedInFirstTime = true;
+    boost::asio::steady_timer loginTokenRefreshTimer;
 };
 
 

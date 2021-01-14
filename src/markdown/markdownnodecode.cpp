@@ -15,7 +15,6 @@ void MarkdownNodeCode::Render()
 
     ImGuiWindow* window = ImGui::GetCurrentWindow();
     ImGuiContext& g = *GImGui;
-    const ImGuiStyle& style = g.Style;
 
     for(const auto& child: children)
     {

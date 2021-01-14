@@ -16,10 +16,10 @@ constexpr auto ERROR_WINDOW_POPUP_TITLE = "Error Occurred";
 constexpr auto SUBREDDITS_WINDOW_TITLE = "My Subreddits";
 }
 
-RedditDesktop::RedditDesktop(boost::asio::any_io_executor executor):
-    uiExecutor(std::move(executor)),
+RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
+    uiExecutor(uiContext.get_executor()),
     client("api.reddit.com","oauth.reddit.com",3),
-    loginWindow(&client,uiExecutor)
+    loginWindow(&client,uiExecutor),loginTokenRefreshTimer(uiContext)
 {
     subredditsSortMethod[SubredditsSorting::None] = "None";
     subredditsSortMethod[SubredditsSorting::Alphabetical_Ascending] = "Alphabetical";
@@ -27,6 +27,7 @@ RedditDesktop::RedditDesktop(boost::asio::any_io_executor executor):
     current_user = Database::getInstance()->getRegisteredUser();
     shouldBlurPictures= Database::getInstance()->getBlurNSFWPictures();
 }
+
 void RedditDesktop::loginCurrentUser()
 {
     if(!current_user)
@@ -35,32 +36,59 @@ void RedditDesktop::loginCurrentUser()
     }
     else
     {
-        auto loginConnection = client.makeLoginClientConnection();
-        loginConnection->connectionCompleteHandler([self=shared_from_this()](const boost::system::error_code& ec,const client_response<access_token>& token){
-            if(ec)
+        refreshLoginToken();
+    }
+}
+void RedditDesktop::refreshLoginToken()
+{
+    auto loginConnection = client.makeLoginClientConnection();
+    loginConnection->connectionCompleteHandler([self=shared_from_this()](const boost::system::error_code& ec,const client_response<access_token>& token){
+        if(ec)
+        {
+            boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,ec.message()));
+        }
+        else
+        {
+            if(token.status >= 400)
             {
-                boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,ec.message()));
+                boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,token.body));
             }
             else
             {
-                if(token.status >= 400)
-                {
-                    boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,token.body));
-                }
-                else
-                {
-                    boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::loginSuccessful,self,std::move(token)));
-                }
+                boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::loginSuccessful,self,std::move(token)));
             }
-        });
-        client.setUserAgent(make_user_agent(current_user.value()));
-        loginConnection->login(current_user.value());
-    }
+        }
+    });
+    client.setUserAgent(make_user_agent(current_user.value()));
+    loginConnection->login(current_user.value());
 }
 
 void RedditDesktop::loginSuccessful(client_response<access_token> token)
 {
     current_access_token = token;
+    loginTokenRefreshTimer.expires_after(std::chrono::seconds(std::min(current_access_token.data.expires,5*60)));
+    loginTokenRefreshTimer.async_wait([weak=weak_from_this()](const boost::system::error_code& ec){
+        auto self = weak.lock();
+        if(self && !ec)
+        {
+            self->refreshLoginToken();
+        }
+    });
+
+    if(loggedInFirstTime)
+    {
+        loadUserInformation();
+        //add front page window
+        addSubredditWindow("");
+        loggedInFirstTime = false;
+    }
+    else
+    {
+        updateWindowsTokenData();
+    }
+}
+void RedditDesktop::loadUserInformation()
+{
     auto userInformationConnection = client.makeListingClientConnection();
     userInformationConnection->connectionCompleteHandler([self=shared_from_this()](const boost::system::error_code& ec,
                                                  const client_response<listing>& response)
@@ -78,16 +106,13 @@ void RedditDesktop::loginSuccessful(client_response<access_token> token)
             else
             {
                 user_info info(response.data.json);
-                boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::loadUserInformation,self,std::move(info)));
+                boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::updateUserInformation,self,std::move(info)));
             }
         }
      });
     userInformationConnection->list("/api/v1/me",current_access_token.data);
-
-    //add front page window
-    addSubredditWindow("");
 }
-void RedditDesktop::loadUserInformation(user_info info)
+void RedditDesktop::updateUserInformation(user_info info)
 {
     info_user = std::move(info);
 
@@ -242,6 +267,17 @@ void RedditDesktop::setConnectionErrorMessage(std::string msg)
 void RedditDesktop::closeWindow()
 {
     shouldQuit = true;
+}
+void RedditDesktop::updateWindowsTokenData()
+{
+    for(auto&& sr : subredditWindows)
+    {
+        sr->setAccessToken(current_access_token.data);
+    }
+    for(auto&& cm : commentsWindows)
+    {
+        cm->setAccessToken(current_access_token.data);
+    }
 }
 void RedditDesktop::showDesktop()
 {

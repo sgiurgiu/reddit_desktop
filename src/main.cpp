@@ -134,9 +134,7 @@ int main(int /*argc*/, char** /*argv*/)
     //io.Fonts->AddFontDefault();
     Utils::LoadFonts();
 
-    MarkdownRenderer::InitEngine();
-    runMainLoop(window,io);
-    MarkdownRenderer::ReleaseEngine();
+    runMainLoop(window,io);    
 
     {
         int x,y,w,h;
@@ -161,11 +159,11 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
 {
 #ifdef REDDIT_DESKTOP_DEBUG
     bool show_demo_window = true;
-    bool show_markdown_window = true;
+    bool show_markdown_window = false;
 #endif
     boost::asio::io_context uiContext;    
     auto work = boost::asio::make_work_guard(uiContext);
-    auto desktop = std::make_shared<RedditDesktop>(uiContext.get_executor());
+    auto desktop = std::make_shared<RedditDesktop>(uiContext);
 
     desktop->loginCurrentUser();
 
@@ -224,7 +222,7 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
         }
     }
     work.reset();
-    uiContext.run();
+    uiContext.stop();
 }
 
 #ifdef REDDIT_DESKTOP_DEBUG

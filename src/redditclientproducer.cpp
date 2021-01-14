@@ -82,4 +82,7 @@ RedditClientProducer::RedditMoreChildrenClientConnection RedditClientProducer::m
 {
     return std::make_shared<RedditMoreChildrenConnection>(executor,ssl_context,server,service,userAgent);
 }
-
+RedditClientProducer::RedditCreateCommentClientConnection RedditClientProducer::makeRedditCreateCommentClientConnection()
+{
+    return std::make_shared<RedditCreateCommentConnection>(executor,ssl_context,server,service,userAgent);
+}

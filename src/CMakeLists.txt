@@ -76,6 +76,8 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         userinformationwindow.cpp
         redditvoteconnection.cpp
         redditmorechildrenconnection.cpp
+        redditcreatecommentconnection.cpp
+        resizableinputtextmultiline.cpp
         )
 
 add_executable(${EXECUTABLE_NAME}

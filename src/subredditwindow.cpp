@@ -201,29 +201,27 @@ void SubredditWindow::setPostThumbnail(PostDisplay* p,unsigned char* data, int w
 void SubredditWindow::votePost(post_ptr p,Voted voted)
 {
     listingErrorMessage.clear();
-    if(!voteConnection)
+    auto voteConnection = client->makeRedditVoteClientConnection();
+    voteConnection->connectionCompleteHandler(
+                [weak=weak_from_this(),post=p.get(),voted=voted](const boost::system::error_code& ec,
+                                                const client_response<std::string>& response)
     {
-        voteConnection = client->makeRedditVoteClientConnection();
-        voteConnection->connectionCompleteHandler(
-                    [weak=weak_from_this(),post=p.get(),voted=voted](const boost::system::error_code& ec,
-                                                    const client_response<std::string>& response)
+        auto self = weak.lock();
+        if(!self) return;
+        if(ec)
         {
-            auto self = weak.lock();
-            if(!self) return;
-            if(ec)
-            {
-                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,ec.message()));
-            }
-            else if(response.status >= 400)
-            {
-                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,std::move(response.body)));
-            }
-            else
-            {
-                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::updatePostVote,self,post,voted));
-            }
-        });
-    }
+            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,ec.message()));
+        }
+        else if(response.status >= 400)
+        {
+            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,std::move(response.body)));
+        }
+        else
+        {
+            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::updatePostVote,self,post,voted));
+        }
+    });
+
     voteConnection->vote(p->name,token,voted);
 }
 void SubredditWindow::updatePostVote(post* p,Voted voted)
@@ -382,7 +380,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         if(p.post->over18)
         {
             ImGui::SameLine();
-            ImGui::TextColored(ImVec4(1.f,0.f,0.f,1.f),"%s",reinterpret_cast<const char*>(ICON_FA_BOMB));
+            ImGui::TextColored(ImVec4(1.f,0.f,0.f,1.f),"NSFW");
             if(ImGui::IsItemHovered())
             {
                 ImGui::BeginTooltip();

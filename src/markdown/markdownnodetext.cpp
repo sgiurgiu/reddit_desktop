@@ -17,7 +17,7 @@ void MarkdownNodeText::Render()
         return;
     }
     bool partOfCell = false;//(node->parent && node->parent->type == CMARK_NODE_TABLE_CELL);
-    float widthLeft = ImGui::GetContentRegionAvail().x;
+    //float widthLeft = ImGui::GetContentRegionAvail().x;
     const char* text_start = curatedText.c_str();
     const char* text_end = curatedText.c_str()+curatedText.size();
     float fontScale = 1.f;
@@ -59,7 +59,7 @@ void MarkdownNodeText::Render()
         ImGui::TextUnformatted( text_start, endPrevLine );
     }
 
-    widthLeft = ImGui::GetContentRegionAvail().x;
+    //widthLeft = ImGui::GetContentRegionAvail().x;
     while( endPrevLine < text_end )
     {
        const float wrap_width = ImGui::CalcWrapWidthForPos(window->DC.CursorPos, 0.f);

@@ -267,8 +267,18 @@ int text_callback(MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size, void* use
 }
 
 }
-
+MarkdownRenderer::MarkdownRenderer()
+{}
 MarkdownRenderer::MarkdownRenderer(const std::string& textToRender):text(textToRender)
+{
+    ParseCurrentText();
+}
+void MarkdownRenderer::SetText(const std::string& textToRender)
+{
+    text = textToRender;
+    ParseCurrentText();
+}
+void MarkdownRenderer::ParseCurrentText()
 {
     MD_PARSER parser = {
             0,
@@ -315,10 +325,4 @@ void MarkdownRenderer::RenderMarkdown() const
     {
         ImGui::TextWrapped("%s",text.c_str());
     }
-}
-void MarkdownRenderer::InitEngine()
-{
-}
-void MarkdownRenderer::ReleaseEngine()
-{
 }
