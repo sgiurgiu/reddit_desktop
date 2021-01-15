@@ -520,6 +520,12 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
     {
         windowOpen = false;
     }
+    if(windowPositionAndSizeSet)
+    {
+        windowPositionAndSizeSet = false;
+        ImGui::SetWindowPos(windowPos);
+        ImGui::SetWindowSize(windowSize);
+    }
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F5)) && ImGui::IsWindowFocused())
     {
         loadingMoreRepliesComments.clear();

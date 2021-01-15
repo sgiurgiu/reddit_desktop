@@ -154,7 +154,31 @@ ResizableGLImagePtr Utils::loadBlurredImage(unsigned char* data, int width, int 
 
     float sigma = 15;
     iir_gauss_blur(width, height, channels, data, sigma);
-    return loadImage(data,width,height,channels);
+    GLuint FramebufferName = 0;
+    glGenFramebuffers(1, &FramebufferName);
+    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+
+    auto image = loadImage(data,width,height,channels);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           image->textureId, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+    glViewport( 0, 0, width, height );
+    glPushMatrix();  //Make sure our transformations don't affect any other transformations in other code
+    glOrtho(0, width, 0, height, -1, 1);
+    glTranslatef(width/6, height/3, 0.0f);  //Translate rectangle to its assigned x and y position
+    glColor3f(1, 1, 1);
+    glBegin(GL_LINE_LOOP);   //We want to draw a quad, i.e. shape with four sides
+        glVertex2f(0,0);
+        glVertex2f(0, height/3);
+        glVertex2f(2*width/3, height/3);
+        glVertex2f(2*width/3, 0);
+    glEnd();
+    glPopMatrix();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glDeleteFramebuffers(1, &FramebufferName);
+
+    return image;
 }
 ResizableGLImagePtr Utils::loadImage(unsigned char* data, int width, int height, int channels)
 {

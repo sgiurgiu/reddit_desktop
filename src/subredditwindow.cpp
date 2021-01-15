@@ -65,18 +65,19 @@ void SubredditWindow::loadSubreddit()
     target = subreddit;
     if(subreddit.empty())
     {
-        windowName = fmt::format("Front Page##{}",id);
+        title = "Front Page";
         target = "/";
     }
     else
     {
-        windowName = fmt::format("{}##{}",subreddit,id);
+        title = subreddit;
         if(!target.starts_with("r/") && !target.starts_with("/r/") &&
             (!target.starts_with("/user/") && target.find("/m/") == target.npos))
         {
             target = "/r/" + target;
         }
     }
+    windowName = fmt::format("{}##{}",title,id);
 
     if(!target.starts_with("/")) target = "/" + target;
     loadSubredditListings(target,token);
@@ -193,7 +194,7 @@ void SubredditWindow::setPostThumbnail(PostDisplay* p,unsigned char* data, int w
     p->thumbnailPicture = std::move(image);
     if(p->post->over18 && shouldBlurPictures)
     {
-        auto blurredImage = Utils::loadBlurredImage(data,width,height,STBI_rgb_alpha);
+        auto blurredImage = Utils::loadBlurredImage(data,width,height,STBI_rgb_alpha);        
         p->blurredThumbnailPicture = std::move(blurredImage);
     }
     stbi_image_free(data);    
@@ -234,6 +235,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
 {
     ImGui::SetNextWindowSize(ImVec2(appFrameWidth*0.6,appFrameHeight*0.8),ImGuiCond_FirstUseEver);
     if(!windowOpen) return;
+
     if(!ImGui::Begin(windowName.c_str(),&windowOpen,ImGuiWindowFlags_None))
     {
         ImGui::End();
@@ -247,6 +249,12 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_W)) && ImGui::GetIO().KeyCtrl && ImGui::IsWindowFocused())
     {
         windowOpen = false;
+    }
+    if(windowPositionAndSizeSet)
+    {
+        windowPositionAndSizeSet = false;
+        ImGui::SetWindowPos(windowPos);
+        ImGui::SetWindowSize(windowSize);
     }
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F5)) && ImGui::IsWindowFocused())
     {

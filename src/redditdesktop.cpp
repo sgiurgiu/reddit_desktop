@@ -42,7 +42,9 @@ void RedditDesktop::loginCurrentUser()
 void RedditDesktop::refreshLoginToken()
 {
     auto loginConnection = client.makeLoginClientConnection();
-    loginConnection->connectionCompleteHandler([self=shared_from_this()](const boost::system::error_code& ec,const client_response<access_token>& token){
+    loginConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,const client_response<access_token>& token){
+        auto self = weak.lock();
+        if(!self) return;
         if(ec)
         {
             boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,ec.message()));
@@ -118,6 +120,18 @@ void RedditDesktop::loadUserInformation()
 void RedditDesktop::updateUserInformation(user_info info)
 {
     info_user = std::move(info);
+    if(info_user)
+    {
+        userInfoDisplay = fmt::format("{} ({}-{})",info_user->name,info_user->humanLinkKarma,info_user->humanCommentKarma);
+        if(info_user->hasMail)
+        {
+            userInfoDisplay.append(reinterpret_cast<const char*>(" " ICON_FA_ENVELOPE_O));
+        }
+        if(info_user->hasModMail)
+        {
+            userInfoDisplay.append(reinterpret_cast<const char*>(" " ICON_FA_BELL));
+        }
+    }
     unsortedSubscribedSubreddits.clear();
     loadSubreddits("/subreddits/mine/subscriber?show=all&limit=100",current_access_token.data);
     loadMultis("/api/multi/mine",current_access_token.data);
@@ -296,8 +310,7 @@ void RedditDesktop::showDesktop()
     {
         openSubredditWindow = true;
     }
-    showMainMenuBar();
-    showSubredditsWindow();
+    showMainMenuBar();    
 
     {
         auto it = subredditWindows.begin();
@@ -330,6 +343,7 @@ void RedditDesktop::showDesktop()
         }
     }
 
+    showSubredditsWindow();
     showOpenSubredditWindow();
 
     if(loginWindow.showLoginWindow())
@@ -511,22 +525,68 @@ void RedditDesktop::showMainMenuBar()
 
             ImGui::EndMenu();
         }
+        if(ImGui::BeginMenu("Windows"))
+        {
+            if(ImGui::MenuItem("Grid Layout"))
+            {
+                auto count = subredditWindows.size();
+                count += commentsWindows.size();
+                if(count > 0)
+                {
+                    auto columnsDouble = std::sqrt(static_cast<double>(count));
+                    auto columns = static_cast<int>(std::round(columnsDouble));
+                    auto lines = static_cast<int>(std::ceil(count / columnsDouble));
+                    auto windowWidth = appFrameWidth / columns;
+                    auto windowHeight = (appFrameHeight-topPosAfterMenuBar) / lines;
+                    auto currentPosX = 0;
+                    auto currentPosY = topPosAfterMenuBar;
+
+                    for(const auto& sr: subredditWindows)
+                    {
+                        sr->setWindowPositionAndSize(ImVec2(currentPosX,currentPosY),ImVec2(windowWidth,windowHeight));
+                        currentPosX += windowWidth;
+                        if(currentPosX >= appFrameWidth)
+                        {
+                            currentPosX = 0;
+                            currentPosY += windowHeight;
+                        }
+                    }
+                    for(const auto& cm: commentsWindows)
+                    {
+                        cm->setWindowPositionAndSize(ImVec2(currentPosX,currentPosY),ImVec2(windowWidth,windowHeight));
+                        currentPosX += windowWidth;
+                        if(currentPosX >= appFrameWidth)
+                        {
+                            currentPosX = 0;
+                            currentPosY += windowHeight;
+                        }
+                    }
+                }
+            }
+            ImGui::Separator();
+            for(const auto& sr: subredditWindows)
+            {
+                if(ImGui::MenuItem(sr->getTitle().c_str()))
+                {
+                    sr->setFocused();
+                }
+            }
+            for(const auto& cm: commentsWindows)
+            {
+                if(ImGui::MenuItem(cm->getTitle().c_str()))
+                {
+                    cm->setFocused();
+                }
+            }
+            ImGui::EndMenu();
+        }
         if(info_user)
         {
             const float itemSpacing = ImGui::GetStyle().ItemSpacing.x;
             static float infoButtonWidth = 0.0f;
-            float pos = infoButtonWidth + itemSpacing;
-            auto displayed_info = fmt::format("{} ({}-{})",info_user->name,info_user->humanLinkKarma,info_user->humanCommentKarma);
-            if(info_user->hasMail)
-            {
-                displayed_info.append(reinterpret_cast<const char*>(" " ICON_FA_ENVELOPE_O));
-            }
-            if(info_user->hasModMail)
-            {
-                displayed_info.append(reinterpret_cast<const char*>(" " ICON_FA_BELL));
-            }
+            float pos = infoButtonWidth + itemSpacing;            
             ImGui::SameLine(ImGui::GetWindowWidth()-pos);
-            if(ImGui::Button(displayed_info.c_str()))
+            if(ImGui::Button(userInfoDisplay.c_str()))
             {
                 if(!userInfoWindow)
                 {

@@ -102,6 +102,7 @@ private:
     std::shared_ptr<UserInformationWindow> userInfoWindow;
     bool loggedInFirstTime = true;
     boost::asio::steady_timer loginTokenRefreshTimer;
+    std::string userInfoDisplay;
 };
 
 

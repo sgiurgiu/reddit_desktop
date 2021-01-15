@@ -5,6 +5,7 @@
 #include <string>
 #include <memory>
 #include <boost/signals2.hpp>
+#include <imgui.h>
 #include "entities.h"
 #include "redditclientproducer.h"
 #include "redditlistingconnection.h"
@@ -32,6 +33,10 @@ public:
     {
         return subreddit;
     }
+    std::string getTitle() const
+    {
+        return title;
+    }
     std::string getTarget() const
     {
         return target;
@@ -39,6 +44,12 @@ public:
     void setAccessToken(const access_token& token)
     {
         this->token = token;
+    }
+    void setWindowPositionAndSize(ImVec2 pos,ImVec2 size)
+    {
+        windowPositionAndSizeSet = true;
+        windowPos = pos;
+        windowSize = size;
     }
 private:
     struct PostDisplay
@@ -81,6 +92,7 @@ private:
     access_token token;
     RedditClientProducer* client;
     std::string windowName;
+    std::string title;
     std::string listingErrorMessage;
     posts_list posts;
     std::string target;
@@ -102,6 +114,9 @@ private:
     char newLinkPost[1000] = {0};
     bool newLinkPostDialog = false;
     bool showingLinkPostDialog = false;
+    bool windowPositionAndSizeSet = false;
+    ImVec2 windowPos;
+    ImVec2 windowSize;
 };
 
 using SubredditWindowPtr = std::shared_ptr<SubredditWindow>;

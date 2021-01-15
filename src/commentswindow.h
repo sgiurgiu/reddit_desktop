@@ -39,6 +39,16 @@ public:
     {
         this->token = token;
     }
+    std::string getTitle() const
+    {
+        return title;
+    }
+    void setWindowPositionAndSize(ImVec2 pos,ImVec2 size)
+    {
+        windowPositionAndSizeSet = true;
+        windowPos = pos;
+        windowSize = size;
+    }
 private:
     struct DisplayComment
     {
@@ -130,6 +140,9 @@ private:
     MarkdownRenderer postPreviewRenderer;
     ImVec2 postCommentTextFieldSize;
     ImVec2 postCommentPreviewSize = {0,1};
+    bool windowPositionAndSizeSet = false;
+    ImVec2 windowPos;
+    ImVec2 windowSize;
 };
 
 using CommentsWindowPtr = std::shared_ptr<CommentsWindow>;
