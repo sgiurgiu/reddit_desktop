@@ -15,8 +15,14 @@
           "name": "ENABLE_TESTS",
           "value": "False",
           "type": "BOOL"
+        },
+        {
+          "name": "VCPKG_TARGET_TRIPLET",
+          "value": "x64-windows-static",
+          "type": "STRING"
         }
-      ]
+      ],
+      "cmakeToolchain": "E:\\projects\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
     },
     {
       "name": "x64-Release",

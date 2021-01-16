@@ -99,7 +99,7 @@ set_source_files_properties(${GLAD_SRCS} ${GUMBO_PARSER_SRCS} PROPERTIES COMPILE
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE  OpenGL::GL SDL2::SDL2)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${CMAKE_DL_LIBS} Threads::Threads )
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE OpenSSL::SSL)
-target_link_libraries(${EXECUTABLE_NAME} PRIVATE Boost::boost Boost::system Boost::filesystem)
+target_link_libraries(${EXECUTABLE_NAME} PRIVATE Boost::boost Boost::system)
 
 if(VCPKG_TOOLCHAIN)
     target_include_directories(${EXECUTABLE_NAME} PUBLIC "strings")
@@ -116,7 +116,7 @@ target_include_directories(${EXECUTABLE_NAME} PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/fmt/include/"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/stb/"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/url/include"
-    ${Boost_INCLUDE_DIRS}
+ #   ${Boost_INCLUDE_DIRS}
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/md4c/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/gumbo-parser/src/"
     )
@@ -140,7 +140,7 @@ target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "$<$<C_COMPILER_ID:MSVC>:_
 #target_compile_options(${EXECUTABLE_NAME} PRIVATE "$<$<C_COMPILER_ID:MSVC>:/utf-8>")
 target_compile_options(${EXECUTABLE_NAME} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/bigobj>")
 target_compile_options(${EXECUTABLE_NAME} PRIVATE "$<$<C_COMPILER_ID:MSVC>:/bigobj>")
-
+set_property(TARGET ${EXECUTABLE_NAME} PROPERTY  MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../test/data/spec.txt" "${CMAKE_CURRENT_BINARY_DIR}/spec.txt" COPYONLY)
 
 

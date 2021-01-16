@@ -292,9 +292,35 @@ post::post(const nlohmann::json& json)
                     preview.resolutions.push_back(img_target);
                 }
             }
+            if (img.contains("variants") && img["variants"].is_object())
+            {
+                for (auto it = img["variants"].begin(); it != img["variants"].end();++it)
+                {
+                    preview_variant variant;
+                    variant.kind = it.key();
+                    if (it.value().contains("source") && it.value()["source"].is_object())
+                    {
+                        variant.source.url = it.value()["source"]["url"].get<std::string>();
+                        variant.source.width = it.value()["source"]["width"].get<int>();
+                        variant.source.height = it.value()["source"]["height"].get<int>();
+                    }
+                    if (it.value().contains("resolutions") && it.value()["resolutions"].is_array())
+                    {
+                        for (const auto& res : it.value()["resolutions"]) {
+                            image_target img_target;
+                            img_target.url = res["url"].get<std::string>();
+                            img_target.width = res["width"].get<int>();
+                            img_target.height = res["height"].get<int>();
+                            variant.resolutions.push_back(img_target);
+                        }
+                    }
+                    preview.variants.push_back(variant);
+                }
+            }
 
             previews.push_back(preview);
         }
+
     }
 
     if(json.contains("media"))

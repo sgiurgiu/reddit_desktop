@@ -50,17 +50,23 @@ struct client_response
     std::string contentType;
     std::string body;
 };
-
 struct image_target
 {
     std::string url;
     int width;
     int height;
 };
+struct preview_variant
+{
+    std::string kind;
+    image_target source;
+    std::vector<image_target> resolutions;
+}; 
 struct images_preview
 {
     image_target source;
     std::vector<image_target> resolutions;
+    std::vector<preview_variant> variants;
 };
 
 

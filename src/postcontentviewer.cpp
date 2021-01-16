@@ -364,7 +364,27 @@ void PostContentViewer::loadPostImage()
     }
     else
     {
-        downloadPostImage(currentPost->url);
+        //has media preview
+        std::string mediaUrl;
+        for (const auto& p : currentPost->previews)
+        {
+            for (const auto& v : p.variants)
+            {
+                if (v.kind == "mp4")
+                {
+                    mediaUrl = v.source.url;
+                    break;
+                }
+            }
+        }
+        if (mediaUrl.empty())
+        {
+            downloadPostImage(currentPost->url);
+        }
+        else
+        {
+            setupMediaContext(mediaUrl);
+        }
     }
 }
 void PostContentViewer::downloadPostImage(std::string url)

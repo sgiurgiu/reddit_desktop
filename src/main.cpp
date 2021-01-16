@@ -3,6 +3,7 @@
 #include "imgui_impl_opengl3.h"
 #include <iostream>
 #include <vector>
+#define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include <boost/asio/io_context.hpp>
 #include <memory>
