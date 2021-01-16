@@ -1,0 +1,22 @@
+﻿{
+  "configurations": [
+    {
+      "name": "x64-Debug (default)",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "-DLIBMPV_DIR=E:\\projects\\mpv\\build -DLIBMPV_INCLUDE=E:\\projects\\mpv\\libmpv",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "ENABLE_TESTS",
+          "value": "False",
+          "type": "BOOL"
+        }
+      ]
+    }
+  ]
+}

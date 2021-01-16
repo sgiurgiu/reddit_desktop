@@ -3,32 +3,36 @@
 #include "redditloginconnection.h"
 #include <fmt/format.h>
 
-#ifdef _WIN32
-void add_windows_root_certs(boost::asio::ssl::context &ctx)
+#ifdef BOOST_OS_WINDOWS
+namespace
 {
-    HCERTSTORE hStore = CertOpenSystemStore(0, "ROOT");
-    if (hStore == NULL) {
-        return;
-    }
-
-    X509_STORE *store = X509_STORE_new();
-    PCCERT_CONTEXT pContext = NULL;
-    while ((pContext = CertEnumCertificatesInStore(hStore, pContext)) != NULL) {
-        // convert from DER to internal format
-        X509 *x509 = d2i_X509(NULL,
-                              (const unsigned char **)&pContext->pbCertEncoded,
-                              pContext->cbCertEncoded);
-        if(x509 != NULL) {
-            X509_STORE_add_cert(store, x509);
-            X509_free(x509);
+    #include <wincrypt.h>
+    void add_windows_root_certs(boost::asio::ssl::context& ctx)
+    {
+        HCERTSTORE hStore = CertOpenSystemStoreA(0, "ROOT");
+        if (hStore == NULL) {
+            return;
         }
+
+        X509_STORE* store = X509_STORE_new();
+        PCCERT_CONTEXT pContext = NULL;
+        while ((pContext = CertEnumCertificatesInStore(hStore, pContext)) != NULL) {
+            // convert from DER to internal format
+            X509* x509 = d2i_X509(NULL,
+                (const unsigned char**)&pContext->pbCertEncoded,
+                pContext->cbCertEncoded);
+            if (x509 != NULL) {
+                X509_STORE_add_cert(store, x509);
+                X509_free(x509);
+            }
+        }
+
+        CertFreeCertificateContext(pContext);
+        CertCloseStore(hStore, 0);
+
+        // attach X509_STORE to boost ssl context
+        SSL_CTX_set_cert_store(ctx.native_handle(), store);
     }
-
-    CertFreeCertificateContext(pContext);
-    CertCloseStore(hStore, 0);
-
-    // attach X509_STORE to boost ssl context
-    SSL_CTX_set_cert_store(ctx.native_handle(), store);
 }
 #endif
 
@@ -41,7 +45,12 @@ RedditClientProducer::RedditClientProducer(std::string_view authServer,std::stri
                                 //| boost::asio::ssl::context::no_sslv3
                                 );
     ssl_context.set_verify_mode(boost::asio::ssl::verify_peer);
-    ssl_context.set_default_verify_paths();    
+#if BOOST_OS_WINDOWS
+    add_windows_root_certs(ssl_context);
+#else
+    ssl_context.set_default_verify_paths();
+#endif
+    
 }
 RedditClientProducer::~RedditClientProducer()
 {

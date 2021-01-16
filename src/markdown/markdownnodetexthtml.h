@@ -2,6 +2,7 @@
 #define MARKDOWNNODETEXTHTML_H
 
 #include "markdownnode.h"
+#include <string>
 
 class MarkdownNodeTextHtml : public MarkdownNode
 {

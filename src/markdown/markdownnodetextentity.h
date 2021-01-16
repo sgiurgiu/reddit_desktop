@@ -2,6 +2,7 @@
 #define MARKDOWNNODETEXTENTITY_H
 
 #include "markdownnode.h"
+#include <string>
 
 class MarkdownNodeTextEntity : public MarkdownNode
 {

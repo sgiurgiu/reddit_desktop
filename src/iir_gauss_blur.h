@@ -128,7 +128,9 @@ void iir_gauss_blur(unsigned int width, unsigned int height, unsigned char compo
 	// Horizontal forward pass (from paper: Implement the forward filter with equation 9a)
 	// The data is loaded from the byte image but stored in the float buffer
 	for(unsigned int y = 0; y < height; y++) {
-		float prev1[components], prev2[components], prev3[components];
+		float* prev1 = new float[components];
+		float* prev2 = new float[components];
+		float* prev3 = new float[components];
 		for(unsigned char n = 0; n < components; n++) {
 			prev1[n] = image[IDX(0, y, n)];
 			prev2[n] = prev1[n];
@@ -144,11 +146,16 @@ void iir_gauss_blur(unsigned int width, unsigned int height, unsigned char compo
 				prev1[n] = val;
 			}
 		}
+		delete[] prev1;
+		delete[] prev2;
+		delete[] prev3;
 	}
 	
 	// Horizontal backward pass (from paper: Implement the backward filter with equation 9b)
 	for(unsigned int y = height-1; y < height; y--) {
-		float prev1[components], prev2[components], prev3[components];
+		float *prev1 = new float[components];
+		float *prev2 = new float[components];
+		float *prev3 = new float[components];
 		for(unsigned char n = 0; n < components; n++) {
 			prev1[n] = buffer[IDX(width-1, y, n)];
 			prev2[n] = prev1[n];
@@ -164,11 +171,17 @@ void iir_gauss_blur(unsigned int width, unsigned int height, unsigned char compo
 				prev1[n] = val;
 			}
 		}
+		delete[] prev1;
+		delete[] prev2;
+		delete[] prev3;
 	}
 	
 	// Vertical forward pass (from paper: Implement the forward filter with equation 9a)
 	for(unsigned int x = 0; x < width; x++) {
-		float prev1[components], prev2[components], prev3[components];
+		float* prev1 = new float[components];
+		float* prev2 = new float[components];
+		float* prev3 = new float[components];
+
 		for(unsigned char n = 0; n < components; n++) {
 			prev1[n] = buffer[IDX(x, 0, n)];
 			prev2[n] = prev1[n];
@@ -184,12 +197,18 @@ void iir_gauss_blur(unsigned int width, unsigned int height, unsigned char compo
 				prev1[n] = val;
 			}
 		}
+		delete[] prev1;
+		delete[] prev2;
+		delete[] prev3;
 	}
 	
 	// Vertical backward pass (from paper: Implement the backward filter with equation 9b)
 	// Also write the result back into the byte image
 	for(unsigned int x = width-1; x < width; x--) {
-		float prev1[components], prev2[components], prev3[components];
+		float* prev1 = new float[components];
+		float* prev2 = new float[components];
+		float* prev3 = new float[components];
+
 		for(unsigned char n = 0; n < components; n++) {
 			prev1[n] = buffer[IDX(x, height-1, n)];
 			prev2[n] = prev1[n];
@@ -205,6 +224,9 @@ void iir_gauss_blur(unsigned int width, unsigned int height, unsigned char compo
 				prev1[n] = val;
 			}
 		}
+		delete[] prev1;
+		delete[] prev2;
+		delete[] prev3;
 	}
 	
 	// Free temporary buffers and restore any potential IDX macro

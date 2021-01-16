@@ -34,8 +34,13 @@ find_package(Threads REQUIRED)
 find_package(SDL2 REQUIRED)
 find_package(Boost 1.74 REQUIRED system filesystem program_options)
 find_package(OpenSSL REQUIRED)
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
+
+if(VCPKG_TOOLCHAIN)
+    find_library(LIBMPV mpv ${LIBMPV_DIR})
+else()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
+endif()
 
 if(UNIX AND NOT APPLE)
     set(LINUX TRUE) #wrong here, what if we're BSD?
@@ -51,11 +56,7 @@ if(APPLE)
     add_definitions(-DRD_APPLE)
 endif()
 
-if(VCPKG_TOOLCHAIN)
-#find_package(unofficial-libuv CONFIG REQUIRED)
-else()
-#find_packae()
-endif()
+
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)

@@ -3,6 +3,7 @@
 
 #include "markdownnode.h"
 #include <md4c.h>
+#include <string>
 
 class MarkdownNodeLink : public MarkdownNode
 {

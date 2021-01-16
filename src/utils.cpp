@@ -7,10 +7,17 @@
 #include <boost/archive/iterators/base64_from_binary.hpp>
 #include <boost/archive/iterators/transform_width.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/process/spawn.hpp>
-#include <boost/process/search_path.hpp>
 #include <chrono>
 #include <iostream>
+
+#ifdef RD_WINDOWS
+#include <shlobj.h>
+#include <shlwapi.h>
+#include <objbase.h>
+#else
+#include <boost/process/spawn.hpp>
+#include <boost/process/search_path.hpp>
+#endif
 
 #if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic push
@@ -281,16 +288,28 @@ std::string Utils::getHumanReadableTimeAgo(uint64_t time)
 void Utils::openInBrowser(const std::string& url)
 {
 
-#ifdef RD_LINUX
+#ifdef RD_WINDOWS    
+    SHELLEXECUTEINFO ShExecInfo;
+    ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
+    ShExecInfo.fMask = NULL;
+    ShExecInfo.hwnd = NULL;
+    ShExecInfo.lpVerb = NULL;
+    ShExecInfo.lpFile = url.c_str();
+    ShExecInfo.lpParameters = NULL;
+    ShExecInfo.lpDirectory = NULL;
+    ShExecInfo.nShow = SW_MAXIMIZE;
+    ShExecInfo.hInstApp = NULL;
+
+    ShellExecuteEx(&ShExecInfo);
+    //ShellExecute(NULL, L"open", url.c_str(), NULL, NULL, 0);
+#else
     auto browser = boost::process::search_path("xdg-open");
-    if(browser.empty())
+    if (browser.empty())
     {
-        std::cerr << "Cannot find xdg-open in PATH"<<std::endl;
+        std::cerr << "Cannot find xdg-open in PATH" << std::endl;
         return;
     }
-    boost::process::spawn(browser,url);
-#elif defined(RD_WINDOWS)
-                    ShellExecuteA(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL);
+    boost::process::spawn(browser, url);
 #endif
 }
 ImVec4 Utils::GetDownVoteColor()

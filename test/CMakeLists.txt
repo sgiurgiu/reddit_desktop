@@ -29,6 +29,9 @@ include_directories(${CMAKE_SOURCE_DIR}/src
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/url/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/gumbo-parser/src/"
         )
+if(VCPKG_TOOLCHAIN)
+    include_directories("${CMAKE_SOURCE_DIR}/src/strings")
+endif()
 
 file(GLOB_RECURSE GUMBO_PARSER_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/../external/gumbo-parser/src/*.c")
 
@@ -51,6 +54,6 @@ add_executable(${PROJECT_NAME} ${BOOST_URL_SRC}
     ${GUMBO_PARSER_SRCS}
     )
 
-
+target_link_libraries(${PROJECT_NAME} PRIVATE Boost::boost Boost::system Boost::filesystem)
 target_link_libraries(${PROJECT_NAME} PRIVATE gtest_main Threads::Threads OpenGL::GL )
 target_compile_definitions(${PROJECT_NAME} PRIVATE "RDTEST_DATA_FOLDER=\"${CMAKE_CURRENT_SOURCE_DIR}/data\"")

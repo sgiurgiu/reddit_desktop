@@ -1,7 +1,3 @@
-#if defined(_MSC_VER)
-#include <Windows.h>
-#endif
-
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
@@ -10,6 +6,11 @@
 #include <SDL.h>
 #include <boost/asio/io_context.hpp>
 #include <memory>
+
+#if defined(_MSC_VER)
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#endif
 
 #if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
 #include <GL/gl3w.h>    // Initialize with gl3wInit()
@@ -52,7 +53,7 @@ int main(int /*argc*/, char** /*argv*/)
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
     {
         std::cerr << "Error: "<<SDL_GetError()<<"\n";
-        return -1;
+        return EXIT_FAILURE;
     }
 
 
@@ -113,7 +114,7 @@ int main(int /*argc*/, char** /*argv*/)
     if (err)
     {
         std::cerr <<"Failed to initialize OpenGL loader!\n";
-        return 1;
+        return EXIT_FAILURE;
     }
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -152,6 +153,7 @@ int main(int /*argc*/, char** /*argv*/)
     SDL_DestroyWindow(window);
     SDL_Quit();
 
+    return EXIT_SUCCESS;
 }
 
 
