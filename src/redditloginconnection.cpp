@@ -64,6 +64,12 @@ void RedditLoginConnection::responseReceivedComplete()
             {
                 token.data.scope = json["scope"].get<std::string>();
             }
+            if (json.contains("error") && json["error"].is_string())
+            {
+                auto error = json["error"].get<std::string>();
+                token.body = error;
+                token.status = 500;
+            }
         }
         catch(const std::exception& ex)
         {

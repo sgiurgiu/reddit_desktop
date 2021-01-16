@@ -7,7 +7,7 @@
       "inheritEnvironments": [ "msvc_x64_x64" ],
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
-      "cmakeCommandArgs": "-DLIBMPV_DIR=E:\\projects\\mpv\\build -DLIBMPV_INCLUDE=E:\\projects\\mpv\\libmpv",
+      "cmakeCommandArgs": "-DLIBMPV_DIR=C:\\Users\\sergiu\\Downloads\\mpv-dev-x86_64-20210103-git-3e175df -DLIBMPV_INCLUDE=C:\\Users\\sergiu\\Downloads\\mpv-dev-x86_64-20210103-git-3e175df\\include",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "variables": [
