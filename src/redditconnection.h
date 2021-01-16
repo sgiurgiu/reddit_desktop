@@ -104,6 +104,7 @@ protected:
     {
         if(boost::beast::get_lowest_layer(stream.value()).socket().is_open())
         {
+            responseParser.emplace();
             sendRequest();
         }
         else
