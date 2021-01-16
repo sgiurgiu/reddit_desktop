@@ -13,17 +13,29 @@ void MarkdownNodeLink::Render()
 {
     for(const auto& child: children)
     {
-        if(child->GetNodeType() != NodeType::Text)
+        std::string text = title.empty() ? href : title;
+        if(child->GetNodeType() == NodeType::Text)
         {
-            continue;
+            auto childPointer = child.get();
+            MarkdownNodeText* textNode = dynamic_cast<MarkdownNodeText*>(childPointer);
+            if (!textNode)
+            {
+                continue;
+            }
+            text = textNode->GetText();
         }
-        auto childPointer = child.get();
-        MarkdownNodeText* textNode =  dynamic_cast<MarkdownNodeText*>(childPointer);
-        if(!textNode)
+        else if (child->GetNodeType() == NodeType::Link)
         {
-            continue;
+            auto childPointer = child.get();
+            MarkdownNodeLink* linkNode = dynamic_cast<MarkdownNodeLink*>(childPointer);
+            if (!linkNode)
+            {
+                continue;
+            }
+            text = linkNode->title.empty() ? linkNode->href : linkNode->title;
         }
-        auto text = textNode->GetText();
+        if (text.empty()) continue;
+
         //float widthLeft = ImGui::GetContentRegionAvail().x;
         float fontScale = 1.f;
         const char* text_start = text.c_str();

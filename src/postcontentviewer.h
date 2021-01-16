@@ -21,7 +21,7 @@ public:
                       );
     ~PostContentViewer();
     void showPostContent();
-    void stopPlayingMedia();
+    void stopPlayingMedia(bool flag = true);    
     void loadContent(post_ptr currentPost);
     bool isCurrentPostSet() const
     {
@@ -97,7 +97,6 @@ private:
     };
     post_gallery gallery;
     std::unique_ptr<MarkdownRenderer> markdown;
-    std::atomic_bool stop;
     bool currentPostSet = false;
 };
 

@@ -53,8 +53,7 @@ PostContentViewer::PostContentViewer(RedditClientProducer* client,
                                      ):
     client(client),uiExecutor(uiExecutor),
     mpvEventIOContextExecutor(boost::asio::require(mpvEventIOContext.get_executor(),
-                                               boost::asio::execution::outstanding_work.tracked)),
-    stop(false)
+                                               boost::asio::execution::outstanding_work.tracked))
 {
     SDL_GetDesktopDisplayMode(0, &displayMode);
     using run_function = boost::asio::io_context::count_type(boost::asio::io_context::*)();
@@ -103,8 +102,9 @@ void PostContentViewer::loadContent(post_ptr currentPost)
         {
             loadingPostContent = true;
             auto mediaStreamingConnection = client->makeMediaStreamingClientConnection();
-            mediaStreamingConnection->streamAvailableHandler([self=shared_from_this()](HtmlParser::MediaLink link) {
-                if(self->stop) return;
+            mediaStreamingConnection->streamAvailableHandler([weak=weak_from_this()](HtmlParser::MediaLink link) {
+                auto self = weak.lock();
+                if(!self) return;
                 switch(link.type)
                 {
                 case HtmlParser::MediaType::Video:
@@ -122,18 +122,25 @@ void PostContentViewer::loadContent(post_ptr currentPost)
                 }
 
             });
-            mediaStreamingConnection->errorHandler([self=shared_from_this()](int /*errorCode*/,const std::string& str){
-                if(self->stop) return;
+            mediaStreamingConnection->errorHandler([weak = weak_from_this()](int /*errorCode*/,const std::string& str){
+                auto self = weak.lock();
+                if (!self) return;
                 boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,self,str));
             });
             mediaStreamingConnection->streamMedia(currentPost.get());
         }
     }
 }
-void PostContentViewer::stopPlayingMedia()
+void PostContentViewer::stopPlayingMedia(bool flag)
 {
-    stop = true;
-    mediaState.finished = true;
+    //stop = flag;
+    mediaState.paused = flag;
+
+    if(mpv)
+    {
+        int shouldPause = flag;
+        mpv_set_property_async(mpv, 0, "pause", MPV_FORMAT_FLAG, &shouldPause);
+    }
 }
 
 PostContentViewer::~PostContentViewer()
@@ -170,14 +177,15 @@ void PostContentViewer::setErrorMessage(std::string errorMessage)
 void PostContentViewer::onMpvEvents(void* context)
 {
     PostContentViewer* win=(PostContentViewer*)context;
-    if(win->stop) return;
-    boost::asio::post(win->mpvEventIOContextExecutor,std::bind(&PostContentViewer::handleMpvEvents,win->shared_from_this()));
+    auto weak = win->weak_from_this();
+    auto self = weak.lock();
+    if (!self) return;
+    boost::asio::post(win->mpvEventIOContextExecutor,std::bind(&PostContentViewer::handleMpvEvents,self));
 }
 void PostContentViewer::handleMpvEvents()
 {
     while (true)
     {
-       if(stop) return;
        mpv_event *mp_event = mpv_wait_event(mpv, 0);
        std::cout << "event:"<<mp_event->event_id<<std::endl;
        if (mp_event->event_id == MPV_EVENT_NONE)
@@ -306,9 +314,11 @@ void PostContentViewer::loadPostGalleryImages()
         if(galImage.url.empty()) continue;
         auto resourceConnection = client->makeResourceClientConnection();
         resourceConnection->connectionCompleteHandler(
-                    [self=shared_from_this(),index=i](const boost::system::error_code& ec,
+                    [weak = weak_from_this(),index=i](const boost::system::error_code& ec,
                          const resource_response& response)
         {
+            auto self = weak.lock();
+            if (!self) return;
             if(ec)
             {
                 boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,self,ec.message()));
@@ -340,12 +350,14 @@ void PostContentViewer::loadPostImage()
     if(currentPost->domain == "imgur.com")
     {
         auto mediaStreamingConnection = client->makeMediaStreamingClientConnection();
-        mediaStreamingConnection->streamAvailableHandler([self=shared_from_this()](HtmlParser::MediaLink link) {
-            if(self->stop) return;
+        mediaStreamingConnection->streamAvailableHandler([weak=weak_from_this()](HtmlParser::MediaLink link) {
+            auto self = weak.lock();
+            if (!self) return;
             self->downloadPostImage(link.url);
         });
-        mediaStreamingConnection->errorHandler([self=shared_from_this()](int /*errorCode*/,const std::string& str){
-            if(self->stop) return;
+        mediaStreamingConnection->errorHandler([weak = weak_from_this()](int /*errorCode*/,const std::string& str){
+            auto self = weak.lock();
+            if (!self) return;
             boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,self,str));
         });
         mediaStreamingConnection->streamMedia(currentPost.get());
@@ -359,10 +371,11 @@ void PostContentViewer::downloadPostImage(std::string url)
 {
     auto resourceConnection = client->makeResourceClientConnection();
     resourceConnection->connectionCompleteHandler(
-                [self=shared_from_this(),url=url](const boost::system::error_code& ec,
+                [weak=weak_from_this(),url=url](const boost::system::error_code& ec,
                      const resource_response& response)
     {
-        if(self->stop) return;
+        auto self = weak.lock();
+        if (!self) return;
         if(ec)
         {
             boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,self,ec.message()));
@@ -431,13 +444,15 @@ void PostContentViewer::setupMediaContext(std::string file)
 void PostContentViewer::mpvRenderUpdate(void *context)
 {
     PostContentViewer* win=(PostContentViewer*)context;
-    if(win->stop) return;
-    boost::asio::post(win->uiExecutor,std::bind(&PostContentViewer::setPostMediaFrame,win->shared_from_this()));
+    auto weak = win->weak_from_this();
+    auto self = weak.lock();
+    if (!self) return;
+    boost::asio::post(win->uiExecutor,std::bind(&PostContentViewer::setPostMediaFrame,self));
 }
 
 void PostContentViewer::setPostMediaFrame()
 {
-    if(!currentPost || !mpv_gl || stop) return;
+    if(!currentPost || !mpv_gl) return;
     uint64_t flags = mpv_render_context_update(mpv_gl);
     if (!(flags & MPV_RENDER_UPDATE_FRAME))
     {
@@ -673,7 +688,6 @@ void PostContentViewer::showPostContent()
             {
                 if(ImGui::Button(reinterpret_cast<const char*>(ICON_FA_REPEAT "##_restartMedia")))
                 {
-                    stop = false;
                     const char *cmd[] = {"playlist-play-index","0", nullptr};
                     mpv_command_async(mpv,0,cmd);
                 }
@@ -681,7 +695,6 @@ void PostContentViewer::showPostContent()
             }
             if(ImGui::Button(reinterpret_cast<const char*>(mediaState.paused ? ICON_FA_PLAY "##_playPauseMedia" : ICON_FA_PAUSE "##_playPauseMedia")))
             {
-                stop = false;
                 int shouldPause = !mediaState.paused;
                 mpv_set_property_async(mpv,0,"pause",MPV_FORMAT_FLAG,&shouldPause);
             }

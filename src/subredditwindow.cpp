@@ -422,7 +422,11 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             p.updateShowContentText();
             if(!p.showingContent && p.postContentViewer)
             {
-                p.postContentViewer->stopPlayingMedia();
+                p.postContentViewer->stopPlayingMedia(true);
+            }
+            else if (p.showingContent && p.postContentViewer)
+            {
+                p.postContentViewer->stopPlayingMedia(false);
             }
         }
 
