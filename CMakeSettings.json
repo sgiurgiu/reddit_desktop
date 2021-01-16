@@ -30,11 +30,23 @@
       "configurationType": "Release",
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
-      "cmakeCommandArgs": "-DLIBMPV_DIR=E:\\projects\\mpv-dev-x86_64-20210103-git-3e175df -DLIBMPV_INCLUDE=E:\\projects\\mpv-dev-x86_64-20210103-git-3e175df\\include -DENABLE_TESTS=OFF",
+      "cmakeCommandArgs": "-DLIBMPV_DIR=E:\\projects\\mpv-dev-x86_64-20210103-git-3e175df -DLIBMPV_INCLUDE=E:\\projects\\mpv-dev-x86_64-20210103-git-3e175df\\include",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x64_x64" ],
-      "variables": []
+      "variables": [
+          {
+            "name": "ENABLE_TESTS",
+            "value": "False",
+            "type": "BOOL"
+          },
+          {
+            "name": "VCPKG_TARGET_TRIPLET",
+            "value": "x64-windows-static",
+            "type": "STRING"
+          }
+      ],
+      "cmakeToolchain": "E:\\projects\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
     }
   ]
 }

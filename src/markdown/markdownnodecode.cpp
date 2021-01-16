@@ -14,7 +14,7 @@ void MarkdownNodeCode::Render()
     ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::NotoMono_Regular)]);
 
     ImGuiWindow* window = ImGui::GetCurrentWindow();
-    ImGuiContext& g = *GImGui;
+    //ImGuiContext& g = *GImGui;
 
     for(const auto& child: children)
     {

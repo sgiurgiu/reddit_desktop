@@ -13,7 +13,7 @@ void MarkdownNodeLink::Render()
 {
     for(const auto& child: children)
     {
-        std::string text = title.empty() ? href : title;
+        std::string text = href;
         if(child->GetNodeType() == NodeType::Text)
         {
             auto childPointer = child.get();

@@ -99,10 +99,10 @@ set_source_files_properties(${GLAD_SRCS} ${GUMBO_PARSER_SRCS} PROPERTIES COMPILE
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE  OpenGL::GL SDL2::SDL2)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${CMAKE_DL_LIBS} Threads::Threads )
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE OpenSSL::SSL)
-target_link_libraries(${EXECUTABLE_NAME} PRIVATE Boost::boost Boost::system)
+target_link_libraries(${EXECUTABLE_NAME} PRIVATE Boost::boost Boost::system Boost::filesystem)
 
 if(VCPKG_TOOLCHAIN)
-    target_include_directories(${EXECUTABLE_NAME} PUBLIC "strings")
+    target_include_directories(${EXECUTABLE_NAME} PRIVATE "strings")
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${LIBMPV} "crypt32.lib")
     target_include_directories(${EXECUTABLE_NAME} PRIVATE ${LIBMPV_INCLUDE})
 else()
