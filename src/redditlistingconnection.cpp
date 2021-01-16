@@ -36,17 +36,15 @@ void RedditListingConnection::list(const std::string& target, const access_token
     request.set(boost::beast::http::field::user_agent, userAgent);
     request.set(boost::beast::http::field::authorization,fmt::format("Bearer {}",token.token));
     request.prepare_payload();
-    response.clear();
-    response.body().clear();
     performRequest();
 }
 
 void RedditListingConnection::responseReceivedComplete()
 {
-    auto status = response.result_int();
-    auto body = response.body();
+    auto status = responseParser->get().result_int();
+    auto body = responseParser->get().body();
     client_response<listing> resp;
-    for(const auto& h : response)
+    for(const auto& h : responseParser->get())
     {
         if(h.name() == boost::beast::http::field::content_length)
         {

@@ -36,7 +36,14 @@ void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::
         return;
     }
     boost::system::error_code error;
-    boost::beast::http::read_header(stream.value(),buffer,responseParser.value(),error);
+    if(isSsl)
+    {
+        boost::beast::http::read_header(stream.value(),buffer,responseParser.value(),error);
+    }
+    else
+    {
+        boost::beast::http::read_header(stream.value().next_layer(),buffer,responseParser.value(),error);
+    }
     if(error)
     {
         onError(error);
@@ -45,7 +52,7 @@ void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::
 
     std::string contentType;
     std::string location;
-    for(const auto& h : responseParser.value().get())
+    for(const auto& h : responseParser->get())
     {
         if(h.name() == boost::beast::http::field::content_type)
         {
@@ -95,7 +102,14 @@ void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::
 
     using namespace std::placeholders;
     auto readMethod = std::bind(&MediaStreamingConnection::onRead,this->shared_from_base<MediaStreamingConnection>(),_1,_2);
-    boost::beast::http::async_read(stream.value(), buffer, responseParser.value(), readMethod);
+    if(isSsl)
+    {
+        boost::beast::http::async_read(stream.value(), buffer, responseParser.value(), readMethod);
+    }
+    else
+    {
+        boost::beast::http::async_read(stream.value().next_layer(), buffer, responseParser.value(), readMethod);
+    }
 }
 
 void MediaStreamingConnection::onError(const boost::system::error_code& ec)
@@ -179,8 +193,6 @@ void MediaStreamingConnection::downloadUrl(const std::string& url)
     request.set(boost::beast::http::field::accept, "*/*");
     request.set(boost::beast::http::field::user_agent, userAgent);
     request.prepare_payload();
-    response.clear();
-    response.body().clear();
     buffer.consume(buffer.size());
     buffer.clear();
     responseParser.emplace();

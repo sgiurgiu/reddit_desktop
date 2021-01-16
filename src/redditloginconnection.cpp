@@ -32,15 +32,15 @@ void RedditLoginConnection::login(const user& user)
     request.set(boost::beast::http::field::authorization,fmt::format("Basic {}",authentication));
     request.body() = fmt::format("grant_type=password&username={}&password={}",user.username,user.password);
     request.prepare_payload();
-    response.clear();
-    response.body().clear();
+    responseParser->get().body().clear();
+    responseParser->get().clear();
     performRequest();
 }
 
 void RedditLoginConnection::responseReceivedComplete()
 {
-    auto status = response.result_int();
-    auto body = response.body();
+    auto status = responseParser->get().result_int();
+    auto body = responseParser->get().body();
     client_response<access_token> token;
     token.status = status;
     if(status == 200)

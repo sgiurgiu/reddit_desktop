@@ -24,11 +24,11 @@ public:
                              const std::string& userAgent);
     void getResource(const std::string& url);
 protected:
-    virtual void responseReceivedComplete();
-    virtual void onWrite(const boost::system::error_code& ec,std::size_t bytesTransferred) override;
+    virtual void responseReceivedComplete() override;
+    virtual void handleLocationChange(const std::string& location) override;
 
 private:
-    boost::beast::http::response_parser<resource_response_body> parser;
+    //boost::beast::http::response_parser<resource_response_body> parser;
     std::string userAgent;
 };
 

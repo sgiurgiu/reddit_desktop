@@ -22,7 +22,7 @@ public:
 
     void login(const user& user);
 protected:
-    virtual void responseReceivedComplete();
+    virtual void responseReceivedComplete() override;
 
 };
 

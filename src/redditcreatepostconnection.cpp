@@ -43,8 +43,8 @@ void RedditCreatePostConnection::createPost(const post_ptr& p,bool sendReplies,
 
     this->p = p;
     request.prepare_payload();
-    response.clear();
-    response.body().clear();
+    responseParser->get().body().clear();
+    responseParser->get().clear();
     if(connected)
     {
         sendRequest();
@@ -57,10 +57,10 @@ void RedditCreatePostConnection::createPost(const post_ptr& p,bool sendReplies,
 
 void RedditCreatePostConnection::responseReceivedComplete()
 {
-    auto status = response.result_int();
-    auto body = response.body();
+    auto status = responseParser->get().result_int();
+    auto body = responseParser->get().body();
     client_response<post_ptr> resp;
-    for(const auto& h : response)
+    for(const auto& h : responseParser->get())
     {
         if(h.name() == boost::beast::http::field::content_length)
         {

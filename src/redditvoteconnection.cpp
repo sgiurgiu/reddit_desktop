@@ -27,7 +27,6 @@ void RedditVoteConnection::vote(const std::string& id,const access_token& token,
 
     this->id = id;
     request.prepare_payload();
-    response.body().clear();
 
     if(connected)
     {
@@ -41,10 +40,10 @@ void RedditVoteConnection::vote(const std::string& id,const access_token& token,
 
 void RedditVoteConnection::responseReceivedComplete()
 {
-    auto status = response.result_int();
-    auto body = response.body();
+    auto status = responseParser->get().result_int();
+    auto body = responseParser->get().body();
     client_response<std::string> resp;
-    for(const auto& h : response)
+    for(const auto& h : responseParser->get())
     {
         if(h.name() == boost::beast::http::field::content_length)
         {

@@ -36,8 +36,6 @@ void RedditCreateCommentConnection::createComment(const std::string& parentId,co
 
     this->parentId = parentId;
     request.prepare_payload();
-    response.clear();
-    response.body().clear();
     if(connected)
     {
         sendRequest();
@@ -50,10 +48,10 @@ void RedditCreateCommentConnection::createComment(const std::string& parentId,co
 
 void RedditCreateCommentConnection::responseReceivedComplete()
 {
-    auto status = response.result_int();
-    auto body = response.body();
+    auto status = responseParser->get().result_int();
+    auto body = responseParser->get().body();
     client_response<listing> resp;
-    for(const auto& h : response)
+    for(const auto& h : responseParser->get())
     {
         if(h.name() == boost::beast::http::field::content_length)
         {

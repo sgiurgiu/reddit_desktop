@@ -24,7 +24,7 @@ public:
                                 const std::string& userAgent );
     void search(const std::string& query, const access_token& token);
 protected:
-    virtual void responseReceivedComplete();
+    virtual void responseReceivedComplete() override;
 private:
     std::string userAgent;
 };

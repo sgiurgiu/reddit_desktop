@@ -21,7 +21,7 @@ public:
                          const std::string& userAgent);
     void vote(const std::string& id,const access_token& token, Voted vote);
 protected:
-    virtual void responseReceivedComplete();
+    virtual void responseReceivedComplete() override;
 private:
     std::string userAgent;
     std::string id;

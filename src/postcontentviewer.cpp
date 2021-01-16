@@ -133,13 +133,16 @@ void PostContentViewer::loadContent(post_ptr currentPost)
 }
 void PostContentViewer::stopPlayingMedia(bool flag)
 {
-    //stop = flag;
     mediaState.paused = flag;
 
     if(mpv)
     {
         int shouldPause = flag;
         mpv_set_property_async(mpv, 0, "pause", MPV_FORMAT_FLAG, &shouldPause);
+    }
+    if(gif)
+    {
+        gif->paused = flag;
     }
 }
 
@@ -594,7 +597,7 @@ void PostContentViewer::showPostContent()
 
     if(gif && !gif->images.empty())
     {
-        if(gif->images[gif->currentImage]->displayed)
+        if(!gif->paused && gif->images[gif->currentImage]->displayed)
         {
             auto lastDisplay = gif->images[gif->currentImage]->lastDisplay;
             auto diffSinceLastDisplay = std::chrono::steady_clock::now() - lastDisplay;

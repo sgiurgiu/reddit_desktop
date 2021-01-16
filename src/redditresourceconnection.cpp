@@ -16,8 +16,7 @@ RedditResourceConnection::RedditResourceConnection(const boost::asio::any_io_exe
                                                    boost::asio::ssl::context& ssl_context,                                                   
                                                    const std::string& userAgent):
     RedditConnection(executor,ssl_context,"",""),userAgent(userAgent)
-{
-    parser.body_limit(BUFFER_SIZE);
+{    
 }
 
 void RedditResourceConnection::getResource(const std::string& url)
@@ -39,22 +38,22 @@ void RedditResourceConnection::getResource(const std::string& url)
     request.set(boost::beast::http::field::host, host);
     request.set(boost::beast::http::field::accept, "*/*");
     request.set(boost::beast::http::field::user_agent, userAgent);    
-    request.prepare_payload();
-    response.clear();
-    response.body().clear();
-    parser.get().body().clear();
-    parser.get().clear();
+    request.prepare_payload();    
+    responseParser->body_limit(BUFFER_SIZE);
     performRequest();
 }
-
+void RedditResourceConnection::handleLocationChange(const std::string& location)
+{
+    getResource(location);
+}
 void RedditResourceConnection::responseReceivedComplete()
 {
-    auto status = response.result_int();
+    auto status = responseParser->get().result_int();
     resource_response resp;
     resp.status = status;
 
-    resp.data = parser.get().body();
-    for(const auto& h : response)
+    resp.data = responseParser->get().body();
+    for(const auto& h : responseParser->get())
     {
         if(h.name() == boost::beast::http::field::content_length)
         {
@@ -67,20 +66,5 @@ void RedditResourceConnection::responseReceivedComplete()
         }
     }
     signal({},resp);
-}
-void RedditResourceConnection::onWrite(const boost::system::error_code& ec,std::size_t bytesTransferred)
-{
-    boost::ignore_unused(bytesTransferred);
-
-    if(ec)
-    {
-        onError(ec);
-        return;
-    }
-    response.clear();
-
-    using namespace std::placeholders;
-    auto readMethod = std::bind(&RedditResourceConnection::onRead,this->shared_from_base<RedditResourceConnection>(),_1,_2);
-    boost::beast::http::async_read(stream.value(), buffer, parser, readMethod);
 }
 

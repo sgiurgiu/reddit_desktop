@@ -23,7 +23,7 @@ public:
     void list(const unloaded_children& children, const std::string& linkId,
               const access_token& token);
 protected:
-    virtual void responseReceivedComplete();
+    virtual void responseReceivedComplete() override;
 private:
     std::string userAgent;
 

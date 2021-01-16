@@ -31,9 +31,8 @@ public:
     void errorHandler(const typename ErrorSignal::slot_type& slot);
     void clearAllSlots();
 protected:
-    virtual void responseReceivedComplete();
+    virtual void responseReceivedComplete() override;
     virtual void onWrite(const boost::system::error_code& ec,std::size_t bytesTransferred) override;
-   // virtual void onRead(const boost::system::error_code& ec,std::size_t bytesTransferred) override;
     virtual void onError(const boost::system::error_code& ec) override;
 
 private:

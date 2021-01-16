@@ -87,6 +87,7 @@ private:
         int currentImage = 0;
         int width = 0;
         int height = 0;
+        bool paused = false;
     };
     std::unique_ptr<post_gif> gif;
     ResizableGLImagePtr postPicture;

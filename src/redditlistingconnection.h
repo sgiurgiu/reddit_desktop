@@ -23,7 +23,7 @@ public:
 
     void list(const std::string& target, const access_token& token);
 protected:
-    virtual void responseReceivedComplete();
+    virtual void responseReceivedComplete() override;
 private:
     std::string userAgent;
 };

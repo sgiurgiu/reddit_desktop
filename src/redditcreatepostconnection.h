@@ -24,7 +24,7 @@ public:
     void createPost(const post_ptr& p,bool sendReplies,
                     const access_token& token);
 protected:
-    virtual void responseReceivedComplete();
+    virtual void responseReceivedComplete() override;
 private:
     std::string userAgent;
     post_ptr p;

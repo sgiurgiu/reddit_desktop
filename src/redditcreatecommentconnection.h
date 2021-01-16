@@ -24,7 +24,7 @@ public:
     void createComment(const std::string& parentId,const std::string& text,
                     const access_token& token);
 protected:
-    virtual void responseReceivedComplete();
+    virtual void responseReceivedComplete() override;
 private:
     std::string userAgent;
     std::string parentId;
