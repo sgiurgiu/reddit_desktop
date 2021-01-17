@@ -49,7 +49,12 @@ void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::
         onError(error);
         return;
     }
-
+    auto status = responseParser->get().result_int();
+    if(status >= 400)
+    {
+        errorSignal(-1,"Not found");
+        return;
+    }
     std::string contentType;
     std::string location;
     for(const auto& h : responseParser->get())
@@ -119,6 +124,12 @@ void MediaStreamingConnection::onError(const boost::system::error_code& ec)
 
 void MediaStreamingConnection::responseReceivedComplete()
 {
+    auto status = responseParser->get().result_int();
+    if(status >= 400)
+    {
+        errorSignal(-1,"Cannot retrieve media");
+        return;
+    }
     if(downloadingHtml)
     {
         HtmlParser htmlParser(responseParser->get().body());

@@ -149,7 +149,12 @@ void PostContentViewer::stopPlayingMedia(bool flag)
 PostContentViewer::~PostContentViewer()
 {
     stopPlayingMedia();
-    Database::getInstance()->setMediaAudioVolume(mediaState.mediaAudioVolume);
+
+    if(mpv)
+    {
+        const char *cmd[] = {"quit", nullptr};
+        mpv_command(mpv,cmd);
+    }
     if(mpv_gl)
     {
         mpv_render_context_free(mpv_gl);
@@ -157,7 +162,7 @@ PostContentViewer::~PostContentViewer()
     }
     if(mpv)
     {
-        mpv_detach_destroy(mpv);
+        mpv_terminate_destroy(mpv);
         mpv = nullptr;
     }
     mpvEventIOContextExecutor = boost::asio::any_io_executor();
@@ -179,7 +184,8 @@ void PostContentViewer::setErrorMessage(std::string errorMessage)
 }
 void PostContentViewer::onMpvEvents(void* context)
 {
-    PostContentViewer* win=(PostContentViewer*)context;
+    auto win=reinterpret_cast<PostContentViewer*>(context);
+    if(!win) return;
     auto weak = win->weak_from_this();
     auto self = weak.lock();
     if (!self) return;
@@ -234,6 +240,7 @@ void PostContentViewer::handleMpvEvents()
                else if (name == "volume")
                {
                    mediaState.mediaAudioVolume = value;
+                   Database::getInstance()->setMediaAudioVolume(mediaState.mediaAudioVolume);
                }
            }
            else if(prop->format == MPV_FORMAT_FLAG)
@@ -466,7 +473,8 @@ void PostContentViewer::setupMediaContext(std::string file)
 
 void PostContentViewer::mpvRenderUpdate(void *context)
 {
-    PostContentViewer* win=(PostContentViewer*)context;
+    auto win=reinterpret_cast<PostContentViewer*>(context);
+    if(!win) return;
     auto weak = win->weak_from_this();
     auto self = weak.lock();
     if (!self) return;
@@ -593,6 +601,13 @@ GLuint PostContentViewer::getAndResetMediaFBO()
 
 void PostContentViewer::showPostContent()
 {
+
+    if(!errorMessage.empty())
+    {
+        ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "%s",errorMessage.c_str());
+        return;
+    }
+
     ResizableGLImage* display_image = postPicture.get();
 
     if(gif && !gif->images.empty())

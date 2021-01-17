@@ -231,13 +231,30 @@ void SubredditWindow::updatePostVote(post* p,Voted voted)
     p->voted = voted;
     p->humanScore = Utils::CalculateScore(p->score,oldVoted,voted);
 }
+void SubredditWindow::pauseAllPosts()
+{
+    for(auto&& p : posts)
+    {
+        if(p.postContentViewer)
+        {
+            p.postContentViewer->stopPlayingMedia(true);
+        }
+    }
+}
 void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
 {
+
     ImGui::SetNextWindowSize(ImVec2(appFrameWidth*0.6,appFrameHeight*0.8),ImGuiCond_FirstUseEver);
-    if(!windowOpen) return;
 
     if(!ImGui::Begin(windowName.c_str(),&windowOpen,ImGuiWindowFlags_None))
     {
+        pauseAllPosts();
+        ImGui::End();
+        return;
+    }
+    if(!windowOpen)
+    {
+        pauseAllPosts();
         ImGui::End();
         return;
     }
@@ -248,6 +265,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
     }
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_W)) && ImGui::GetIO().KeyCtrl && ImGui::IsWindowFocused())
     {
+        pauseAllPosts();
         windowOpen = false;
     }
     if(windowPositionAndSizeSet)

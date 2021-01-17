@@ -501,13 +501,15 @@ void CommentsWindow::updateCommentVote(DisplayComment* c,Voted vote)
 void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
 {
     ImGui::SetNextWindowSize(ImVec2(appFrameWidth*0.6,appFrameHeight*0.8),ImGuiCond_FirstUseEver);
+    if(!ImGui::Begin(windowName.c_str(),&windowOpen,ImGuiWindowFlags_None))
+    {
+        if(postContentViewer) postContentViewer->stopPlayingMedia();
+        ImGui::End();
+        return;
+    }
     if(!windowOpen)
     {
         if(postContentViewer) postContentViewer->stopPlayingMedia();
-        return;
-    }
-    if(!ImGui::Begin(windowName.c_str(),&windowOpen,ImGuiWindowFlags_None))
-    {
         ImGui::End();
         return;
     }
@@ -518,6 +520,7 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
     }
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_W)) && ImGui::GetIO().KeyCtrl && ImGui::IsWindowFocused())
     {
+        if(postContentViewer) postContentViewer->stopPlayingMedia();
         windowOpen = false;
     }
     if(windowPositionAndSizeSet)

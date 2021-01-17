@@ -83,6 +83,7 @@ private:
     void clearExistingPostsData();
     void votePost(post_ptr p,Voted voted);
     void updatePostVote(post* p,Voted voted);
+    void pauseAllPosts();
 private:    
     using CommentsSignal = boost::signals2::signal<void(std::string id,std::string title)>;
     int id;

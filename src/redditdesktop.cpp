@@ -299,6 +299,17 @@ void RedditDesktop::updateWindowsTokenData()
         cm->setAccessToken(current_access_token.data);
     }
 }
+void RedditDesktop::cleanupClosedWindows()
+{
+    auto startRemoveSubredditWindows = std::remove_if(subredditWindows.begin(),subredditWindows.end(),[](const auto& win) {
+        return !win->isWindowOpen();
+    });
+    subredditWindows.erase(startRemoveSubredditWindows,subredditWindows.end());
+    auto startRemoveCommentsWindows = std::remove_if(commentsWindows.begin(),commentsWindows.end(),[](const auto& win) {
+        return !win->isWindowOpen();
+    });
+    commentsWindows.erase(startRemoveCommentsWindows,commentsWindows.end());
+}
 void RedditDesktop::showDesktop()
 {
     ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Medium)]);//Roboto medium
@@ -312,35 +323,37 @@ void RedditDesktop::showDesktop()
     }
     showMainMenuBar();    
 
+    int haveRemovedWindows = 0;
+    for(const auto& srw : subredditWindows)
     {
-        auto it = subredditWindows.begin();
-        while(it != subredditWindows.end())
+        if(srw->isWindowOpen())
         {
-            if((*it)->isWindowOpen())
-            {
-                (*it)->showWindow(appFrameWidth,appFrameHeight);
-                ++it;
-            }
-            else
-            {
-                it = subredditWindows.erase(it);
-            }
+            srw->showWindow(appFrameWidth,appFrameHeight);
+        }
+        else
+        {
+            ++haveRemovedWindows;
         }
     }
+    for(const auto& cw : commentsWindows)
     {
-        auto it = commentsWindows.begin();
-        while(it != commentsWindows.end())
+        if(cw->isWindowOpen())
         {
-            if((*it)->isWindowOpen())
-            {
-                (*it)->showWindow(appFrameWidth,appFrameHeight);
-                ++it;
-            }
-            else
-            {
-                it = commentsWindows.erase(it);
-            }
+            cw->showWindow(appFrameWidth,appFrameHeight);
         }
+        else
+        {
+            ++haveRemovedWindows;
+        }
+    }
+
+    if(haveRemovedWindows > 0)
+    {
+        boost::asio::post(uiExecutor,[weak=weak_from_this()](){
+            auto self = weak.lock();
+            if(!self) return;
+            self->cleanupClosedWindows();
+        });
     }
 
     showSubredditsWindow();

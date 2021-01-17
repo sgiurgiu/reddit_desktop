@@ -55,6 +55,7 @@ private:
     void refreshLoginToken();
     void loadUserInformation();
     void updateWindowsTokenData();
+    void cleanupClosedWindows();
 private:
     boost::asio::any_io_executor uiExecutor;
     RedditClientProducer client;
