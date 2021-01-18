@@ -159,35 +159,39 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
         p.openLinkButtonText = fmt::format("{}##openLink{}",
                                            reinterpret_cast<const char*>(ICON_FA_EXTERNAL_LINK_SQUARE " Open Link"),
                                            p.post->name);
+        p.votesChildText = fmt::format("##{}_votes_child",p.post->name).c_str();
         p.updateShowContentText();
-        p.thumbnailPicture = Utils::GetRedditThumbnail(p.post->thumbnail);
-        if(!p.thumbnailPicture)
+        if(!p.post->thumbnail.empty())
         {
-            auto resourceConnection = client->makeResourceClientConnection();
-            resourceConnection->connectionCompleteHandler(
-                        [post=&p,weak=weak_from_this()](const boost::system::error_code& ec,
-                             const resource_response& response)
+            p.thumbnailPicture = Utils::GetRedditThumbnail(p.post->thumbnail);
+            if(!p.thumbnailPicture)
             {
-                auto self = weak.lock();
-                if(!self) return;
-                if(ec)
+                auto resourceConnection = client->makeResourceClientConnection();
+                resourceConnection->connectionCompleteHandler(
+                            [post=&p,weak=weak_from_this()](const boost::system::error_code& ec,
+                                 const resource_response& response)
                 {
-                    auto message = "Cannot load thumbnail:" + ec.message();
-                    boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,post,std::move(message)));
-                }
-                else if(response.status >= 400)
-                {
-                    auto message = "Cannot load thumbnail:" + response.body;
-                    boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,post,std::move(message)));
-                }
-                else if(response.status == 200)
-                {
-                    int width, height, channels;
-                    auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
-                    boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,self,post,data,width,height,channels));
-                }
-            });
-            resourceConnection->getResource(p.post->thumbnail);
+                    auto self = weak.lock();
+                    if(!self) return;
+                    if(ec)
+                    {
+                        auto message = "Cannot load thumbnail:" + ec.message();
+                        boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,post,std::move(message)));
+                    }
+                    else if(response.status >= 400)
+                    {
+                        auto message = "Cannot load thumbnail:" + response.body;
+                        boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,post,std::move(message)));
+                    }
+                    else if(response.status == 200)
+                    {
+                        int width, height, channels;
+                        auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
+                        boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,self,post,data,width,height,channels));
+                    }
+                });
+                resourceConnection->getResource(p.post->thumbnail);
+            }
         }
     }
 }
@@ -362,7 +366,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "%s",p.errorMessageText.c_str());
         }
 
-        ImGui::BeginChild(fmt::format("##{}_votes_child",p.post->name).c_str(),
+        ImGui::BeginChild(p.votesChildText.c_str(),
                           ImVec2(maxScoreWidth,ImGui::GetFontSize()*4+ImGui::GetStyle().FramePadding.x*2));
         ImGui::PushStyleColor(ImGuiCol_Button,ImVec4(1.0f,1.0f,1.0f,0.0f));
         ImGui::Dummy(ImVec2(upvotesButtonsIdent/2.f,0.f));ImGui::SameLine();

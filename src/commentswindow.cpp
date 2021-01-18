@@ -304,7 +304,12 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
 
 void CommentsWindow::showComment(DisplayComment& c)
 {
-    if(ImGui::TreeNodeEx(c.titleText.c_str(),ImGuiTreeNodeFlags_DefaultOpen))
+    int flags = ImGuiTreeNodeFlags_DefaultOpen;
+    if(c.commentData.isSubmitter)
+    {
+        flags |= ImGuiTreeNodeFlags_Framed;
+    }
+    if(ImGui::TreeNodeEx(c.titleText.c_str(),flags))
     {
         c.renderer.RenderMarkdown();
         //ImGui::NewLine();

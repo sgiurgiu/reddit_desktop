@@ -198,6 +198,7 @@ struct comment
     uint64_t createdAt;
     std::string humanReadableTimeDifference;
     comments_list replies;
+    bool isSubmitter = false;
 };
 
 struct user_info

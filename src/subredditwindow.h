@@ -67,7 +67,7 @@ private:
         std::string showContentButtonText;
         std::string openLinkButtonText;
         std::string errorMessageText;
-
+        std::string votesChildText;
         void updateShowContentText();
     };
     using posts_list = std::vector<PostDisplay>;

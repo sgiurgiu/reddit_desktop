@@ -427,7 +427,10 @@ comment::comment(const nlohmann::json& json)
         auto likes = json["likes"].get<bool>();
         voted = likes ? Voted::UpVoted : Voted::DownVoted;
     }
-
+    if(json.contains("is_submitter") && json["is_submitter"].is_boolean())
+    {
+        isSubmitter = json["is_submitter"].get<bool>();
+    }
     if(json.contains("replies") && json["replies"].is_object())
     {
         const auto& replies_json = json["replies"];
