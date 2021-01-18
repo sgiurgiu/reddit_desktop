@@ -144,7 +144,7 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
     {
         after = afterJson.get<std::string>();
     }
-    listingErrorMessage.clear();    
+    listingErrorMessage.clear();
     clearExistingPostsData();
     posts = std::move(receivedPosts);
     scrollToTop = true;
@@ -160,16 +160,27 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
                                            reinterpret_cast<const char*>(ICON_FA_EXTERNAL_LINK_SQUARE " Open Link"),
                                            p.post->name);
         p.updateShowContentText();
-
-        if(!p.post->thumbnail.empty() && p.post->thumbnail != "self" &&
-                p.post->thumbnail != "default")
+        p.thumbnailPicture = Utils::GetRedditThumbnail(p.post->thumbnail);
+        if(!p.thumbnailPicture)
         {
             auto resourceConnection = client->makeResourceClientConnection();
             resourceConnection->connectionCompleteHandler(
-                        [post=&p,self=shared_from_this()](const boost::system::error_code&,
+                        [post=&p,weak=weak_from_this()](const boost::system::error_code& ec,
                              const resource_response& response)
             {
-                if(response.status == 200)
+                auto self = weak.lock();
+                if(!self) return;
+                if(ec)
+                {
+                    auto message = "Cannot load thumbnail:" + ec.message();
+                    boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,post,std::move(message)));
+                }
+                else if(response.status >= 400)
+                {
+                    auto message = "Cannot load thumbnail:" + response.body;
+                    boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,post,std::move(message)));
+                }
+                else if(response.status == 200)
                 {
                     int width, height, channels;
                     auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
@@ -179,6 +190,10 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
             resourceConnection->getResource(p.post->thumbnail);
         }
     }
+}
+void SubredditWindow::setPostErrorMessage(PostDisplay* post,std::string msg)
+{
+    post->errorMessageText = std::move(msg);
 }
 void SubredditWindow::PostDisplay::updateShowContentText()
 {
@@ -190,8 +205,7 @@ void SubredditWindow::PostDisplay::updateShowContentText()
 void SubredditWindow::setPostThumbnail(PostDisplay* p,unsigned char* data, int width, int height, int channels)
 {
     ((void)channels);
-    auto image = Utils::loadImage(data,width,height,STBI_rgb_alpha);
-    p->thumbnailPicture = std::move(image);
+    p->thumbnailPicture = Utils::loadImage(data,width,height,STBI_rgb_alpha);
     if(p->post->over18 && shouldBlurPictures)
     {
         auto blurredImage = Utils::loadBlurredImage(data,width,height,STBI_rgb_alpha);        
@@ -306,6 +320,29 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
     {
         newLinkPostDialog = true;
     }
+    {
+        bool refreshDisabled = posts.empty();
+        if(refreshDisabled)
+        {
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+            ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+        }
+        ImGui::SameLine(ImGui::GetWindowContentRegionMax().x-(ImGui::GetStyle().FramePadding.x)-ImGui::GetFontSize());
+        if(ImGui::Button(reinterpret_cast<const char*>(ICON_FA_REFRESH)))
+        {
+            listingErrorMessage.clear();
+            clearExistingPostsData();
+            posts.clear();
+            loadSubredditListings(target,token);
+        }
+        if(refreshDisabled)
+        {
+            ImGui::PopStyleColor(3);
+            ImGui::PopStyleVar();
+        }
+    }
 
     if(maxScoreWidth == 0.f)
     {
@@ -320,6 +357,11 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
 
     for(auto&& p : posts)
     {                
+        if(!p.errorMessageText.empty())
+        {
+            ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "%s",p.errorMessageText.c_str());
+        }
+
         ImGui::BeginGroup();
         ImGui::PushStyleColor(ImGuiCol_Button,ImVec4(1.0f,1.0f,1.0f,0.0f));
         ImGui::Dummy(ImVec2(upvotesButtonsIdent/2.f,0.f));ImGui::SameLine();
@@ -503,6 +545,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             loadSubredditListings(target+"?before="+before.value()+"&count="+std::to_string(currentCount),token);
             currentCount-=posts.size();
             before.reset();
+            after.reset();
         }
         if(!previousEnabled)
         {
@@ -524,6 +567,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             currentCount+=posts.size();
             loadSubredditListings(target+"?after="+after.value()+"&count="+std::to_string(currentCount),token);
             after.reset();
+            before.reset();
         }
         if(!nextEnabled)
         {

@@ -62,9 +62,14 @@ public:
     static ImVec4 GetDownVoteColor();
     static ImVec4 GetUpVoteColor();
     static std::string CalculateScore(int& score,Voted originalVote,Voted newVote);
+    static void LoadRedditThumbnails();
+    static void ReleaseRedditThumbnails();
+    static ResizableGLImagePtr GetRedditThumbnail(const std::string& kind);
 private:
     static void AddFont(const unsigned int* fontData, const unsigned int fontDataSize, float fontSize);
-
+private:
+    static ResizableGLImagePtr redditThumbnails;
+    static std::map<std::string, std::tuple<int,int,int,int>> thumbnailsCoordinates;
 };
 
 #endif // UTILS_H

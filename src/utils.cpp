@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "imgui.h"
+#include "images/sprite_reddit.h"
 #include "fonts/fonts.h"
 #include <array>
 #include <fmt/format.h>
@@ -43,6 +44,17 @@
 #if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic pop
 #endif
+
+ResizableGLImagePtr Utils::redditThumbnails;
+
+std::map<std::string, std::tuple<int,int,int,int>> Utils::thumbnailsCoordinates = {
+    {"image",   {0,310      ,140,105}},
+    {"default", {0,310+(148),140,105}},
+    {"nsfw",    {0,310+(290),140,105}},
+    {"spoiler", {0,310+(440),140,105}},
+    {"self",    {0,310+(585),140,105}},
+    {"reddit",  {0,310+(445),140,105}}, //same as "spoiler"
+};
 
 void Utils::AddFont(const unsigned int* fontData, const unsigned int fontDataSize, float fontSize)
 {
@@ -145,7 +157,57 @@ std::string Utils::encode64(const std::string &val)
     auto tmp = std::string(It(std::begin(val)), It(std::end(val)));
     return tmp.append((3 - val.size() % 3) % 3, '=');
 }
+void Utils::LoadRedditThumbnails()
+{
+    int width, height, channels;
+    auto data = decodeImageData(sprite_reddit_png,sprite_reddit_png_len,&width,&height,&channels);
+    redditThumbnails = Utils::loadImage(data,width,height,STBI_rgb_alpha);
+    stbi_image_free(data);
+}
+void Utils::ReleaseRedditThumbnails()
+{
+    redditThumbnails.reset();
+}
+ResizableGLImagePtr Utils::GetRedditThumbnail(const std::string& kind)
+{
+    auto thumbnailIt = thumbnailsCoordinates.find(kind);
+    if(thumbnailIt == thumbnailsCoordinates.end())
+    {
+        return ResizableGLImagePtr();
+    }
+    auto image = std::make_unique<ResizableGLImage>();
+    int x = std::get<0>(thumbnailIt->second);
+    int y = std::get<1>(thumbnailIt->second);
+    int width = std::get<2>(thumbnailIt->second);
+    int height = std::get<3>(thumbnailIt->second);
 
+    GLuint image_texture;
+    glGenTextures(1, &image_texture);
+    glBindTexture(GL_TEXTURE_2D, image_texture);
+
+    // Setup filtering parameters for display
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Upload pixels into texture
+#if defined(GL_UNPACK_ROW_LENGTH) && !defined(__EMSCRIPTEN__)
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#endif
+    //glTexStorage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height,
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+    glCopyImageSubData(redditThumbnails->textureId, GL_TEXTURE_2D, 0, x, y, 0,
+                       image_texture, GL_TEXTURE_2D, 0, 0, 0, 0,
+                       width, height, 1);
+
+    image->width = width;
+    image->height = height;
+    image->channels = STBI_rgb_alpha;
+    image->textureId = image_texture;
+
+    return image;
+}
 stbi_uc * Utils::decodeImageData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file)
 {
     return stbi_load_from_memory(buffer,len,x,y,channels_in_file,STBI_rgb_alpha);
@@ -192,9 +254,6 @@ ResizableGLImagePtr Utils::loadImage(unsigned char* data, int width, int height,
     if(!data) return ResizableGLImagePtr();
     auto image = std::make_unique<ResizableGLImage>();
 
-    //SDL_CreateTexture();
-    //SDL_UpdateTexture()
-
     //https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples
     GLuint image_texture;
     glGenTextures(1, &image_texture);
@@ -210,8 +269,6 @@ ResizableGLImagePtr Utils::loadImage(unsigned char* data, int width, int height,
 #if defined(GL_UNPACK_ROW_LENGTH) && !defined(__EMSCRIPTEN__)
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 #endif
-    /*glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height,
-                 0, GL_RGBA, GL_UNSIGNED_BYTE, data);*/
     if(channels == 3)
     {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height,
@@ -222,6 +279,7 @@ ResizableGLImagePtr Utils::loadImage(unsigned char* data, int width, int height,
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height,
                      0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     }
+
     image->width = width;
     image->height = height;
     image->channels = channels;

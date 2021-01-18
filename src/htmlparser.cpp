@@ -13,6 +13,9 @@
 #include <boost/spirit/include/karma_numeric.hpp>
 #include <boost/spirit/include/karma_uint.hpp>
 
+/**
+ * This class looks for video links in HTML
+ */
 
 namespace bsq = boost::spirit::qi;
 namespace bk = boost::spirit::karma;

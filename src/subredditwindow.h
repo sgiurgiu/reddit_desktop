@@ -66,6 +66,7 @@ private:
         std::string downvoteButtonText;
         std::string showContentButtonText;
         std::string openLinkButtonText;
+        std::string errorMessageText;
 
         void updateShowContentText();
     };
@@ -84,6 +85,7 @@ private:
     void votePost(post_ptr p,Voted voted);
     void updatePostVote(post* p,Voted voted);
     void pauseAllPosts();
+    void setPostErrorMessage(PostDisplay* post,std::string msg);
 private:    
     using CommentsSignal = boost::signals2::signal<void(std::string id,std::string title)>;
     int id;
