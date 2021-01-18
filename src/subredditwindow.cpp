@@ -346,7 +346,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
 
     if(maxScoreWidth == 0.f)
     {
-        maxScoreWidth = ImGui::CalcTextSize("99.9k").x  - (ImGui::GetStyle().FramePadding.x*2.f);
+        maxScoreWidth = ImGui::CalcTextSize("XXXXXX").x;
     }
     if(upvotesButtonsIdent == 0.f)
     {
@@ -362,7 +362,8 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "%s",p.errorMessageText.c_str());
         }
 
-        ImGui::BeginGroup();
+        ImGui::BeginChild(fmt::format("##{}_votes_child",p.post->name).c_str(),
+                          ImVec2(maxScoreWidth,ImGui::GetFontSize()*4+ImGui::GetStyle().FramePadding.x*2));
         ImGui::PushStyleColor(ImGuiCol_Button,ImVec4(1.0f,1.0f,1.0f,0.0f));
         ImGui::Dummy(ImVec2(upvotesButtonsIdent/2.f,0.f));ImGui::SameLine();
 
@@ -382,7 +383,9 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         }
 
         auto scoreIdent = (maxScoreWidth - ImGui::CalcTextSize(p.post->humanScore.c_str()).x)/2.f;
-        ImGui::Dummy(ImVec2(scoreIdent,0.f));ImGui::SameLine();
+        //ImGui::Dummy(ImVec2(scoreIdent,0.f));
+        ImGui::Dummy(ImVec2(0,0));
+        ImGui::SameLine(scoreIdent);
         ImGui::Text("%s",p.post->humanScore.c_str());
         if(ImGui::GetItemRectSize().x > maxScoreWidth) maxScoreWidth = ImGui::GetItemRectSize().x;
         ImGui::Dummy(ImVec2(upvotesButtonsIdent/2.f,0.f));ImGui::SameLine();
@@ -403,7 +406,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         }
 
         ImGui::PopStyleColor(1);
-        ImGui::EndGroup();
+        ImGui::EndChild();
 
         auto height = ImGui::GetCursorPosY();
         ImGui::SameLine();
