@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.15)
-
 project(reddit_desktop LANGUAGES C CXX
     VERSION 0.0.1
     DESCRIPTION "Reddit desktop"
     )
+
+include("${CMAKE_SOURCE_DIR}/cmake/CMakeCCache.txt")
 
 option(ENABLE_TESTS "Build tests" ON)
 option(ASAN_ENABLE "Build with sanitization on" OFF)

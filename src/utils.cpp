@@ -45,16 +45,18 @@
 #pragma GCC diagnostic pop
 #endif
 
-ResizableGLImagePtr Utils::redditThumbnails;
+namespace {
+    std::map<std::string, std::tuple<int,int,int,int>> thumbnailsCoordinates = {
+        {"image",   {0,310      ,140,105}},
+        {"default", {0,310+(148),140,105}},
+        {"nsfw",    {0,310+(290),140,105}},
+        {"spoiler", {0,310+(440),140,105}},
+        {"self",    {0,310+(585),140,105}},
+        {"reddit",  {0,310+(445),140,105}}, //same as "spoiler"
+    };
+}
 
-std::map<std::string, std::tuple<int,int,int,int>> Utils::thumbnailsCoordinates = {
-    {"image",   {0,310      ,140,105}},
-    {"default", {0,310+(148),140,105}},
-    {"nsfw",    {0,310+(290),140,105}},
-    {"spoiler", {0,310+(440),140,105}},
-    {"self",    {0,310+(585),140,105}},
-    {"reddit",  {0,310+(445),140,105}}, //same as "spoiler"
-};
+ResizableGLImagePtr Utils::redditThumbnails;
 
 void Utils::AddFont(const unsigned int* fontData, const unsigned int fontDataSize, float fontSize)
 {

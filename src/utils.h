@@ -68,8 +68,7 @@ public:
 private:
     static void AddFont(const unsigned int* fontData, const unsigned int fontDataSize, float fontSize);
 private:
-    static ResizableGLImagePtr redditThumbnails;
-    static std::map<std::string, std::tuple<int,int,int,int>> thumbnailsCoordinates;
+    static ResizableGLImagePtr redditThumbnails;    
 };
 
 #endif // UTILS_H
