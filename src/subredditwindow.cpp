@@ -109,6 +109,33 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
         });
     }
 
+    resourceConnection = client->makeResourceClientConnection();
+    resourceConnection->connectionCompleteHandler(
+                [weak=weak_from_this()](const boost::system::error_code& ec,
+                     const resource_response& response)
+    {
+        auto self = weak.lock();
+        if(!self) return;
+        PostDisplay* post = static_cast<PostDisplay*>(response.userData);
+        if(!post) return;
+        if(ec)
+        {
+            auto message = "Cannot load thumbnail:" + ec.message();
+            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,post,std::move(message)));
+        }
+        else if(response.status >= 400)
+        {
+            auto message = "Cannot load thumbnail:" + response.body;
+            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,post,std::move(message)));
+        }
+        else if(response.status == 200)
+        {
+            int width, height, channels;
+            auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
+            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,self,post,data,width,height,channels));
+        }
+    });
+
     listingConnection->list(target,token);
 }
 
@@ -166,31 +193,7 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
             p.thumbnailPicture = Utils::GetRedditThumbnail(p.post->thumbnail);
             if(!p.thumbnailPicture)
             {
-                auto resourceConnection = client->makeResourceClientConnection();
-                resourceConnection->connectionCompleteHandler(
-                            [post=&p,weak=weak_from_this()](const boost::system::error_code& ec,
-                                 const resource_response& response)
-                {
-                    auto self = weak.lock();
-                    if(!self) return;
-                    if(ec)
-                    {
-                        auto message = "Cannot load thumbnail:" + ec.message();
-                        boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,post,std::move(message)));
-                    }
-                    else if(response.status >= 400)
-                    {
-                        auto message = "Cannot load thumbnail:" + response.body;
-                        boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,post,std::move(message)));
-                    }
-                    else if(response.status == 200)
-                    {
-                        int width, height, channels;
-                        auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
-                        boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,self,post,data,width,height,channels));
-                    }
-                });
-                resourceConnection->getResource(p.post->thumbnail);
+                resourceConnection->getResource(p.post->thumbnail,&p);
             }
         }
     }

@@ -3,9 +3,6 @@
 
 #include "redditconnection.h"
 #include "entities.h"
-#include <memory>
-#include <boost/asio/ip/resolver_base.hpp>
-#include <boost/beast/http.hpp>
 
 class RedditListingConnection : public RedditConnection<
         boost::beast::http::empty_body,
@@ -18,9 +15,9 @@ public:
                   const std::string& host, const std::string& service,
                   const std::string& userAgent );
 
-    void list(const std::string& target, const access_token& token);
+    void list(const std::string& target, const access_token& token, void* userData = nullptr);
 protected:
-    virtual void responseReceivedComplete() override;
+    virtual void responseReceivedComplete(void* userData) override;
 private:
     std::string userAgent;
 };

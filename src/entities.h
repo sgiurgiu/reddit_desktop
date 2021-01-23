@@ -41,7 +41,7 @@ struct listing
     nlohmann::json json;
 };
 
-template <typename T>
+template <typename T, typename U = void>
 struct client_response
 {
     T data;
@@ -49,6 +49,7 @@ struct client_response
     int64_t contentLength;
     std::string contentType;
     std::string body;
+    U* userData;
 };
 struct image_target
 {

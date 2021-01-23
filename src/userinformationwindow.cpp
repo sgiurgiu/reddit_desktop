@@ -87,28 +87,31 @@ void UserInformationWindow::loadMessages(const std::string& kind,Messages* messa
     {
         url+= "&after="+messages->after;
     }
-    auto connection = client->makeListingClientConnection();
-    connection->connectionCompleteHandler([self=shared_from_this(),messages](const boost::system::error_code& ec,
-                                          const client_response<listing>& response)
-        {
-            if(ec)
+    if(!listingConnection)
+    {
+        listingConnection = client->makeListingClientConnection();
+        listingConnection->connectionCompleteHandler([self=shared_from_this()](const boost::system::error_code& ec,
+                                              const client_response<listing>& response)
             {
-                boost::asio::post(self->uiExecutor,std::bind(&UserInformationWindow::setErrorMessage,self,ec.message()));
-            }
-            else
-            {
-                if(response.status >= 400)
+                if(ec)
                 {
-                    boost::asio::post(self->uiExecutor,std::bind(&UserInformationWindow::setErrorMessage,self,std::move(response.body)));
+                    boost::asio::post(self->uiExecutor,std::bind(&UserInformationWindow::setErrorMessage,self,ec.message()));
                 }
                 else
                 {
-                    boost::asio::post(self->uiExecutor,std::bind(&UserInformationWindow::loadListingsFromConnection,
-                                                                 self,std::move(response.data),messages));
-                }
-        }
-    });
-    connection->list(url,token);
+                    if(response.status >= 400)
+                    {
+                        boost::asio::post(self->uiExecutor,std::bind(&UserInformationWindow::setErrorMessage,self,std::move(response.body)));
+                    }
+                    else
+                    {
+                        boost::asio::post(self->uiExecutor,std::bind(&UserInformationWindow::loadListingsFromConnection,
+                                                                     self,std::move(response.data),(Messages*)response.userData));
+                    }
+            }
+        });
+    }
+    listingConnection->list(url,token,messages);
 }
 void UserInformationWindow::loadListingsFromConnection(listing listingResponse,Messages* messages)
 {

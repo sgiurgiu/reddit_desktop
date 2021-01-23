@@ -1,6 +1,7 @@
 #include "redditlistingconnection.h"
 #include <boost/beast/core.hpp>
 #include <boost/system/error_code.hpp>
+#include <boost/beast/http.hpp>
 #include <charconv>
 #include <fmt/format.h>
 #include "json.hpp"
@@ -15,7 +16,7 @@ RedditListingConnection::RedditListingConnection(const boost::asio::any_io_execu
 {
 }
 
-void RedditListingConnection::list(const std::string& target, const access_token& token)
+void RedditListingConnection::list(const std::string& target, const access_token& token, void* userData)
 {
     auto raw_json_target = target;
     if(raw_json_target.find('?') == std::string::npos)
@@ -37,10 +38,11 @@ void RedditListingConnection::list(const std::string& target, const access_token
     request.set(boost::beast::http::field::user_agent, userAgent);
     request.set(boost::beast::http::field::authorization,fmt::format("Bearer {}",token.token));
     request.prepare_payload();
-    performRequest(std::move(request));
+
+    enqueueRequest(std::move(request),userData);
 }
 
-void RedditListingConnection::responseReceivedComplete()
+void RedditListingConnection::responseReceivedComplete(void* userData)
 {
     auto status = responseParser->get().result_int();
     auto body = responseParser->get().body();
@@ -74,5 +76,6 @@ void RedditListingConnection::responseReceivedComplete()
     {
         resp.body = body;
     }
+    resp.userData = userData;
     signal({},resp);
 }

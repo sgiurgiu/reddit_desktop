@@ -21,15 +21,16 @@ public:
     RedditResourceConnection(const boost::asio::any_io_executor& executor,
                              boost::asio::ssl::context& ssl_context,                             
                              const std::string& userAgent);
-    void getResource(const std::string& url);
+    void getResource(const std::string& url, void* userData = nullptr);
 protected:
     virtual void sendRequest(request_t request) override;
-    virtual void responseReceivedComplete() override;
+    virtual void responseReceivedComplete(void* userData) override;
     virtual void handleLocationChange(const std::string& location) override;
+    virtual void performRequest(request_t request) override;
 
 private:
-    //boost::beast::http::response_parser<resource_response_body> parser;
     std::string userAgent;
+    std::string newHost;
 };
 
 #endif // REDDITRESOURCECONNECTION_H

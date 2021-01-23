@@ -13,6 +13,8 @@
 #include <string>
 #include <memory>
 #include <optional>
+#include <deque>
+#include <mutex>
 
 template<typename RequestBody,typename ResponseBody, typename ClientResponse>
 class RedditConnection :
@@ -111,7 +113,21 @@ private:
 
 
 protected:
-    void performRequest(request_t request)
+    struct queued_request
+    {
+        request_t request;
+        void* userData;
+    };
+    void enqueueRequest(request_t request, void* userData = nullptr)
+    {
+        std::lock_guard<std::mutex> _(queuedRequestsMutex);
+        queuedRequests.push_back({request,userData});
+        if(queuedRequests.size() == 1)
+        {
+            performRequest(std::move(queuedRequests.front().request));
+        }
+    }
+    virtual void performRequest(request_t request)
     {
         if(boost::beast::get_lowest_layer(stream.value()).socket().is_open())
         {
@@ -260,12 +276,29 @@ protected:
             onError(ec);
             return;
         }
-
-        responseReceivedComplete();
+        {
+            std::lock_guard<std::mutex> _(queuedRequestsMutex);
+            if(queuedRequests.empty())
+            {
+                responseReceivedComplete();
+            }
+            else
+            {
+                responseReceivedComplete(queuedRequests.front().userData);
+                queuedRequests.pop_front();
+                if(!queuedRequests.empty())
+                {
+                    performRequest(std::move(queuedRequests.front().request));
+                }
+            }
+        }
     }
 
-    virtual void responseReceivedComplete() = 0;
-protected:
+    virtual void responseReceivedComplete() {};
+    virtual void responseReceivedComplete(void* userData) {
+        boost::ignore_unused(userData);
+    };
+protected:    
     boost::asio::ssl::context& ssl_context;
     boost::asio::strand<boost::asio::any_io_executor> strand;
     boost::asio::ip::tcp::resolver resolver;
@@ -282,8 +315,10 @@ protected:
 #else
     std::chrono::seconds streamTimeout{30};
 #endif
-private:
+private:    
     request_t privateRequest;
+    std::deque<queued_request> queuedRequests;
+    std::mutex queuedRequestsMutex;
 };
 
 #endif // REDDITCONNECTION_H

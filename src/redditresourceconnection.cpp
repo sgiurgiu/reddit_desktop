@@ -19,12 +19,12 @@ RedditResourceConnection::RedditResourceConnection(const boost::asio::any_io_exe
 {    
 }
 
-void RedditResourceConnection::getResource(const std::string& url)
+void RedditResourceConnection::getResource(const std::string& url,void* userData)
 {
     boost::url_view urlParts(url);
 
     service = urlParts.port().empty() ? urlParts.scheme().to_string() : urlParts.port().to_string();
-    host = urlParts.encoded_host().to_string();
+    newHost = urlParts.encoded_host().to_string();
     auto target = urlParts.encoded_path().to_string();
     if(!urlParts.encoded_query().empty())
     {
@@ -36,11 +36,20 @@ void RedditResourceConnection::getResource(const std::string& url)
     request.method(boost::beast::http::verb::get);
     request.target(target);
     request.set(boost::beast::http::field::connection, "keep-alive");
-    request.set(boost::beast::http::field::host, host);
+    request.set(boost::beast::http::field::host, newHost);
     request.set(boost::beast::http::field::accept, "*/*");
     request.set(boost::beast::http::field::user_agent, userAgent);    
     request.prepare_payload();    
-    performRequest(std::move(request));
+    enqueueRequest(std::move(request),userData);
+}
+void RedditResourceConnection::performRequest(request_t request)
+{
+    if(newHost != host)
+    {
+        stream.emplace(strand,ssl_context);
+        host = newHost;
+    }
+    RedditConnection::performRequest(std::move(request));
 }
 void RedditResourceConnection::handleLocationChange(const std::string& location)
 {
@@ -51,7 +60,7 @@ void RedditResourceConnection::sendRequest(request_t request)
     responseParser->body_limit(BUFFER_SIZE);
     RedditConnection::sendRequest(std::move(request));
 }
-void RedditResourceConnection::responseReceivedComplete()
+void RedditResourceConnection::responseReceivedComplete(void* userData)
 {
     auto status = responseParser->get().result_int();
     resource_response resp;
@@ -70,6 +79,7 @@ void RedditResourceConnection::responseReceivedComplete()
             resp.contentType = h.value().to_string();
         }
     }
+    resp.userData = userData;
     signal({},resp);
 }
 

@@ -87,6 +87,7 @@ private:
     std::string listingErrorMessage;
     std::vector<DisplayMessage*> loadingMoreRepliesComments;
     RedditClientProducer::RedditCreateCommentClientConnection createCommentConnection;
+    RedditClientProducer::RedditListingClientConnection listingConnection;
 };
 
 #endif // USERINFORMATIONWINDOW_H

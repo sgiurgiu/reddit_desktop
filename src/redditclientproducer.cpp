@@ -3,7 +3,7 @@
 #include "redditloginconnection.h"
 #include <fmt/format.h>
 
-#ifdef BOOST_OS_WINDOWS
+#ifdef RD_WINDOWS
 namespace
 {
     #include <wincrypt.h>
@@ -45,7 +45,7 @@ RedditClientProducer::RedditClientProducer(std::string_view authServer,std::stri
                                 //| boost::asio::ssl::context::no_sslv3
                                 );
     ssl_context.set_verify_mode(boost::asio::ssl::verify_peer);
-#if BOOST_OS_WINDOWS
+#ifdef RD_WINDOWS
     add_windows_root_certs(ssl_context);
 #else
     ssl_context.set_default_verify_paths();
