@@ -17,10 +17,10 @@ RedditLoginConnection::RedditLoginConnection(const boost::asio::any_io_executor&
 {
 }
 
-
 void RedditLoginConnection::login(const user& user)
 {
-    request.clear();
+    boost::signals2::scoped_connection a;
+    request_t request;
     request.version(11);
     request.method(boost::beast::http::verb::post);
     request.target("/api/v1/access_token");
@@ -32,9 +32,8 @@ void RedditLoginConnection::login(const user& user)
     request.set(boost::beast::http::field::authorization,fmt::format("Basic {}",authentication));
     request.body() = fmt::format("grant_type=password&username={}&password={}",user.username,user.password);
     request.prepare_payload();
-    responseParser->get().body().clear();
-    responseParser->get().clear();
-    performRequest();
+    responseParser.emplace();
+    performRequest(std::move(request));
 }
 
 void RedditLoginConnection::responseReceivedComplete()

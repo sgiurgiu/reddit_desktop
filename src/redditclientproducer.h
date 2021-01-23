@@ -32,7 +32,7 @@ public:
     using RedditSearchNamesClientConnection = std::shared_ptr<RedditSearchNamesConnection>;
     using RedditVoteClientConnection = std::shared_ptr<RedditVoteConnection>;
     using RedditMoreChildrenClientConnection = std::shared_ptr<RedditMoreChildrenConnection>;
-    using RedditCreateCommentClientConnection = std::shared_ptr<RedditCreateCommentConnection>;
+    using RedditCreateCommentClientConnection = std::shared_ptr<RedditCreateCommentConnection>;    
     RedditLoginClientConnection makeLoginClientConnection();
     RedditListingClientConnection makeListingClientConnection();
     RedditResourceClientConnection makeResourceClientConnection();

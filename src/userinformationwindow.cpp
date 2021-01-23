@@ -4,6 +4,8 @@
 #include <fmt/format.h>
 #include "fonts/IconsFontAwesome4.h"
 #include "utils.h"
+#include "resizableinputtextmultiline.h"
+#include <iostream>
 
 namespace
 {
@@ -18,6 +20,50 @@ UserInformationWindow::UserInformationWindow(const access_token& token,
 }
 void UserInformationWindow::loadMessages()
 {
+    if(!createCommentConnection)
+    {
+        createCommentConnection = client->makeRedditCreateCommentClientConnection();
+        createCommentConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
+                                   const client_response<listing>& response)
+       {
+           auto self = weak.lock();
+           if(!self || !self->showWindow) return;
+           if(ec)
+           {
+               boost::asio::post(self->uiExecutor,
+                        std::bind(&UserInformationWindow::setErrorMessage,self,ec.message()));
+           }
+           else
+           {
+               if(response.status >= 400)
+               {
+                   boost::asio::post(self->uiExecutor,
+                                 std::bind(&UserInformationWindow::setErrorMessage,self,response.body));
+               }
+               else
+               {
+                   if(response.data.json.contains("json") && response.data.json["json"].is_object())
+                   {
+                       const auto& respJson = response.data.json["json"];
+                       if(respJson.contains("data") && respJson["data"].is_object() &&
+                               respJson["data"].contains("things") && respJson["data"]["things"].is_array())
+                       {
+                          auto& things = respJson["data"]["things"];
+                          if(things.is_array())
+                          {
+                              for(const auto& msgResponse : things)
+                              {
+                                  boost::asio::post(self->uiExecutor,std::bind(&UserInformationWindow::loadMessageResponse,
+                                                                               self,std::move(msgResponse)));
+                              }
+                          }
+                       }
+                   }
+               }
+           }
+       });
+    }
+
     loadMoreUnreadMessages();
     loadMoreAllMessages();
     loadMoreSentMessages();
@@ -44,22 +90,22 @@ void UserInformationWindow::loadMessages(const std::string& kind,Messages* messa
     auto connection = client->makeListingClientConnection();
     connection->connectionCompleteHandler([self=shared_from_this(),messages](const boost::system::error_code& ec,
                                           const client_response<listing>& response)
-    {
-        if(ec)
         {
-            boost::asio::post(self->uiExecutor,std::bind(&UserInformationWindow::setErrorMessage,self,ec.message()));
-        }
-        else
-        {
-            if(response.status >= 400)
+            if(ec)
             {
-                boost::asio::post(self->uiExecutor,std::bind(&UserInformationWindow::setErrorMessage,self,std::move(response.body)));
+                boost::asio::post(self->uiExecutor,std::bind(&UserInformationWindow::setErrorMessage,self,ec.message()));
             }
             else
             {
-                boost::asio::post(self->uiExecutor,std::bind(&UserInformationWindow::loadListingsFromConnection,
-                                                             self,std::move(response.data),messages));
-            }
+                if(response.status >= 400)
+                {
+                    boost::asio::post(self->uiExecutor,std::bind(&UserInformationWindow::setErrorMessage,self,std::move(response.body)));
+                }
+                else
+                {
+                    boost::asio::post(self->uiExecutor,std::bind(&UserInformationWindow::loadListingsFromConnection,
+                                                                 self,std::move(response.data),messages));
+                }
         }
     });
     connection->list(url,token);
@@ -82,7 +128,7 @@ void UserInformationWindow::loadListingsFromConnection(listing listingResponse,M
                 auto kind = child["kind"].get<std::string>();
                 if (kind == "t4" || kind == "t1")
                 {
-                    messages->messages.emplace_back(child["data"]);
+                    messages->messages.emplace_back(message{child["data"], kind});
                 }
             }
             messages->count = messages->messages.size();
@@ -94,9 +140,52 @@ void UserInformationWindow::loadListingsFromConnection(listing listingResponse,M
         }
     }
 }
+void UserInformationWindow::loadMessageResponse(nlohmann::json response)
+{
+    std::string kind;
+    if(response.contains("kind") && response["kind"].is_string())
+    {
+        kind = response["kind"].get<std::string>();
+    }
+    if(response.contains("data") && response["data"].is_object())
+    {
+        message msg{response["data"], kind};
+        auto it = std::find_if(loadingMoreRepliesComments.begin(),loadingMoreRepliesComments.end(),
+                               [&msg](const DisplayMessage* c){
+            return msg.parentId == c->msg.name;
+        });
+
+        if(it != loadingMoreRepliesComments.end())
+        {
+            (*it)->replies.emplace((*it)->replies.begin(),std::move(msg));
+            loadingMoreRepliesComments.erase(it);
+        }
+        else
+        {
+            std::cerr<<"Cannot find message I just replied to. msg.parentId:"<<msg.parentId<<std::endl;
+        }
+    }
+}
 void UserInformationWindow::setErrorMessage(std::string errorMessage)
 {
     listingErrorMessage = std::move(errorMessage);
+}
+void UserInformationWindow::DisplayMessage::updateButtonsText()
+{
+    upvoteButtonText = fmt::format("{}##{}_up",reinterpret_cast<const char*>(ICON_FA_ARROW_UP),msg.name);
+    downvoteButtonText = fmt::format("{}##{}_down",reinterpret_cast<const char*>(ICON_FA_ARROW_DOWN),msg.name);
+    saveButtonText = fmt::format("save##{}_save",msg.name);
+    replyButtonText = fmt::format("reply##{}_reply",msg.name);
+    replyIdText = fmt::format("##{}comment_reply",msg.name);
+    saveReplyButtonText = fmt::format("Save##{}save_comment_reply",msg.name);
+    postReplyPreviewCheckboxId = fmt::format("Show Preview##{}_postReplyPreview",msg.name);
+    liveReplyPreviewText = fmt::format("Live Preview##{}_commentLivePreview",msg.name);
+    markReadUnreadButtonText = fmt::format("{}##{}_commentMarkReadUnread",(msg.isNew?"Mark Read":"Mark Unread"),msg.name);
+#ifdef REDDIT_DESKTOP_DEBUG
+    titleText = fmt::format("{} - {}{} ({})",msg.author, msg.subject,(msg.isNew?" (unread)":""),msg.name);
+#else
+    titleText = fmt::format("{} - {}{}",msg.author,msg.subject,(msg.isNew?" (unread)":""));
+#endif
 }
 void UserInformationWindow::showUserInfoWindow(int appFrameWidth,int appFrameHeight)
 {
@@ -112,7 +201,11 @@ void UserInformationWindow::showUserInfoWindow(int appFrameWidth,int appFrameHei
     {
         if (ImGui::BeginTabItem("Unread"))
         {
-            for(const auto& msg : unreadMessages.messages)
+            if(unreadMessages.count > 0 && ImGui::Button("Mark All Read"))
+            {
+
+            }
+            for(auto&& msg : unreadMessages.messages)
             {
                 showMessage(msg);
                 ImGui::Separator();
@@ -126,7 +219,7 @@ void UserInformationWindow::showUserInfoWindow(int appFrameWidth,int appFrameHei
 
         if (ImGui::BeginTabItem("Inbox"))
         {
-            for(const auto& msg : allMessages.messages)
+            for(auto&& msg : allMessages.messages)
             {
                 showMessage(msg);
                 ImGui::Separator();
@@ -140,7 +233,7 @@ void UserInformationWindow::showUserInfoWindow(int appFrameWidth,int appFrameHei
 
         if (ImGui::BeginTabItem("Sent"))
         {
-            for(const auto& msg : sentMessages.messages)
+            for(auto&& msg : sentMessages.messages)
             {
                 showMessage(msg);
                 ImGui::Separator();
@@ -157,8 +250,54 @@ void UserInformationWindow::showUserInfoWindow(int appFrameWidth,int appFrameHei
     ImGui::End();
 }
 
-void UserInformationWindow::showMessage(const DisplayMessage& msg)
+void UserInformationWindow::showMessage(DisplayMessage& msg)
 {
-    ImGui::Text("%s",msg.msg.subject.c_str());
-    msg.renderer.RenderMarkdown();
+    if(ImGui::TreeNodeEx(msg.titleText.c_str(),ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        msg.renderer.RenderMarkdown();
+        if(ImGui::Button(msg.replyButtonText.c_str()))
+        {
+            msg.showingReplyArea = !msg.showingReplyArea;
+        }
+        if(ImGui::Button(msg.markReadUnreadButtonText.c_str()))
+        {
+
+        }
+        if(msg.showingReplyArea)
+        {
+            if(ResizableInputTextMultiline::InputText(msg.replyIdText.c_str(),&msg.postReplyTextBuffer,
+                                      &msg.postReplyTextFieldSize) && msg.showingPreview)
+            {
+                msg.previewRenderer.SetText(msg.postReplyTextBuffer);
+            }
+
+            if(ImGui::Button(msg.saveReplyButtonText.c_str()) && !msg.postingReply)
+            {
+                msg.showingReplyArea = false;
+                msg.postingReply = true;
+                loadingMoreRepliesComments.push_back(&msg);
+                createCommentConnection->createComment(msg.msg.name,msg.postReplyTextBuffer,token);
+            }
+            ImGui::SameLine();
+            if(ImGui::Checkbox(msg.postReplyPreviewCheckboxId.c_str(),&msg.showingPreview))
+            {
+                msg.previewRenderer.SetText(msg.postReplyTextBuffer);
+            }
+            if(msg.showingPreview)
+            {
+                if(ImGui::BeginChild(msg.liveReplyPreviewText.c_str(),msg.postReplyPreviewSize,true))
+                {
+                    msg.previewRenderer.RenderMarkdown();
+                    auto endPos = ImGui::GetCursorPos();
+                    msg.postReplyPreviewSize.y = endPos.y + ImGui::GetTextLineHeight();
+                }
+                ImGui::EndChild();
+            }
+        }
+        for(auto&& reply : msg.replies)
+        {
+            showMessage(reply);
+        }
+        ImGui::TreePop();
+    }
 }

@@ -17,7 +17,7 @@ void RedditCreateCommentConnection::createComment(const std::string& parentId,co
                                                   const access_token& token)
 {
     if(text.empty() || parentId.empty()) return;
-
+    request_t request;
     request.clear();
     request.version(11);
     request.method(boost::beast::http::verb::post);
@@ -32,18 +32,8 @@ void RedditCreateCommentConnection::createComment(const std::string& parentId,co
     request.body() = fmt::format("api_type=json&text={}"
                                  "&thing_id={}",
                                  escapedText,parentId);
-
-
-    this->parentId = parentId;
     request.prepare_payload();
-    if(connected)
-    {
-        sendRequest();
-    }
-    else
-    {
-        resolveHost();
-    }
+    performRequest(std::move(request));
 }
 
 void RedditCreateCommentConnection::responseReceivedComplete()

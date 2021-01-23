@@ -9,20 +9,29 @@
 #include <boost/beast/http.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/beast/http/parser.hpp>
+#include <boost/signals2.hpp>
 #include <string>
 #include <memory>
 #include <optional>
 
-template<typename Request,typename Response, typename Signal>
-class RedditConnection : public std::enable_shared_from_this<RedditConnection<Request,Response,Signal>>
+template<typename RequestBody,typename ResponseBody, typename ClientResponse>
+class RedditConnection :
+        public std::enable_shared_from_this<
+            RedditConnection<RequestBody,ResponseBody,ClientResponse>
+        >
 {
+protected:
+    using response_parser_t = boost::beast::http::response_parser<ResponseBody>;
+    using request_t = boost::beast::http::request<RequestBody>;
+    using stream_t = boost::beast::ssl_stream<boost::beast::tcp_stream>;
+
 public:
     RedditConnection(const boost::asio::any_io_executor& executor,
                      boost::asio::ssl::context& ssl_context,const std::string& host,
                      const std::string& service):
         ssl_context(ssl_context),strand(boost::asio::make_strand(executor)),
         resolver(strand),stream(std::make_optional<stream_t>(strand, ssl_context)),
-        host(host),service(service),responseParser(std::make_optional<parser_t>())
+        host(host),service(service),responseParser(std::make_optional<response_parser_t>())
     {
     }
     virtual ~RedditConnection()
@@ -42,11 +51,12 @@ public:
     }
 private:
     void onConnect(const boost::system::error_code& ec,
-                          boost::asio::ip::tcp::resolver::results_type::endpoint_type)
+                          boost::asio::ip::tcp::resolver::results_type::endpoint_type,
+                   request_t request)
     {
         if(ec)
         {
-            onError(ec);
+            onError(ec,std::move(request));
             return;
         }
         isSsl = !(service == "http" || service == "80" || service == "8080");
@@ -55,61 +65,63 @@ private:
         {
             boost::beast::error_code ec{static_cast<int>(::ERR_get_error()),
                          boost::asio::error::get_ssl_category()};
-            onError(ec);
+            onError(ec,std::move(request));
             return;
         }
 
         if(!isSsl)
         {
-            sendRequest();
+            sendRequest(std::move(request));
         }
         else
         {
             using namespace std::placeholders;
-            auto handshakeMethod = std::bind(&RedditConnection::onHandshake,this->shared_from_this(),_1);
+            auto handshakeMethod = std::bind(&RedditConnection::onHandshake,this->shared_from_this(),_1,std::move(request));
             stream->async_handshake(boost::asio::ssl::stream_base::client,handshakeMethod);
         }
     }
 
     void resolveComplete(const boost::system::error_code& ec,
-                                                 boost::asio::ip::tcp::resolver::results_type results)
+                         boost::asio::ip::tcp::resolver::results_type results,
+                         request_t request)
     {
         if(ec)
         {
-            onError(ec);
+            onError(ec,std::move(request));
             return;
         }
         // Set a timeout on the operation
         boost::beast::get_lowest_layer(stream.value()).expires_after(streamTimeout);
         using namespace std::placeholders;
-        auto connectMethod = std::bind(&RedditConnection::onConnect,this->shared_from_this(),_1,_2);
+        auto connectMethod = std::bind(&RedditConnection::onConnect,this->shared_from_this(),_1,_2,std::move(request));
         // Make the connection on the IP address we get from a lookup
         boost::beast::get_lowest_layer(stream.value()).async_connect(results,connectMethod);
     }
 
-    void onHandshake(const boost::system::error_code& ec)
+    void onHandshake(const boost::system::error_code& ec,request_t request)
     {
         if(ec)
         {
-            onError(ec);
+            onError(ec,std::move(request));
             return;
         }
         connected = true;
-        sendRequest();
+        sendRequest(std::move(request));
     }
 
 
 protected:
-    void performRequest()
+    void performRequest(request_t request)
     {
         if(boost::beast::get_lowest_layer(stream.value()).socket().is_open())
         {
+            readBuffer.clear();
             responseParser.emplace();
-            sendRequest();
+            sendRequest(std::move(request));
         }
         else
         {
-            resolveHost();
+            resolveHost(std::move(request));
         }
     }
     template<typename Derived>
@@ -118,15 +130,16 @@ protected:
         return std::static_pointer_cast<Derived>(this->shared_from_this());
     }
 
-    virtual void onError(const boost::system::error_code& ec)
+    virtual void onError(const boost::system::error_code& ec,request_t request)
     {
         if(boost::beast::http::error::end_of_stream == ec)
         {
             //we got the connection closed on us, reconnect
             connected = false;
             stream.emplace(strand, ssl_context);
+            responseParser.reset();
             responseParser.emplace();
-            resolveHost();
+            resolveHost(std::move(request));
         }
         else
         {
@@ -134,27 +147,33 @@ protected:
         }
     }
 
-    void resolveHost()
+    virtual void onError(const boost::system::error_code& ec)
+    {
+        onError(ec,std::move(privateRequest));
+    }
+
+    void resolveHost(request_t request)
     {
         using namespace std::placeholders;
         auto resolverMethod = std::bind(&RedditConnection::resolveComplete,this->shared_from_this(),
-                                        _1,_2);
+                                        _1,_2,std::move(request));
         resolver.async_resolve(host,service,resolverMethod);
     }
 
-    virtual void sendRequest()
+    virtual void sendRequest(request_t request)
     {
         boost::beast::get_lowest_layer(stream.value()).expires_after(streamTimeout);
         using namespace std::placeholders;
         auto writeMethod = std::bind(&RedditConnection::onWrite,this->shared_from_this(),_1,_2);
+        this->privateRequest = std::move(request);
         // Send the HTTP request to the remote host
         if(isSsl)
         {
-            boost::beast::http::async_write(stream.value(), request,writeMethod);
+            boost::beast::http::async_write(stream.value(), privateRequest, writeMethod);
         }
         else
         {
-            boost::beast::http::async_write(stream.value().next_layer(), request,writeMethod);
+            boost::beast::http::async_write(stream.value().next_layer(), privateRequest, writeMethod);
         }
     }
 
@@ -164,24 +183,19 @@ protected:
 
         if(ec)
         {
-            onError(ec);
+            onError(ec,std::move(this->privateRequest));
             return;
         }
-        response.clear();
-        response.body().clear();
-        responseParser->get().body().clear();
-        responseParser->get().clear();
-
 
         using namespace std::placeholders;
         auto readMethod = std::bind(&RedditConnection::onReadHeader,this->shared_from_this(),_1,_2);
         if(isSsl)
         {
-            boost::beast::http::async_read_header(stream.value(), buffer, responseParser.value(), readMethod);
+            boost::beast::http::async_read_header(stream.value(), readBuffer, responseParser.value(), readMethod);
         }
         else
         {
-            boost::beast::http::async_read_header(stream.value().next_layer(), buffer, responseParser.value(), readMethod);
+            boost::beast::http::async_read_header(stream.value().next_layer(), readBuffer, responseParser.value(), readMethod);
         }
     }
     virtual void onReadHeader(const boost::system::error_code& ec,std::size_t bytesTransferred)
@@ -213,6 +227,8 @@ protected:
             {
                 connected = false;
                 stream.emplace(strand, ssl_context);
+                readBuffer.clear();
+                responseParser.reset();
                 responseParser.emplace();
                 handleLocationChange(location);
             }
@@ -223,11 +239,11 @@ protected:
             auto readMethod = std::bind(&RedditConnection::onRead,this->shared_from_this(),_1,_2);
             if(isSsl)
             {
-                boost::beast::http::async_read(stream.value(), buffer, responseParser.value(), readMethod);
+                boost::beast::http::async_read(stream.value(), readBuffer, responseParser.value(), readMethod);
             }
             else
             {
-                boost::beast::http::async_read(stream.value().next_layer(), buffer, responseParser.value(), readMethod);
+                boost::beast::http::async_read(stream.value().next_layer(), readBuffer, responseParser.value(), readMethod);
             }
         }
     }
@@ -253,15 +269,12 @@ protected:
     boost::asio::ssl::context& ssl_context;
     boost::asio::strand<boost::asio::any_io_executor> strand;
     boost::asio::ip::tcp::resolver resolver;
-    using stream_t = boost::beast::ssl_stream<boost::beast::tcp_stream>;
     std::optional<stream_t> stream;
-    boost::beast::flat_buffer buffer; // (Must persist between reads)
+    boost::beast::flat_buffer readBuffer; // (Must persist between reads)
     std::string host;
     std::string service;
-    Request request;
-    Signal signal;
-    using parser_t = boost::beast::http::response_parser<typename Response::body_type>;
-    std::optional<parser_t> responseParser;
+    boost::signals2::signal<void(const boost::system::error_code&,ClientResponse)> signal;
+    std::optional<response_parser_t> responseParser;
     bool isSsl = true;
     bool connected = false;
 #ifdef REDDIT_DESKTOP_DEBUG
@@ -270,7 +283,7 @@ protected:
     std::chrono::seconds streamTimeout{30};
 #endif
 private:
-    Response response;
+    request_t privateRequest;
 };
 
 #endif // REDDITCONNECTION_H

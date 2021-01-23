@@ -12,7 +12,8 @@ RedditVoteConnection::RedditVoteConnection(const boost::asio::any_io_executor& e
 }
 void RedditVoteConnection::vote(const std::string& id,const access_token& token, Voted vote)
 {
-    request.clear();
+
+    request_t request;
     request.version(11);
     request.method(boost::beast::http::verb::post);
     request.target("/api/vote");
@@ -28,14 +29,7 @@ void RedditVoteConnection::vote(const std::string& id,const access_token& token,
     this->id = id;
     request.prepare_payload();
 
-    if(connected)
-    {
-        sendRequest();
-    }
-    else
-    {
-        resolveHost();
-    }
+    performRequest(std::move(request));
 }
 
 void RedditVoteConnection::responseReceivedComplete()

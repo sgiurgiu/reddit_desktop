@@ -35,14 +35,15 @@ void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::
         onError(ec);
         return;
     }
+    responseParser->body_limit(10*1024*1024);
     boost::system::error_code error;
     if(isSsl)
     {
-        boost::beast::http::read_header(stream.value(),buffer,responseParser.value(),error);
+        boost::beast::http::read_header(stream.value(),readBuffer,responseParser.value(),error);
     }
     else
     {
-        boost::beast::http::read_header(stream.value().next_layer(),buffer,responseParser.value(),error);
+        boost::beast::http::read_header(stream.value().next_layer(),readBuffer,responseParser.value(),error);
     }
     if(error)
     {
@@ -109,11 +110,11 @@ void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::
     auto readMethod = std::bind(&MediaStreamingConnection::onRead,this->shared_from_base<MediaStreamingConnection>(),_1,_2);
     if(isSsl)
     {
-        boost::beast::http::async_read(stream.value(), buffer, responseParser.value(), readMethod);
+        boost::beast::http::async_read(stream.value(), readBuffer, responseParser.value(), readMethod);
     }
     else
     {
-        boost::beast::http::async_read(stream.value().next_layer(), buffer, responseParser.value(), readMethod);
+        boost::beast::http::async_read(stream.value().next_layer(), readBuffer, responseParser.value(), readMethod);
     }
 }
 
@@ -195,6 +196,7 @@ void MediaStreamingConnection::downloadUrl(const std::string& url)
         if(!query.empty()) target+="&gl=US&hl=en&has_verified=1&bpctr=9999999999";
         else target+="?gl=US&hl=en&has_verified=1&bpctr=9999999999";
     }
+    request_t request;
     request.clear();
     request.version(11);
     request.method(boost::beast::http::verb::get);
@@ -204,18 +206,11 @@ void MediaStreamingConnection::downloadUrl(const std::string& url)
     request.set(boost::beast::http::field::accept, "*/*");
     request.set(boost::beast::http::field::user_agent, userAgent);
     request.prepare_payload();
-    buffer.consume(buffer.size());
-    buffer.clear();
+    readBuffer.consume(readBuffer.size());
+    readBuffer.clear();
     responseParser.emplace();
     responseParser->body_limit(std::numeric_limits<uint64_t>::max());
-    if(connected)
-    {
-        sendRequest();
-    }
-    else
-    {
-        resolveHost();
-    }
+    performRequest(std::move(request));
 }
 
 void MediaStreamingConnection::startStreaming(const HtmlParser::MediaLink& link)
@@ -223,11 +218,3 @@ void MediaStreamingConnection::startStreaming(const HtmlParser::MediaLink& link)
     streamingSignal(link);
 }
 
-void MediaStreamingConnection::streamAvailableHandler(const typename StreamingSignal::slot_type& slot)
-{
-    streamingSignal.connect(slot);
-}
-void MediaStreamingConnection::errorHandler(const typename ErrorSignal::slot_type& slot)
-{
-    errorSignal.connect(slot);
-}

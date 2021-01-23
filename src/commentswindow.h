@@ -76,7 +76,7 @@ private:
         std::string liveReplyPreviewText;
         std::vector<DisplayComment> replies;
         bool loadingUnloadedReplies = false;
-        char postReplyTextBuffer[1000] = {0};
+        std::string postReplyTextBuffer;
         bool postingReply = false;
         bool showingReplyArea = false;
         bool showingPreview = false;
@@ -133,7 +133,7 @@ private:
     std::vector<DisplayComment*> loadingMoreRepliesComments;
     std::optional<unloaded_children> unloadedPostComments;
     bool loadingUnloadedReplies = false;
-    char postCommentTextBuffer[1000] = {0};
+    std::string postCommentTextBuffer;
     bool postingComment = false;
     bool showingPostPreview = false;
     bool loadingInitialComments = true;

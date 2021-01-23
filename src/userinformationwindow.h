@@ -8,6 +8,7 @@
 #include "entities.h"
 #include "redditclientproducer.h"
 #include "markdownrenderer.h"
+#include <imgui.h>
 
 class UserInformationWindow : public std::enable_shared_from_this<UserInformationWindow>
 {
@@ -26,16 +27,40 @@ public:
     }
     void loadMessages();
 private:
+    struct DisplayMessage;
+    using DisplayMessageList = std::vector<DisplayMessage>;
     struct DisplayMessage
     {
         DisplayMessage(message message):
             msg(std::move(message)),renderer(this->msg.body)
         {
+            updateButtonsText();
         }
         message msg;
         MarkdownRenderer renderer;
-    };
-    using DisplayMessageList = std::vector<DisplayMessage>;
+        MarkdownRenderer previewRenderer;
+        std::string upvoteButtonText;
+        std::string downvoteButtonText;
+        std::string saveButtonText;
+        std::string replyButtonText;
+        std::string moreRepliesButtonText;
+        std::string spinnerIdText;
+        std::string replyIdText;
+        std::string saveReplyButtonText;
+        std::string titleText;
+        std::string postReplyPreviewCheckboxId;
+        std::string liveReplyPreviewText;
+        std::string markReadUnreadButtonText;
+        bool loadingUnloadedReplies = false;
+        std::string postReplyTextBuffer;
+        bool postingReply = false;
+        bool showingReplyArea = false;
+        bool showingPreview = false;
+        ImVec2 postReplyTextFieldSize;
+        ImVec2 postReplyPreviewSize = {0,1};
+        DisplayMessageList replies;
+        void updateButtonsText();
+    };    
     struct Messages
     {
         std::string after;
@@ -49,7 +74,8 @@ private:
     void loadMessages(const std::string& kind,Messages* messages);
     void setErrorMessage(std::string errorMessage);
     void loadListingsFromConnection(listing listingResponse,Messages* messages);
-    void showMessage(const DisplayMessage& msg);
+    void showMessage(DisplayMessage& msg);
+    void loadMessageResponse(nlohmann::json);
 private:
     bool showWindow = false;
     access_token token;
@@ -59,6 +85,8 @@ private:
     Messages allMessages;
     Messages sentMessages;
     std::string listingErrorMessage;
+    std::vector<DisplayMessage*> loadingMoreRepliesComments;
+    RedditClientProducer::RedditCreateCommentClientConnection createCommentConnection;
 };
 
 #endif // USERINFORMATIONWINDOW_H

@@ -80,7 +80,12 @@ void MarkdownNodeLink::Render()
             }
             if(ImGui::IsItemClicked(ImGuiMouseButton_Left))
             {
-                Utils::openInBrowser(href);
+                auto fixedHref = href;
+                if (href.starts_with("/r/"))
+                {
+                    fixedHref = "https://reddit.com"+href;
+                }
+                Utils::openInBrowser(fixedHref);
             }
         }
 

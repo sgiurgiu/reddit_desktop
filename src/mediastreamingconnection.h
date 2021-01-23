@@ -13,10 +13,9 @@
 
 using dummy_response = client_response<void*>;
 class MediaStreamingConnection : public RedditConnection<
-        boost::beast::http::request<boost::beast::http::empty_body>,
-        boost::beast::http::response<boost::beast::http::string_body>,
-        boost::signals2::signal<void(const boost::system::error_code&,
-                                     const dummy_response&)>
+        boost::beast::http::empty_body,
+        boost::beast::http::string_body,
+        const dummy_response&
         >
 {
 public:
@@ -27,8 +26,16 @@ public:
     void streamMedia(post* mediaPost);
     using StreamingSignal = boost::signals2::signal<void(HtmlParser::MediaLink)>;
     using ErrorSignal = boost::signals2::signal<void(int errorCode,const std::string&)>;
-    void streamAvailableHandler(const typename StreamingSignal::slot_type& slot);
-    void errorHandler(const typename ErrorSignal::slot_type& slot);
+    template<typename S>
+    void streamAvailableHandler(S slot)
+    {
+        streamingSignal.connect(std::move(slot));
+    }
+    template<typename S>
+    void errorHandler(S slot)
+    {
+        errorSignal.connect(std::move(slot));
+    }
     void clearAllSlots();
 protected:
     virtual void responseReceivedComplete() override;

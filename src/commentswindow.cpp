@@ -215,7 +215,7 @@ void CommentsWindow::setComments(comments_list receivedComments, bool append)
 {
     loadingInitialComments = false;
     postingComment = false;
-    std::fill_n(postCommentTextBuffer, sizeof(postCommentTextBuffer), '\0');
+    postCommentTextBuffer.clear();
     listingErrorMessage.clear();
     if(receivedComments.empty()) return;
     if(comments.empty())
@@ -264,7 +264,7 @@ void CommentsWindow::setComments(comments_list receivedComments, bool append)
                 }
                 (*it)->loadingUnloadedReplies = false;
                 (*it)->postingReply = false;
-                std::fill_n((*it)->postReplyTextBuffer, sizeof((*it)->postReplyTextBuffer), '\0');
+                (*it)->postReplyTextBuffer.clear();
                 loadingMoreRepliesComments.erase(it);
             }
             else
@@ -357,7 +357,7 @@ void CommentsWindow::showComment(DisplayComment& c)
         if(c.showingReplyArea)
         {
 
-            if(ResizableInputTextMultiline::InputText(c.replyIdText.c_str(),c.postReplyTextBuffer,sizeof(c.postReplyTextBuffer),
+            if(ResizableInputTextMultiline::InputText(c.replyIdText.c_str(),&c.postReplyTextBuffer,
                                       &c.postReplyTextFieldSize) && c.showingPreview)
             {
                 c.previewRenderer.SetText(c.postReplyTextBuffer);
@@ -368,7 +368,7 @@ void CommentsWindow::showComment(DisplayComment& c)
                 c.showingReplyArea = false;
                 c.postingReply = true;
                 loadingMoreRepliesComments.push_back(&c);
-                createCommentConnection->createComment(c.commentData.name,std::string(c.postReplyTextBuffer),token);
+                createCommentConnection->createComment(c.commentData.name,c.postReplyTextBuffer,token);
             }
             ImGui::SameLine();
             if(ImGui::Checkbox(c.postReplyPreviewCheckboxId.c_str(),&c.showingPreview))
@@ -617,7 +617,7 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
             }
         }
         ImGui::Separator();
-        if(ResizableInputTextMultiline::InputText(postCommentTextFieldId.c_str(),postCommentTextBuffer,sizeof(postCommentTextBuffer),
+        if(ResizableInputTextMultiline::InputText(postCommentTextFieldId.c_str(),&postCommentTextBuffer,
                                   &postCommentTextFieldSize) && showingPostPreview)
         {
             postPreviewRenderer.SetText(postCommentTextBuffer);
@@ -625,7 +625,7 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
         if(ImGui::Button(commentButtonText.c_str()) && !postingComment)
         {
             postingComment = true;
-            createCommentConnection->createComment(parentPost->name,std::string(postCommentTextBuffer),token);
+            createCommentConnection->createComment(parentPost->name,postCommentTextBuffer,token);
         }
         ImGui::SameLine();
         if(ImGui::Checkbox(postCommentPreviewCheckboxId.c_str(),&showingPostPreview))

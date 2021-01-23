@@ -666,7 +666,7 @@ multireddit::multireddit(const nlohmann::json& json)
     }
 }
 
-message::message(const nlohmann::json& json)
+message::message(const nlohmann::json& json, const std::string& kind):kind(kind)
 {
     if(json.contains("name") && json["name"].is_string())
     {

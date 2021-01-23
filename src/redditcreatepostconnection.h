@@ -10,10 +10,9 @@
 #include <optional>
 
 class RedditCreatePostConnection : public RedditConnection<
-        boost::beast::http::request<boost::beast::http::string_body>,
-        boost::beast::http::response<boost::beast::http::string_body>,
-        boost::signals2::signal<void(const boost::system::error_code&,
-                                     const client_response<post_ptr>&)>
+        boost::beast::http::string_body,
+        boost::beast::http::string_body,
+        const client_response<post_ptr>&
     >
 {
 public:

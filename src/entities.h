@@ -267,7 +267,8 @@ using multireddit_list = std::vector<multireddit>;
 struct message
 {
     message(){}
-    message(const nlohmann::json& json);
+    message(const nlohmann::json& json, const std::string& kind);
+    std::string kind;
     std::string body;
     bool wasComment = false;
     std::optional<std::string> firstMessage;
@@ -283,7 +284,7 @@ struct message
     std::string id;
     bool isNew = false;
     std::string distinguished;
-    std::string subject;
+    std::string subject;    
 };
 
 #endif // ENTITIES_H

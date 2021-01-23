@@ -21,7 +21,7 @@ void RedditSearchNamesConnection::search(const std::string& query, const access_
     std::string target = fmt::format("/api/search_reddit_names?raw_json=1&exact=false&"
                                      "include_over_18=true&include_unadvertisable=true&query={}",
                                      escapedQuery);
-    request.clear();
+    request_t request;
     request.version(11);
     request.method(boost::beast::http::verb::get);
     request.target(target);
@@ -32,14 +32,7 @@ void RedditSearchNamesConnection::search(const std::string& query, const access_
     request.prepare_payload();
     responseParser->get().body().clear();
     responseParser->get().clear();
-    if(connected)
-    {
-        sendRequest();
-    }
-    else
-    {
-        resolveHost();
-    }
+    performRequest(std::move(request));
 }
 void RedditSearchNamesConnection::responseReceivedComplete()
 {

@@ -10,10 +10,9 @@
 #include <optional>
 
 class RedditCreateCommentConnection : public RedditConnection<
-        boost::beast::http::request<boost::beast::http::string_body>,
-        boost::beast::http::response<boost::beast::http::string_body>,
-        boost::signals2::signal<void(const boost::system::error_code&,
-                                     const client_response<listing>&)>
+        boost::beast::http::string_body,
+        boost::beast::http::string_body,
+        const client_response<listing>&
     >
 {
 public:
@@ -27,7 +26,6 @@ protected:
     virtual void responseReceivedComplete() override;
 private:
     std::string userAgent;
-    std::string parentId;
 };
 
 #endif // REDDITCREATECOMMENTCONNECTION_H

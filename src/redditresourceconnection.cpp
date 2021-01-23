@@ -30,7 +30,8 @@ void RedditResourceConnection::getResource(const std::string& url)
     {
         target+="?"+urlParts.encoded_query().to_string();
     }
-    request.clear();
+
+    request_t request;
     request.version(11);
     request.method(boost::beast::http::verb::get);
     request.target(target);
@@ -39,12 +40,16 @@ void RedditResourceConnection::getResource(const std::string& url)
     request.set(boost::beast::http::field::accept, "*/*");
     request.set(boost::beast::http::field::user_agent, userAgent);    
     request.prepare_payload();    
-    responseParser->body_limit(BUFFER_SIZE);
-    performRequest();
+    performRequest(std::move(request));
 }
 void RedditResourceConnection::handleLocationChange(const std::string& location)
 {
     getResource(location);
+}
+void RedditResourceConnection::sendRequest(request_t request)
+{
+    responseParser->body_limit(BUFFER_SIZE);
+    RedditConnection::sendRequest(std::move(request));
 }
 void RedditResourceConnection::responseReceivedComplete()
 {

@@ -26,6 +26,7 @@ void RedditListingConnection::list(const std::string& target, const access_token
     {
         raw_json_target+="&raw_json=1";
     }
+    request_t request;
     request.clear();
     request.version(11);
     request.method(boost::beast::http::verb::get);
@@ -36,7 +37,7 @@ void RedditListingConnection::list(const std::string& target, const access_token
     request.set(boost::beast::http::field::user_agent, userAgent);
     request.set(boost::beast::http::field::authorization,fmt::format("Bearer {}",token.token));
     request.prepare_payload();
-    performRequest();
+    performRequest(std::move(request));
 }
 
 void RedditListingConnection::responseReceivedComplete()

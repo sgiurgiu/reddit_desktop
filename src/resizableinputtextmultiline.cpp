@@ -1,9 +1,9 @@
 #include "resizableinputtextmultiline.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui_internal.h>
+#include <imgui_stdlib.h>
 
-
-bool ResizableInputTextMultiline::InputText(const char* label, char* buf, size_t buf_size, ImVec2* size)
+bool ResizableInputTextMultiline::InputText(const char* label, std::string* buf, ImVec2* size)
 {
     ImGuiContext& g = *GImGui;
     const ImGuiStyle& style = g.Style;
@@ -11,7 +11,8 @@ bool ResizableInputTextMultiline::InputText(const char* label, char* buf, size_t
     if (window->SkipItems)
         return false;
 
-    bool ret = ImGui::InputTextMultiline(label,buf,buf_size,*size);
+    bool ret = ImGui::InputTextMultiline(label,buf,*size);
+
     auto textSize = ImGui::GetItemRectMax() - ImGui::GetItemRectMin();
     auto lowerLeftCorner = window->DC.CursorPos  +
             ImVec2(ImGui::GetItemRectSize().x, -style.FramePadding.y - window->WindowBorderSize);

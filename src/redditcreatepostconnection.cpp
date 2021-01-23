@@ -15,7 +15,7 @@ RedditCreatePostConnection::RedditCreatePostConnection(const boost::asio::any_io
 void RedditCreatePostConnection::createPost(const post_ptr& p,bool sendReplies,
                                             const access_token& token)
 {
-    request.clear();
+    request_t request;
     request.version(11);
     request.method(boost::beast::http::verb::post);
     request.target("/api/submit");
@@ -45,14 +45,7 @@ void RedditCreatePostConnection::createPost(const post_ptr& p,bool sendReplies,
     request.prepare_payload();
     responseParser->get().body().clear();
     responseParser->get().clear();
-    if(connected)
-    {
-        sendRequest();
-    }
-    else
-    {
-        resolveHost();
-    }
+    performRequest(std::move(request));
 }
 
 void RedditCreatePostConnection::responseReceivedComplete()

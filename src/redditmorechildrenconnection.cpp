@@ -30,7 +30,7 @@ void RedditMoreChildrenConnection::list(const unloaded_children& children,
     std::string body = "link_id="+linkId+
                         "&sort=confidence&limit_children=false&raw_json=1"+
                         "&children="+childrensList;
-    request.clear();
+    request_t request;
 
     request.version(11);
     request.method(boost::beast::http::verb::post);
@@ -45,7 +45,7 @@ void RedditMoreChildrenConnection::list(const unloaded_children& children,
     request.prepare_payload();
     responseParser->get().body().clear();
     responseParser->get().clear();
-    performRequest();
+    performRequest(std::move(request));
 }
 
 void RedditMoreChildrenConnection::responseReceivedComplete()
