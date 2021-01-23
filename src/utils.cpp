@@ -100,7 +100,14 @@ void Utils::AddFont(const unsigned int* fontData, const unsigned int fontDataSiz
 
 void Utils::LoadFonts()
 {
-    float normalFontSize = 20.f;
+#ifdef WIN32
+    const float normalFontSize = 18.f;
+    const float bigFontSize = 22.f;
+#else
+    const float normalFontSize = 20.f;
+    const float bigFontSize = 24.f;
+#endif // WIN
+
     AddFont(NotoSans_Black_ttf_compressed_data,NotoSans_Black_ttf_compressed_size,normalFontSize);
     AddFont(NotoSans_BlackItalic_ttf_compressed_data,NotoSans_BlackItalic_ttf_compressed_size,normalFontSize);
     AddFont(NotoSans_Bold_ttf_compressed_data,NotoSans_Bold_ttf_compressed_size,normalFontSize);
@@ -113,8 +120,8 @@ void Utils::LoadFonts()
     AddFont(NotoSans_Regular_ttf_compressed_data,NotoSans_Regular_ttf_compressed_size,normalFontSize);
     AddFont(NotoSans_Thin_ttf_compressed_data,NotoSans_Thin_ttf_compressed_size,normalFontSize);
     AddFont(NotoSans_ThinItalic_ttf_compressed_data,NotoSans_ThinItalic_ttf_compressed_size,normalFontSize);
-    AddFont(NotoSans_Medium_ttf_compressed_data,NotoSans_Medium_ttf_compressed_size, 24.0f);
-    AddFont(NotoSans_MediumItalic_ttf_compressed_data,NotoSans_MediumItalic_ttf_compressed_size, 24.0f);
+    AddFont(NotoSans_Medium_ttf_compressed_data,NotoSans_Medium_ttf_compressed_size, bigFontSize);
+    AddFont(NotoSans_MediumItalic_ttf_compressed_data,NotoSans_MediumItalic_ttf_compressed_size, bigFontSize);
     AddFont(NotoMono_Regular_ttf_compressed_data,NotoMono_Regular_ttf_compressed_size, normalFontSize);
 }
 

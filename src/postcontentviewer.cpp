@@ -175,6 +175,7 @@ PostContentViewer::~PostContentViewer()
     if(mediaFramebufferObject > 0)
     {
         glDeleteFramebuffers(1, &mediaFramebufferObject);
+        mediaFramebufferObject = 0;
     }
 }
 void PostContentViewer::setErrorMessage(std::string errorMessage)
