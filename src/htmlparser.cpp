@@ -290,7 +290,7 @@ HtmlParser::MediaLink HtmlParser::getMediaLink(const std::string& domain) const
 
     MediaLink link;
     link.type = MediaType::Video;
-    if(domain == "youtube.com" || domain == "www.youtube.com" || domain == "youtu.be")
+    if(domain.find("youtube") != domain.npos || domain == "youtu.be")
     {
         link.url = this->template lookupYoutubeVideoUrl<GumboNode>(output->root);
     }

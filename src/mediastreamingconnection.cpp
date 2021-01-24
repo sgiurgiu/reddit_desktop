@@ -191,7 +191,7 @@ void MediaStreamingConnection::downloadUrl(const std::string& url)
     {
         target+="?"+urlParts.encoded_query().to_string();
     }
-    if(host == "youtube.com" || host == "www.youtube.com" ||  host == "youtu.be")
+    if(host.find("youtube") != host.npos ||  host == "youtu.be")
     {
         if(!query.empty()) target+="&gl=US&hl=en&has_verified=1&bpctr=9999999999";
         else target+="?gl=US&hl=en&has_verified=1&bpctr=9999999999";

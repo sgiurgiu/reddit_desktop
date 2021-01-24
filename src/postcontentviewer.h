@@ -46,6 +46,7 @@ private:
     void loadPostGalleryImages();
     void setPostGalleryImage(unsigned char* data, int width, int height, int channels, int index);
     void setErrorMessage(std::string errorMessage);
+    void resetOpenGlState();
 private:
     RedditClientProducer* client;
     const boost::asio::any_io_executor& uiExecutor;
@@ -99,6 +100,7 @@ private:
     post_gallery gallery;
     std::unique_ptr<MarkdownRenderer> markdown;
     bool currentPostSet = false;
+    std::atomic_bool destroying = {false};
 };
 
 #endif // POSTCONTENTVIEWER_H

@@ -148,7 +148,8 @@ void PostContentViewer::stopPlayingMedia(bool flag)
 
 PostContentViewer::~PostContentViewer()
 {
-    stopPlayingMedia();
+    //stopPlayingMedia();
+    destroying = true;
 
     if(mpv)
     {
@@ -174,10 +175,6 @@ PostContentViewer::~PostContentViewer()
 
     if(mediaFramebufferObject > 0)
     {
-        if(postPicture)
-        {
-            postPicture.reset();
-        }
         glDeleteFramebuffers(1, &mediaFramebufferObject);
         mediaFramebufferObject = 0;
     }
@@ -198,10 +195,11 @@ void PostContentViewer::onMpvEvents(void* context)
 }
 void PostContentViewer::handleMpvEvents()
 {
+    if(destroying) return;
     while (true)
     {
        mpv_event *mp_event = mpv_wait_event(mpv, 0);
-       std::cout << "event:"<<mp_event->event_id<<std::endl;
+       //std::cout << "event:"<<mp_event->event_id<<std::endl;
        if (mp_event->event_id == MPV_EVENT_NONE)
            break;
        switch(mp_event->event_id)
@@ -219,7 +217,7 @@ void PostContentViewer::handleMpvEvents()
        case MPV_EVENT_PROPERTY_CHANGE:
        {
            mpv_event_property *prop = (mpv_event_property *)mp_event->data;
-           std::cout << "prop change:"<<prop->name<<",format:"<<prop->format<<std::endl;
+          // std::cout << "prop change:"<<prop->name<<",format:"<<prop->format<<std::endl;
            std::string name(prop->name);
            if(prop->format == MPV_FORMAT_DOUBLE)
            {
@@ -284,7 +282,7 @@ void PostContentViewer::handleMpvEvents()
 }
 void PostContentViewer::mpvInt64PropertyChanged(std::string name, int64_t value)
 {
-    std::cout << "prop change :"<<name<<", val:"<<value<<std::endl;
+    //std::cout << "prop change :"<<name<<", val:"<<value<<std::endl;
     if(name == "volume")
     {
         //mediaState.mediaAudioVolume = value;
@@ -292,7 +290,7 @@ void PostContentViewer::mpvInt64PropertyChanged(std::string name, int64_t value)
 }
 void PostContentViewer::mpvFlagPropertyChanged(std::string name, int value)
 {
-    std::cout << "prop change :"<<name<<", val:"<<value<<std::endl;
+   // std::cout << "prop change :"<<name<<", val:"<<value<<std::endl;
     if(name == "pause")
     {
         mediaState.paused = (bool)value;
@@ -300,7 +298,7 @@ void PostContentViewer::mpvFlagPropertyChanged(std::string name, int value)
 }
 void PostContentViewer::mpvDoublePropertyChanged(std::string name, double value)
 {
-    std::cout << "prop change :"<<name<<", val:"<<value<<std::endl;
+   // std::cout << "prop change :"<<name<<", val:"<<value<<std::endl;
     if(name == "time-pos")
     {
         mediaState.timePosition = value;
@@ -442,13 +440,28 @@ void PostContentViewer::setupMediaContext(std::string file)
     mpv = mpv_create();
     //mpv_set_option_string(mpv, "idle", "no");
     mpv_set_option_string(mpv, "config", "no");
+    mpv_set_option_string(mpv, "terminal", "yes");
+    mpv_set_option_string(mpv, "msg-level", "all=v");
+
     //mpv_set_option_string(mpv, "cache", "yes");
     //int64_t maxBytes = 1024*1024*10;
     //mpv_set_option(mpv, "demuxer-max-bytes", MPV_FORMAT_INT64,&maxBytes);
 
     mpv_initialize(mpv);
+    int64_t cacheDefault = 15000;
+    int64_t cacheBackBuffer = 15000;
+    int64_t cacheSecs = 10;
+    mpv_set_property(mpv, "cache-default", MPV_FORMAT_INT64, &cacheDefault);
+    mpv_set_property(mpv, "cache-backbuffer", MPV_FORMAT_INT64, &cacheBackBuffer);
+    mpv_set_property(mpv, "cache-secs", MPV_FORMAT_INT64, &cacheSecs);
+    //char* voProp = "libmpv";
+    //char* hwdecInteropProp = "auto";
+   // mpv_set_property(mpv, "vo", MPV_FORMAT_STRING,&voProp);
+    // Enable opengl-hwdec-interop so we can set hwdec at runtime
+    //mpv_set_property(mpv, "gpu-hwdec-interop",MPV_FORMAT_STRING, &hwdecInteropProp);
+
+
     mpv_opengl_init_params gl_params = {get_proc_address_mpv, nullptr, nullptr};
-    //gl_params.get_proc_address = &get_proc_address_mpv;
     int mpv_advanced_control = 1;
     mpv_render_param params[] = {
         {MPV_RENDER_PARAM_API_TYPE, const_cast<char*>(MPV_RENDER_API_TYPE_OPENGL)},
@@ -485,10 +498,30 @@ void PostContentViewer::mpvRenderUpdate(void *context)
     if (!self) return;
     boost::asio::post(win->uiExecutor,std::bind(&PostContentViewer::setPostMediaFrame,self));
 }
-
+void PostContentViewer::resetOpenGlState()
+{
+    glBindBuffer(GL_ARRAY_BUFFER,0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_STENCIL_TEST);
+    glDisable(GL_SCISSOR_TEST);
+    glColorMask(true, true, true, true);
+    glClearColor(0, 0, 0, 0);
+    glDepthMask(true);
+    glDepthFunc(GL_LESS);
+    glClearDepthf(1);
+    glStencilMask(0xff);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+    glStencilFunc(GL_ALWAYS, 0, 0xff);
+    glDisable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ZERO);
+    glUseProgram(0);
+}
 void PostContentViewer::setPostMediaFrame()
 {
-    if(!currentPost || !mpv_gl) return;
+    if(!currentPost || !mpv_gl || destroying) return;
     uint64_t flags = mpv_render_context_update(mpv_gl);
     if (!(flags & MPV_RENDER_UPDATE_FRAME))
     {
@@ -503,11 +536,14 @@ void PostContentViewer::setPostMediaFrame()
         postPicture = std::make_unique<ResizableGLImage>();
         glGenTextures(1, &postPicture->textureId);
         glBindTexture(GL_TEXTURE_2D, postPicture->textureId);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (int)mediaState.width, (int)mediaState.height, 0,
-                     GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glBindTexture(GL_TEXTURE_2D, 0);
+#if defined(GL_UNPACK_ROW_LENGTH) && !defined(__EMSCRIPTEN__)
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#endif
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (int)mediaState.width, (int)mediaState.height, 0,
+                     GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
         // attach it to currently bound framebuffer object
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
@@ -518,6 +554,8 @@ void PostContentViewer::setPostMediaFrame()
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
+    //resetOpenGlState();
+    //glBindFramebuffer(GL_FRAMEBUFFER, mediaFramebufferObject);
     //glBindFramebuffer(GL_FRAMEBUFFER, mediaFramebufferObject);
     mpv_opengl_fbo mpfbo{(int)mediaFramebufferObject,
                 postPicture->width,
@@ -530,7 +568,9 @@ void PostContentViewer::setPostMediaFrame()
                     {MPV_RENDER_PARAM_INVALID,0}
                 };
     int ret = mpv_render_context_render(mpv_gl, params);
+
     //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    //resetOpenGlState();
 
     if(ret < 0)
     {
