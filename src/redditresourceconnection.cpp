@@ -23,8 +23,16 @@ void RedditResourceConnection::getResource(const std::string& url,void* userData
 {
     boost::url_view urlParts(url);
 
-    service = urlParts.port().empty() ? urlParts.scheme().to_string() : urlParts.port().to_string();
+    newService = urlParts.port().empty() ? urlParts.scheme().to_string() : urlParts.port().to_string();
     newHost = urlParts.encoded_host().to_string();
+    if(host.empty())
+    {
+        host = newHost;
+    }
+    if(service.empty())
+    {
+        service = newService;
+    }
     auto target = urlParts.encoded_path().to_string();
     if(!urlParts.encoded_query().empty())
     {
@@ -44,11 +52,13 @@ void RedditResourceConnection::getResource(const std::string& url,void* userData
 }
 void RedditResourceConnection::performRequest(request_t request)
 {
-    if(newHost != host)
+    if((newHost != host) || (service != newService))
     {
         stream.emplace(strand,ssl_context);
         host = newHost;
+        service = newService;
     }
+
     RedditConnection::performRequest(std::move(request));
 }
 void RedditResourceConnection::handleLocationChange(const std::string& location)

@@ -174,6 +174,10 @@ PostContentViewer::~PostContentViewer()
 
     if(mediaFramebufferObject > 0)
     {
+        if(postPicture)
+        {
+            postPicture.reset();
+        }
         glDeleteFramebuffers(1, &mediaFramebufferObject);
         mediaFramebufferObject = 0;
     }

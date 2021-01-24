@@ -48,17 +48,17 @@ void SubredditWindow::clearExistingPostsData()
         if(p.postContentViewer)
         {
             p.postContentViewer->stopPlayingMedia();
-            auto postContentViewerTextures = p.postContentViewer->getAndResetTextures();
-            std::move(postContentViewerTextures.begin(),postContentViewerTextures.end(),std::back_inserter(textures));
-            auto fbo = p.postContentViewer->getAndResetMediaFBO();
+            //auto postContentViewerTextures = p.postContentViewer->getAndResetTextures();
+            //std::move(postContentViewerTextures.begin(),postContentViewerTextures.end(),std::back_inserter(textures));
+            /*auto fbo = p.postContentViewer->getAndResetMediaFBO();
             if(fbo > 0)
             {
                 fbos.push_back(fbo);
-            }
+            }*/
         }
     }
+    //glDeleteFramebuffers(fbos.size(), fbos.data());
     glDeleteTextures(textures.size(),textures.data());
-    glDeleteFramebuffers(fbos.size(), fbos.data());
 }
 void SubredditWindow::loadSubreddit()
 {
@@ -109,32 +109,35 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
         });
     }
 
-    resourceConnection = client->makeResourceClientConnection();
-    resourceConnection->connectionCompleteHandler(
-                [weak=weak_from_this()](const boost::system::error_code& ec,
-                     const resource_response& response)
+    if(!resourceConnection)
     {
-        auto self = weak.lock();
-        if(!self) return;
-        PostDisplay* post = static_cast<PostDisplay*>(response.userData);
-        if(!post) return;
-        if(ec)
+        resourceConnection = client->makeResourceClientConnection();
+        resourceConnection->connectionCompleteHandler(
+                    [weak=weak_from_this()](const boost::system::error_code& ec,
+                         const resource_response& response)
         {
-            auto message = "Cannot load thumbnail:" + ec.message();
-            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,post,std::move(message)));
-        }
-        else if(response.status >= 400)
-        {
-            auto message = "Cannot load thumbnail:" + response.body;
-            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,post,std::move(message)));
-        }
-        else if(response.status == 200)
-        {
-            int width, height, channels;
-            auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
-            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,self,post,data,width,height,channels));
-        }
-    });
+            auto self = weak.lock();
+            if(!self) return;
+            PostDisplay* post = static_cast<PostDisplay*>(response.userData);
+            if(!post) return;
+            if(ec)
+            {
+                auto message = "Cannot load thumbnail:" + ec.message();
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,post,std::move(message)));
+            }
+            else if(response.status >= 400)
+            {
+                auto message = "Cannot load thumbnail:" + response.body;
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,post,std::move(message)));
+            }
+            else if(response.status == 200)
+            {
+                int width, height, channels;
+                auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,self,post,data,width,height,channels));
+            }
+        });
+    }
 
     listingConnection->list(target,token);
 }

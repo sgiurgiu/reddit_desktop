@@ -31,6 +31,7 @@ protected:
 private:
     std::string userAgent;
     std::string newHost;
+    std::string newService;
 };
 
 #endif // REDDITRESOURCECONNECTION_H

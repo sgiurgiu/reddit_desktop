@@ -86,11 +86,9 @@ private:
 
         void updateButtonsText();
     };
-    void loadListingsFromConnection(const listing& listingResponse,
-                                    std::shared_ptr<CommentsWindow> self);
+    void loadListingsFromConnection(const listing& listingResponse);
     void setErrorMessage(std::string errorMessage);
     void loadListingChildren(const nlohmann::json& children,
-                             std::shared_ptr<CommentsWindow> self,
                              bool append);
     void setComments(comments_list receivedComments, bool append);
     void setParentPost(post_ptr receivedParentPost);

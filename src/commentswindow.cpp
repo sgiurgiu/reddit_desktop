@@ -47,7 +47,7 @@ void CommentsWindow::setupListingConnections()
             }
             else
             {
-                self->loadListingsFromConnection(std::move(response.data),self);
+                self->loadListingsFromConnection(std::move(response.data));
             }
         }
     };
@@ -90,7 +90,7 @@ void CommentsWindow::setupListingConnections()
                                respJson["data"].contains("things") && respJson["data"]["things"].is_array())
                        {
                           auto& things = respJson["data"]["things"];
-                          self->loadListingChildren(things,self,false);
+                          self->loadListingChildren(things,false);
                        }
                    }
                }
@@ -109,8 +109,7 @@ void CommentsWindow::setErrorMessage(std::string errorMessage)
 {
     listingErrorMessage = errorMessage;
 }
-void CommentsWindow::loadListingsFromConnection(const listing& listingResponse,
-                                                std::shared_ptr<CommentsWindow> self)
+void CommentsWindow::loadListingsFromConnection(const listing& listingResponse)
 {
     if(!windowOpen) return;
     loadingInitialComments = false;
@@ -130,7 +129,7 @@ void CommentsWindow::loadListingsFromConnection(const listing& listingResponse,
             {
                 continue;
             }
-            self->loadListingChildren(child["data"]["children"],self,true);
+            loadListingChildren(child["data"]["children"],true);
         }
     }
     else if (listingResponse.json.is_object())
@@ -150,7 +149,7 @@ void CommentsWindow::loadListingsFromConnection(const listing& listingResponse,
                     for(const auto& childrenArray : elem)
                     {
                         if(!childrenArray.is_array()) continue;
-                        self->loadListingChildren(childrenArray,self,true);
+                        loadListingChildren(childrenArray,true);
                     }
                 }
             }
@@ -158,7 +157,6 @@ void CommentsWindow::loadListingsFromConnection(const listing& listingResponse,
     }
 }
 void CommentsWindow::loadListingChildren(const nlohmann::json& children,
-                                         std::shared_ptr<CommentsWindow> self,
                                          bool append)
 {
     if(!windowOpen || !children.is_array()) return;
@@ -193,15 +191,15 @@ void CommentsWindow::loadListingChildren(const nlohmann::json& children,
     }
     if(!comments.empty())
     {
-        boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setComments,self,std::move(comments), append));
+        boost::asio::post(uiExecutor,std::bind(&CommentsWindow::setComments,this,std::move(comments), append));
     }
     if(pp)
     {
-        boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setParentPost,self,std::move(pp)));
+        boost::asio::post(uiExecutor,std::bind(&CommentsWindow::setParentPost,this,std::move(pp)));
     }
     if(unloadedPostComments)
     {
-        boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setUnloadedComments,self,std::move(unloadedPostComments)));
+        boost::asio::post(uiExecutor,std::bind(&CommentsWindow::setUnloadedComments,this,std::move(unloadedPostComments)));
     }
 }
 void CommentsWindow::setUnloadedComments(std::optional<unloaded_children> children)
