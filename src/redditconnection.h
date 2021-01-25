@@ -132,10 +132,10 @@ protected:
     }
     virtual void performRequest(request_t request)
     {
+        readBuffer.clear();
+        responseParser.emplace();
         if(boost::beast::get_lowest_layer(stream.value()).socket().is_open())
         {
-            readBuffer.clear();
-            responseParser.emplace();
             sendRequest(std::move(request));
         }
         else

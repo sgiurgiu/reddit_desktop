@@ -559,10 +559,14 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_TextDisabled));
             ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
         }
-        if(ImGui::Button(reinterpret_cast<const char*>(ICON_FA_ARROW_LEFT " Previous")) && previousEnabled)
+        if( (ImGui::Button(reinterpret_cast<const char*>(ICON_FA_ARROW_LEFT " Previous")) ||
+             (ImGui::IsMouseClicked(3) && ImGui::IsWindowFocused())) && previousEnabled)
         {
+            auto oldPostsSize = posts.size();
+            clearExistingPostsData();
+            posts.clear();
             loadSubredditListings(target+"?before="+before.value()+"&count="+std::to_string(currentCount),token);
-            currentCount-=posts.size();
+            currentCount-=oldPostsSize;
             before.reset();
             after.reset();
         }
@@ -581,9 +585,12 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_TextDisabled));
             ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
         }
-        if(ImGui::Button(reinterpret_cast<const char*>("Next " ICON_FA_ARROW_RIGHT),previousSize) && nextEnabled)
+        if((ImGui::Button(reinterpret_cast<const char*>("Next " ICON_FA_ARROW_RIGHT),previousSize) ||
+           (ImGui::IsMouseClicked(4) && ImGui::IsWindowFocused())) && nextEnabled)
         {
             currentCount+=posts.size();
+            clearExistingPostsData();
+            posts.clear();
             loadSubredditListings(target+"?after="+after.value()+"&count="+std::to_string(currentCount),token);
             after.reset();
             before.reset();

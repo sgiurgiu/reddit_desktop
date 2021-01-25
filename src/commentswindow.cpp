@@ -22,7 +22,6 @@ CommentsWindow::CommentsWindow(const std::string& postId,
 }
 CommentsWindow::~CommentsWindow()
 {
-    if(postContentViewer) postContentViewer->stopPlayingMedia();
 }
 void CommentsWindow::setupListingConnections()
 {

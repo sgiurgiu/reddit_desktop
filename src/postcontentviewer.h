@@ -28,7 +28,7 @@ public:
         return currentPostSet;
     }
     std::vector<GLuint> getAndResetTextures();
-    GLuint getAndResetMediaFBO();
+    //GLuint getAndResetMediaFBO();
 private:
     void setPostImage(unsigned char* data, int width, int height, int channels);
     void setPostGif(unsigned char* data, int width, int height, int channels,
@@ -55,11 +55,10 @@ private:
     SDL_DisplayMode displayMode;
     bool loadingPostContent = false;
     mpv_handle* mpv = nullptr;
-    mpv_render_context *mpv_gl = nullptr;
+    mpv_render_context *mpvRenderContext = nullptr;
     boost::asio::io_context mpvEventIOContext;
     boost::asio::any_io_executor mpvEventIOContextExecutor;
     std::thread mvpEventThread;
-    GLuint mediaFramebufferObject = 0;
     struct MediaState {
         std::atomic_int mediaAudioVolume;
         std::atomic_bool paused;

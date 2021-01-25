@@ -133,9 +133,9 @@ void PostContentViewer::loadContent(post_ptr currentPost)
 }
 void PostContentViewer::stopPlayingMedia(bool flag)
 {
-    mediaState.paused = flag;
+    mediaState.paused = mediaState.finished || flag;
 
-    if(mpv)
+    if(mpv && !mediaState.finished)
     {
         int shouldPause = flag;
         mpv_set_property_async(mpv, 0, "pause", MPV_FORMAT_FLAG, &shouldPause);
@@ -156,12 +156,12 @@ PostContentViewer::~PostContentViewer()
         const char *cmd[] = {"quit", nullptr};
         mpv_command(mpv,cmd);
     }
-    if(mpv_gl)
+    if(mpvRenderContext)
     {
        // mediaFramebufferObject = 0;
        // postPicture->textureId = 0;
-        mpv_render_context_free(mpv_gl);
-        mpv_gl = nullptr;
+        mpv_render_context_free(mpvRenderContext);
+        mpvRenderContext = nullptr;
     }
     if(mpv)
     {
@@ -173,12 +173,6 @@ PostContentViewer::~PostContentViewer()
     if(mvpEventThread.joinable())
     {
         mvpEventThread.join();
-    }
-
-    if(mediaFramebufferObject > 0)
-    {        
-        glDeleteFramebuffers(1, &mediaFramebufferObject);
-        mediaFramebufferObject = 0;
     }
 }
 void PostContentViewer::setErrorMessage(std::string errorMessage)
@@ -464,15 +458,15 @@ void PostContentViewer::setupMediaContext(std::string file)
     //mpv_set_property(mpv, "gpu-hwdec-interop",MPV_FORMAT_STRING, &hwdecInteropProp);
 
 
-    mpv_opengl_init_params gl_params = {get_proc_address_mpv, nullptr, nullptr};
+   // mpv_opengl_init_params gl_params = {get_proc_address_mpv, nullptr, nullptr};
     int mpv_advanced_control = 1;
     mpv_render_param params[] = {
-        {MPV_RENDER_PARAM_API_TYPE, const_cast<char*>(MPV_RENDER_API_TYPE_OPENGL)},
-        {MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_params},
+        {MPV_RENDER_PARAM_API_TYPE, const_cast<char*>(MPV_RENDER_API_TYPE_SW)},
+//        {MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_params},
         {MPV_RENDER_PARAM_ADVANCED_CONTROL, &mpv_advanced_control},
         {MPV_RENDER_PARAM_INVALID, 0}
     };
-    mpv_render_context_create(&mpv_gl, mpv, params);
+    mpv_render_context_create(&mpvRenderContext, mpv, params);
 
     mpv_observe_property(mpv, 0, "duration", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "time-pos", MPV_FORMAT_DOUBLE);
@@ -486,7 +480,7 @@ void PostContentViewer::setupMediaContext(std::string file)
     mpv_observe_property(mpv, 0, "volume", MPV_FORMAT_DOUBLE);
     //TODO: figure out a way to pass these to a std::function bound to a shared_from_this or weak_from_this
     mpv_set_wakeup_callback(mpv, &PostContentViewer::onMpvEvents, this);
-    mpv_render_context_set_update_callback(mpv_gl, &PostContentViewer::mpvRenderUpdate, this);
+    mpv_render_context_set_update_callback(mpvRenderContext, &PostContentViewer::mpvRenderUpdate, this);
     std::cout << "playing URL:"<<file<<std::endl;
     const char *cmd[] = {"loadfile", file.c_str(), nullptr};
     mpv_command_async(mpv, 0, cmd);
@@ -524,8 +518,8 @@ void PostContentViewer::resetOpenGlState()
 }
 void PostContentViewer::setPostMediaFrame()
 {
-    if(!currentPost || !mpv_gl || destroying) return;
-    uint64_t flags = mpv_render_context_update(mpv_gl);
+    if(!currentPost || !mpvRenderContext || destroying) return;
+    uint64_t flags = mpv_render_context_update(mpvRenderContext);
     if (!(flags & MPV_RENDER_UPDATE_FRAME))
     {
         return;
@@ -533,9 +527,6 @@ void PostContentViewer::setPostMediaFrame()
 
     if(!postPicture)
     {
-        glGenFramebuffers(1, &mediaFramebufferObject);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, mediaFramebufferObject);
         postPicture = std::make_unique<ResizableGLImage>();
         glGenTextures(1, &postPicture->textureId);
         glBindTexture(GL_TEXTURE_2D, postPicture->textureId);
@@ -548,38 +539,32 @@ void PostContentViewer::setPostMediaFrame()
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (int)mediaState.width, (int)mediaState.height, 0,
                      GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
-        // attach it to currently bound framebuffer object
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                               postPicture->textureId, 0);
         postPicture->width = (int)mediaState.width;
         postPicture->height = (int)mediaState.height;
+        glBindTexture(GL_TEXTURE_2D, 0);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
-
-    //resetOpenGlState();
-    //glBindFramebuffer(GL_FRAMEBUFFER, mediaFramebufferObject);
-    //glBindFramebuffer(GL_FRAMEBUFFER, mediaFramebufferObject);
-    mpv_opengl_fbo mpfbo{(int)mediaFramebufferObject,
-                postPicture->width,
-                postPicture->height, GL_RGBA};
-    int flip_y{0};
-
+    int rgbaBitsPerPixel = 32;
+    size_t stride = (postPicture->width * rgbaBitsPerPixel + 7) / 8;
+    std::unique_ptr<uint8_t[]> pixels = std::make_unique<uint8_t[]>(stride*postPicture->height);
+    int size[2] = {postPicture->width, postPicture->height};
     mpv_render_param params[] = {
-                    {MPV_RENDER_PARAM_OPENGL_FBO, &mpfbo},
-                    {MPV_RENDER_PARAM_FLIP_Y, &flip_y},
-                    {MPV_RENDER_PARAM_INVALID,0}
-                };
-    int ret = mpv_render_context_render(mpv_gl, params);
-
-    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    //resetOpenGlState();
-
+            {MPV_RENDER_PARAM_SW_SIZE, size},
+            {MPV_RENDER_PARAM_SW_FORMAT, (void*)"rgb0"},
+            {MPV_RENDER_PARAM_SW_STRIDE, &stride},
+            {MPV_RENDER_PARAM_SW_POINTER, pixels.get()},
+            {MPV_RENDER_PARAM_INVALID,0}
+    };
+    int ret = mpv_render_context_render(mpvRenderContext, params);
     if(ret < 0)
     {
         std::cerr << "error rendering:"<<mpv_error_string(ret)<<std::endl;
         return;
     }
+    glBindTexture(GL_TEXTURE_2D, postPicture->textureId);
+    glTexSubImage2D(GL_TEXTURE_2D,0,0,0,postPicture->width,postPicture->height,
+                    GL_RGBA,GL_UNSIGNED_BYTE,pixels.get());
+    glBindTexture(GL_TEXTURE_2D, 0);
     loadingPostContent = false;
 }
 void PostContentViewer::setPostGif(unsigned char* data, int width, int height, int channels,
@@ -642,11 +627,11 @@ std::vector<GLuint> PostContentViewer::getAndResetTextures()
 
     return textures;
 }
-GLuint PostContentViewer::getAndResetMediaFBO()
+/*GLuint PostContentViewer::getAndResetMediaFBO()
 {
-    return std::exchange(mediaFramebufferObject,0);
+    return 0;//std::exchange(mediaFramebufferObject,0);
 }
-
+*/
 void PostContentViewer::showPostContent()
 {
 
