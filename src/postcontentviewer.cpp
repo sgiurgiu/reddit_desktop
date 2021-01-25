@@ -51,14 +51,9 @@ static void* get_proc_address_mpv(void *fn_ctx, const char *name)
 PostContentViewer::PostContentViewer(RedditClientProducer* client,
                                      const boost::asio::any_io_executor& uiExecutor
                                      ):
-    client(client),uiExecutor(uiExecutor),
-    mpvEventIOContextExecutor(boost::asio::require(mpvEventIOContext.get_executor(),
-                                               boost::asio::execution::outstanding_work.tracked))
+    client(client),uiExecutor(uiExecutor)
 {
     SDL_GetDesktopDisplayMode(0, &displayMode);
-    using run_function = boost::asio::io_context::count_type(boost::asio::io_context::*)();
-    auto bound_run_fuction = std::bind(static_cast<run_function>(&boost::asio::io_context::run),std::ref(mpvEventIOContext));
-    mvpEventThread = std::thread(bound_run_fuction);
     mediaState.mediaAudioVolume = Database::getInstance()->getMediaAudioVolume();
 }
 void PostContentViewer::loadContent(post_ptr currentPost)
@@ -168,12 +163,6 @@ PostContentViewer::~PostContentViewer()
         mpv_terminate_destroy(mpv);
         mpv = nullptr;
     }
-    mpvEventIOContextExecutor = boost::asio::any_io_executor();
-    mpvEventIOContext.stop();
-    if(mvpEventThread.joinable())
-    {
-        mvpEventThread.join();
-    }
 }
 void PostContentViewer::setErrorMessage(std::string errorMessage)
 {
@@ -187,7 +176,8 @@ void PostContentViewer::onMpvEvents(void* context)
     auto weak = win->weak_from_this();
     auto self = weak.lock();
     if (!self) return;
-    boost::asio::post(win->mpvEventIOContextExecutor,std::bind(&PostContentViewer::handleMpvEvents,self));
+    if(self->destroying) return;
+    boost::asio::post(win->uiExecutor,std::bind(&PostContentViewer::handleMpvEvents,self));
 }
 void PostContentViewer::handleMpvEvents()
 {
@@ -493,6 +483,7 @@ void PostContentViewer::mpvRenderUpdate(void *context)
     auto weak = win->weak_from_this();
     auto self = weak.lock();
     if (!self) return;
+    if(self->destroying) return;
     boost::asio::post(win->uiExecutor,std::bind(&PostContentViewer::setPostMediaFrame,self));
 }
 void PostContentViewer::resetOpenGlState()
@@ -544,6 +535,7 @@ void PostContentViewer::setPostMediaFrame()
         glBindTexture(GL_TEXTURE_2D, 0);
 
     }
+    if(postPicture->width <= 0 || postPicture->height <=0 ) return;
     int rgbaBitsPerPixel = 32;
     size_t stride = (postPicture->width * rgbaBitsPerPixel + 7) / 8;
     std::unique_ptr<uint8_t[]> pixels = std::make_unique<uint8_t[]>(stride*postPicture->height);

@@ -56,9 +56,9 @@ private:
     bool loadingPostContent = false;
     mpv_handle* mpv = nullptr;
     mpv_render_context *mpvRenderContext = nullptr;
-    boost::asio::io_context mpvEventIOContext;
-    boost::asio::any_io_executor mpvEventIOContextExecutor;
-    std::thread mvpEventThread;
+    //boost::asio::io_context mpvEventIOContext;
+    //boost::asio::any_io_executor mpvEventIOContextExecutor;
+    //std::thread mvpEventThread;
     struct MediaState {
         std::atomic_int mediaAudioVolume;
         std::atomic_bool paused;
