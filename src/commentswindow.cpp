@@ -29,7 +29,7 @@ void CommentsWindow::setupListingConnections()
     if(moreChildrenConnection && listingConnection) return;
 
     auto completeHandler = [weak=weak_from_this()](const boost::system::error_code& ec,
-            const client_response<listing>& response)
+            client_response<listing> response)
     {
         auto self = weak.lock();
         if(!self || !self->windowOpen) return;
@@ -65,7 +65,7 @@ void CommentsWindow::setupListingConnections()
     {
         createCommentConnection = client->makeRedditCreateCommentClientConnection();
         createCommentConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
-                                   const client_response<listing>& response)
+                                   client_response<listing> response)
        {
            auto self = weak.lock();
            if(!self || !self->windowOpen) return;
@@ -440,11 +440,14 @@ void CommentsWindow::voteParentPost(post_ptr p, Voted vote)
     {
         postVotingConnection = client->makeRedditVoteClientConnection();
         postVotingConnection->connectionCompleteHandler(
-                    [weak=weak_from_this(),post=p.get(),voted=vote](const boost::system::error_code& ec,
-                                                    const client_response<std::string>& response)
+                    [weak=weak_from_this()](const boost::system::error_code& ec,
+                                            client_response<std::string> response)
         {
             auto self = weak.lock();
             if(!self) return;
+            std::pair<post_ptr, Voted>* p = static_cast<std::pair<post_ptr, Voted>*>(response.userData);
+            if (!p) return;
+
             if(ec)
             {
                 boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,self,ec.message()));
@@ -455,11 +458,13 @@ void CommentsWindow::voteParentPost(post_ptr p, Voted vote)
             }
             else
             {
-                boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::updatePostVote,self,post,voted));
+                boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::updatePostVote,self, p->first.get(), p->second));
             }
+            delete p;
         });
     }
-    postVotingConnection->vote(p->name,token,vote);
+    std::pair<post_ptr, Voted>* pair = new std::pair<post_ptr, Voted>(p, vote);
+    postVotingConnection->vote(p->name,token,vote, pair);
 }
 void CommentsWindow::updatePostVote(post* p, Voted vote)
 {
@@ -470,28 +475,35 @@ void CommentsWindow::updatePostVote(post* p, Voted vote)
 void CommentsWindow::voteComment(DisplayComment* c,Voted vote)
 {
     listingErrorMessage.clear();
-    auto commentVotingConnection = client->makeRedditVoteClientConnection();
-    commentVotingConnection->connectionCompleteHandler(
-                [weak=weak_from_this(),c=c,voted=vote](const boost::system::error_code& ec,
-                                                const client_response<std::string>& response)
+    if(!commentVotingConnection)
     {
-        auto self = weak.lock();
-        if(!self) return;
-        if(ec)
+        commentVotingConnection = client->makeRedditVoteClientConnection();
+        commentVotingConnection->connectionCompleteHandler(
+            [weak = weak_from_this()](const boost::system::error_code& ec,
+                client_response<std::string> response)
         {
-            boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,self,ec.message()));
-        }
-        else if(response.status >= 400)
-        {
-            boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,self,std::move(response.body)));
-        }
-        else
-        {
-            boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::updateCommentVote,self,c,voted));
-        }
-    });
+            auto self = weak.lock();
+            if (!self) return;
+            std::pair<DisplayComment*, Voted>* p = static_cast<std::pair<DisplayComment*, Voted>*>(response.userData);
+            if (!p) return;
 
-    commentVotingConnection->vote(c->commentData.name,token,vote);
+            if (ec)
+            {
+                boost::asio::post(self->uiExecutor, std::bind(&CommentsWindow::setErrorMessage, self, ec.message()));
+            }
+            else if (response.status >= 400)
+            {
+                boost::asio::post(self->uiExecutor, std::bind(&CommentsWindow::setErrorMessage, self, std::move(response.body)));
+            }
+            else
+            {
+                boost::asio::post(self->uiExecutor, std::bind(&CommentsWindow::updateCommentVote, self, p->first, p->second));
+            }
+            delete p;
+        });
+    }
+    std::pair<DisplayComment*, Voted>* pair = new std::pair<DisplayComment*, Voted>(c, vote);
+    commentVotingConnection->vote(c->commentData.name,token,vote,pair);
 }
 void CommentsWindow::updateCommentVote(DisplayComment* c,Voted vote)
 {

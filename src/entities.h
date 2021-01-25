@@ -41,6 +41,7 @@ struct listing
     nlohmann::json json;
 };
 
+//TODO: get std::any in here
 template <typename T, typename U = void>
 struct client_response
 {

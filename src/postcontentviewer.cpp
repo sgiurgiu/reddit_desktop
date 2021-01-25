@@ -158,6 +158,8 @@ PostContentViewer::~PostContentViewer()
     }
     if(mpv_gl)
     {
+       // mediaFramebufferObject = 0;
+       // postPicture->textureId = 0;
         mpv_render_context_free(mpv_gl);
         mpv_gl = nullptr;
     }
@@ -174,7 +176,7 @@ PostContentViewer::~PostContentViewer()
     }
 
     if(mediaFramebufferObject > 0)
-    {
+    {        
         glDeleteFramebuffers(1, &mediaFramebufferObject);
         mediaFramebufferObject = 0;
     }
@@ -328,7 +330,7 @@ void PostContentViewer::loadPostGalleryImages()
         auto resourceConnection = client->makeResourceClientConnection();
         resourceConnection->connectionCompleteHandler(
                     [weak = weak_from_this(),index=i](const boost::system::error_code& ec,
-                         const resource_response& response)
+                         resource_response response)
         {
             auto self = weak.lock();
             if (!self) return;
@@ -405,7 +407,7 @@ void PostContentViewer::downloadPostImage(std::string url)
     auto resourceConnection = client->makeResourceClientConnection();
     resourceConnection->connectionCompleteHandler(
                 [weak=weak_from_this(),url=url](const boost::system::error_code& ec,
-                     const resource_response& response)
+                     resource_response response)
     {
         auto self = weak.lock();
         if (!self) return;

@@ -117,6 +117,7 @@ private:
     RedditClientProducer::RedditVoteClientConnection postVotingConnection;
     RedditClientProducer::RedditMoreChildrenClientConnection moreChildrenConnection;
     RedditClientProducer::RedditCreateCommentClientConnection createCommentConnection;
+    RedditClientProducer::RedditVoteClientConnection commentVotingConnection;
 
     using OpenSubredditSignal = boost::signals2::signal<void(std::string subreddit)>;
     OpenSubredditSignal openSubredditSignal;

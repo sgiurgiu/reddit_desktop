@@ -115,13 +115,16 @@ private:
 protected:
     struct queued_request
     {
+        queued_request(request_t request, void* userData):
+            request(std::move(request)),userData(userData)
+        {}
         request_t request;
         void* userData;
     };
     void enqueueRequest(request_t request, void* userData = nullptr)
     {
         std::lock_guard<std::mutex> _(queuedRequestsMutex);
-        queuedRequests.push_back({request,userData});
+        queuedRequests.emplace_back(std::move(request),userData);
         if(queuedRequests.size() == 1)
         {
             performRequest(std::move(queuedRequests.front().request));

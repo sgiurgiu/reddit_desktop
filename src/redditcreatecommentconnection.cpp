@@ -70,5 +70,5 @@ void RedditCreateCommentConnection::responseReceivedComplete()
     {
         resp.body = body;
     }
-    signal({},resp);
+    signal({},std::move(resp));
 }

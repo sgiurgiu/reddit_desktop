@@ -90,6 +90,6 @@ void RedditResourceConnection::responseReceivedComplete(void* userData)
         }
     }
     resp.userData = userData;
-    signal({},resp);
+    signal({},std::move(resp));
 }
 

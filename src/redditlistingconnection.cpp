@@ -77,5 +77,5 @@ void RedditListingConnection::responseReceivedComplete(void* userData)
         resp.body = body;
     }
     resp.userData = userData;
-    signal({},resp);
+    signal({},std::move(resp));
 }

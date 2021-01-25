@@ -2,11 +2,8 @@
 #define REDDITRESOURCECONNECTION_H
 
 #include "redditconnection.h"
-
 #include "entities.h"
-#include <boost/asio/ip/resolver_base.hpp>
 #include <boost/beast/http.hpp>
-#include <boost/signals2.hpp>
 
 using response_byte = unsigned char;
 using resource_response = client_response<std::vector<response_byte>>;
@@ -14,7 +11,7 @@ using resource_response_body = boost::beast::http::vector_body<response_byte>;
 class RedditResourceConnection : public RedditConnection<
         boost::beast::http::empty_body,
         resource_response_body,
-        const resource_response&
+        resource_response
         >
 {
 public:

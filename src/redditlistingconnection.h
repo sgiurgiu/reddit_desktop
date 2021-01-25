@@ -7,7 +7,7 @@
 class RedditListingConnection : public RedditConnection<
         boost::beast::http::empty_body,
         boost::beast::http::string_body,
-        const client_response<listing>&>
+        client_response<listing>>
 {
 public:
     RedditListingConnection(const boost::asio::any_io_executor& executor,

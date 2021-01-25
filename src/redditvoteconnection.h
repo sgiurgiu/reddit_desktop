@@ -10,7 +10,7 @@
 class RedditVoteConnection : public RedditConnection<
         boost::beast::http::string_body,
         boost::beast::http::string_body,
-        const client_response<std::string>&
+        client_response<std::string>
         >
 {
 public:
@@ -18,9 +18,9 @@ public:
                          boost::asio::ssl::context& ssl_context,
                          const std::string& host, const std::string& service,
                          const std::string& userAgent);
-    void vote(const std::string& id,const access_token& token, Voted vote);
+    void vote(const std::string& id,const access_token& token, Voted vote, void* userData);
 protected:
-    virtual void responseReceivedComplete() override;
+    virtual void responseReceivedComplete(void* userData) override;
 private:
     std::string userAgent;
     std::string id;

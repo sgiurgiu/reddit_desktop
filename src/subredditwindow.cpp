@@ -89,7 +89,7 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
     {
         listingConnection = client->makeListingClientConnection();
         listingConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
-                                    const client_response<listing>& response)
+                                    client_response<listing> response)
         {
             auto self = weak.lock();
             if(!self) return;
@@ -114,7 +114,7 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
         resourceConnection = client->makeResourceClientConnection();
         resourceConnection->connectionCompleteHandler(
                     [weak=weak_from_this()](const boost::system::error_code& ec,
-                         const resource_response& response)
+                         resource_response response)
         {
             auto self = weak.lock();
             if(!self) return;
@@ -136,6 +136,33 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
                 auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
                 boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,self,post,data,width,height,channels));
             }
+        });
+    }
+    if (!voteConnection)
+    {
+        voteConnection = client->makeRedditVoteClientConnection();
+        voteConnection->connectionCompleteHandler(
+            [weak = weak_from_this()](const boost::system::error_code& ec,
+                client_response<std::string> response)
+        {
+            auto self = weak.lock();
+            if (!self) return;
+            std::pair<post_ptr,Voted>* p = static_cast<std::pair<post_ptr, Voted>*>(response.userData);
+            if (!p) return;
+
+            if (ec)
+            {
+                boost::asio::post(self->uiExecutor, std::bind(&SubredditWindow::setErrorMessage, self, ec.message()));
+            }
+            else if (response.status >= 400)
+            {
+                boost::asio::post(self->uiExecutor, std::bind(&SubredditWindow::setErrorMessage, self, std::move(response.body)));
+            }
+            else
+            {
+                boost::asio::post(self->uiExecutor, std::bind(&SubredditWindow::updatePostVote, self, p->first.get(), p->second));
+            }
+            delete p;
         });
     }
 
@@ -178,7 +205,7 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
     clearExistingPostsData();
     posts = std::move(receivedPosts);
     scrollToTop = true;
-    for(auto&& p : posts)
+    for(auto& p : posts)
     {
         if(subredditName.empty())
         {
@@ -218,36 +245,15 @@ void SubredditWindow::setPostThumbnail(PostDisplay* p,unsigned char* data, int w
     p->thumbnailPicture = Utils::loadImage(data,width,height,STBI_rgb_alpha);
     if(p->post->over18 && shouldBlurPictures)
     {
-        auto blurredImage = Utils::loadBlurredImage(data,width,height,STBI_rgb_alpha);        
-        p->blurredThumbnailPicture = std::move(blurredImage);
+        p->blurredThumbnailPicture = Utils::loadBlurredImage(data,width,height,STBI_rgb_alpha);
     }
     stbi_image_free(data);    
 }
 void SubredditWindow::votePost(post_ptr p,Voted voted)
 {
     listingErrorMessage.clear();
-    auto voteConnection = client->makeRedditVoteClientConnection();
-    voteConnection->connectionCompleteHandler(
-                [weak=weak_from_this(),post=p.get(),voted=voted](const boost::system::error_code& ec,
-                                                const client_response<std::string>& response)
-    {
-        auto self = weak.lock();
-        if(!self) return;
-        if(ec)
-        {
-            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,ec.message()));
-        }
-        else if(response.status >= 400)
-        {
-            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,std::move(response.body)));
-        }
-        else
-        {
-            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::updatePostVote,self,post,voted));
-        }
-    });
-
-    voteConnection->vote(p->name,token,voted);
+    std::pair<post_ptr, Voted>* pair = new std::pair<post_ptr, Voted>(p,voted);
+    voteConnection->vote(p->name,token,voted,pair);
 }
 void SubredditWindow::updatePostVote(post* p,Voted voted)
 {
@@ -365,7 +371,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         upvotesButtonsIdent = (maxScoreWidth - upvotesButtonsWidth) / 2.f - (ImGui::GetStyle().FramePadding.x);
     }
 
-    for(auto&& p : posts)
+    for(auto& p : posts)
     {                
         if(!p.errorMessageText.empty())
         {
