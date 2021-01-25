@@ -37,7 +37,12 @@ public:
     void setMediaAudioVolume(int volume);
     int getMediaAudioVolume();
     void setBlurNSFWPictures(bool flag);
-    bool getBlurNSFWPictures();
+    bool getBlurNSFWPictures() const;
+    void setUseHWAccelerationForMedia(bool flag);
+    bool getUseHWAccelerationForMedia() const;
+private:
+    void setBoolProperty(bool flag, const std::string& propName);
+    bool getBoolProperty(const std::string& propName, bool defaultValue) const;
 private:
     std::unique_ptr<sqlite3,connection_deleter> db;
     static std::unique_ptr<Database> instance;

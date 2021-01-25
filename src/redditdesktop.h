@@ -104,6 +104,7 @@ private:
     bool loggedInFirstTime = true;
     boost::asio::steady_timer loginTokenRefreshTimer;
     std::string userInfoDisplay;
+    bool useMediaHwAccel = true;
 };
 
 

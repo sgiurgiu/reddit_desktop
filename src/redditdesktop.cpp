@@ -26,6 +26,7 @@ RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
     subredditsSortMethod[SubredditsSorting::Alphabetical_Descending] = "Alphabetical (Inverse)";
     current_user = Database::getInstance()->getRegisteredUser();
     shouldBlurPictures= Database::getInstance()->getBlurNSFWPictures();
+    useMediaHwAccel = Database::getInstance()->getUseHWAccelerationForMedia();
 }
 
 void RedditDesktop::loginCurrentUser()
@@ -536,6 +537,16 @@ void RedditDesktop::showMainMenuBar()
             if(ImGui::Checkbox("Blur NSFW Thumbnails", &shouldBlurPictures))
             {
                 Database::getInstance()->setBlurNSFWPictures(shouldBlurPictures);
+            }
+            if(ImGui::Checkbox("Hardware Accelerated Media", &useMediaHwAccel))
+            {
+                Database::getInstance()->setUseHWAccelerationForMedia(useMediaHwAccel);
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted("Disable this if you experience crashes when playing media");
+                ImGui::EndTooltip();
             }
 
             ImGui::EndMenu();

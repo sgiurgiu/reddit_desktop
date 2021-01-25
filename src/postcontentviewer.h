@@ -98,7 +98,7 @@ private:
     std::unique_ptr<MarkdownRenderer> markdown;
     bool currentPostSet = false;
     std::atomic_bool destroying = {false};
-
+    bool useMediaHwAccel = true;
 };
 
 #endif // POSTCONTENTVIEWER_H

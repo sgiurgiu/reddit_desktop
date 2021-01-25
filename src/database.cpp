@@ -45,40 +45,62 @@ Database* Database::getInstance()
     }
     return instance.get();
 }
-
-void Database::setBlurNSFWPictures(bool flag)
+void Database::setBoolProperty(bool flag, const std::string& propName)
 {
-    sqlite3_exec(db.get(),"DELETE FROM PROPERTIES WHERE NAME='BLUR_NSFW'",nullptr,nullptr,nullptr);
+    std::string sql("DELETE FROM PROPERTIES WHERE NAME='");
+    sql+=propName;
+    sql+="'";
+    sqlite3_exec(db.get(),sql.c_str(),nullptr,nullptr,nullptr);
     std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
     sqlite3_stmt *stmt_ptr;
     int rc = sqlite3_prepare_v2(db.get(),"INSERT INTO PROPERTIES(NAME,PROP_VAL) VALUES(?,?)",-1,&stmt_ptr, nullptr);
     stmt.reset(stmt_ptr);
-    DB_ERR_CHECK("Cannot insert BLUR_NSFW");
-    rc = sqlite3_bind_text(stmt.get(),1,"BLUR_NSFW",-1,nullptr);
-    DB_ERR_CHECK("Cannot bind values to BLUR_NSFW")
+    DB_ERR_CHECK("Cannot insert "+propName);
+    rc = sqlite3_bind_text(stmt.get(),1,propName.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to "+propName)
     rc = sqlite3_bind_int(stmt.get(),2,flag?1:0);
-    DB_ERR_CHECK("Cannot bind values to BLUR_NSFW");
+    DB_ERR_CHECK("Cannot bind values to "+propName);
     rc = sqlite3_step(stmt.get());
-    DB_ERR_CHECK("Cannot insert BLUR_NSFW");
+    DB_ERR_CHECK("Cannot insert "+propName);
 }
-bool Database::getBlurNSFWPictures()
+bool Database::getBoolProperty(const std::string& propName, bool defaultValue) const
 {
-    bool blur = true;
+    bool flag = defaultValue;
     std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
     sqlite3_stmt *stmt_ptr;
-    int rc = sqlite3_prepare_v2(db.get(),"SELECT NAME,PROP_VAL FROM PROPERTIES WHERE NAME='BLUR_NSFW'",-1,&stmt_ptr, nullptr);
+    std::string sql="SELECT NAME,PROP_VAL FROM PROPERTIES WHERE NAME='";
+    sql+=propName;
+    sql+="'";
+    int rc = sqlite3_prepare_v2(db.get(),sql.c_str(),-1,&stmt_ptr, nullptr);
     stmt.reset(stmt_ptr);
-    DB_ERR_CHECK("Cannot find BLUR_NSFW");
+    DB_ERR_CHECK("Cannot find "+propName);
     if(sqlite3_step(stmt.get()) == SQLITE_ROW)
     {
         auto name = sqlite3_column_text(stmt.get(),0);
         auto val = sqlite3_column_int(stmt.get(),1);
-        if(std::string("BLUR_NSFW") == std::string(reinterpret_cast<const char*>(name)))
+        if(propName == std::string(reinterpret_cast<const char*>(name)))
         {
-             blur = (val != 0);
+             flag = (val != 0);
         }
     }
-    return blur;
+    return flag;
+}
+
+void Database::setBlurNSFWPictures(bool flag)
+{
+    setBoolProperty(flag,"BLUR_NSFW");
+}
+bool Database::getBlurNSFWPictures() const
+{
+    return getBoolProperty("BLUR_NSFW", true);
+}
+void Database::setUseHWAccelerationForMedia(bool flag)
+{
+    setBoolProperty(flag,"MEDIA_HW_ACCEL");
+}
+bool Database::getUseHWAccelerationForMedia() const
+{
+    return getBoolProperty("MEDIA_HW_ACCEL", true);
 }
 
 void Database::setMediaAudioVolume(int volume)

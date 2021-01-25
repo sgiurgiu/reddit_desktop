@@ -55,6 +55,7 @@ PostContentViewer::PostContentViewer(RedditClientProducer* client,
 {
     SDL_GetDesktopDisplayMode(0, &displayMode);
     mediaState.mediaAudioVolume = Database::getInstance()->getMediaAudioVolume();
+    useMediaHwAccel = Database::getInstance()->getUseHWAccelerationForMedia();
 }
 void PostContentViewer::loadContent(post_ptr currentPost)
 {
@@ -453,17 +454,27 @@ void PostContentViewer::setupMediaContext(std::string file)
     // Enable opengl-hwdec-interop so we can set hwdec at runtime
     //mpv_set_property(mpv, "gpu-hwdec-interop",MPV_FORMAT_STRING, &hwdecInteropProp);
 
-
-    mpv_opengl_init_params gl_params = {get_proc_address_mpv, nullptr, nullptr};
     int mpv_advanced_control = 1;
-    mpv_render_param params[] = {
-        {MPV_RENDER_PARAM_API_TYPE, const_cast<char*>(MPV_RENDER_API_TYPE_OPENGL)},
-        {MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_params},
-        {MPV_RENDER_PARAM_ADVANCED_CONTROL, &mpv_advanced_control},
-        {MPV_RENDER_PARAM_INVALID, 0}
-    };
-    mpv_render_context_create(&mpvRenderContext, mpv, params);
-
+    if(useMediaHwAccel)
+    {
+        mpv_opengl_init_params gl_params = {get_proc_address_mpv, nullptr, nullptr};
+        mpv_render_param params[] = {
+            {MPV_RENDER_PARAM_API_TYPE, const_cast<char*>(MPV_RENDER_API_TYPE_OPENGL)},
+            {MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_params},
+            {MPV_RENDER_PARAM_ADVANCED_CONTROL, &mpv_advanced_control},
+            {MPV_RENDER_PARAM_INVALID, 0}
+        };
+        mpv_render_context_create(&mpvRenderContext, mpv, params);
+    }
+    else
+    {
+        mpv_render_param params[] = {
+            {MPV_RENDER_PARAM_API_TYPE, const_cast<char*>(MPV_RENDER_API_TYPE_SW)},
+            {MPV_RENDER_PARAM_ADVANCED_CONTROL, &mpv_advanced_control},
+            {MPV_RENDER_PARAM_INVALID, 0}
+        };
+        mpv_render_context_create(&mpvRenderContext, mpv, params);
+    }
     mpv_observe_property(mpv, 0, "duration", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "time-pos", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "height", MPV_FORMAT_DOUBLE);
@@ -524,8 +535,11 @@ void PostContentViewer::setPostMediaFrame()
 
     if(!postPicture)
     {
-        glGenFramebuffers(1, &mediaFramebufferObject);
-        glBindFramebuffer(GL_FRAMEBUFFER, mediaFramebufferObject);
+        if(useMediaHwAccel)
+        {
+            glGenFramebuffers(1, &mediaFramebufferObject);
+            glBindFramebuffer(GL_FRAMEBUFFER, mediaFramebufferObject);
+        }
 
         postPicture = std::make_unique<ResizableGLImage>();
         glGenTextures(1, &postPicture->textureId);
@@ -539,47 +553,64 @@ void PostContentViewer::setPostMediaFrame()
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (int)mediaState.width, (int)mediaState.height, 0,
                      GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                                       postPicture->textureId, 0);
         postPicture->width = (int)mediaState.width;
         postPicture->height = (int)mediaState.height;
-        //glBindTexture(GL_TEXTURE_2D, 0);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        if(useMediaHwAccel)
+        {
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                                           postPicture->textureId, 0);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+        else
+        {
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
     }
     if(postPicture->width <= 0 || postPicture->height <=0 ) return;
-    mpv_opengl_fbo mpfbo{(int)mediaFramebufferObject,
-                    postPicture->width,
-                    postPicture->height, GL_RGBA};
-    int flip_y{0};
-    mpv_render_param params[] = {
-                        {MPV_RENDER_PARAM_OPENGL_FBO, &mpfbo},
-                        {MPV_RENDER_PARAM_FLIP_Y, &flip_y},
-                        {MPV_RENDER_PARAM_INVALID,0}
-                    };
+    int ret = 0;
+    if(useMediaHwAccel)
+    {
+        mpv_opengl_fbo mpfbo{(int)mediaFramebufferObject,
+                        postPicture->width,
+                        postPicture->height, GL_RGBA};
+        int flip_y{0};
+        mpv_render_param params[] = {
+                            {MPV_RENDER_PARAM_OPENGL_FBO, &mpfbo},
+                            {MPV_RENDER_PARAM_FLIP_Y, &flip_y},
+                            {MPV_RENDER_PARAM_INVALID,0}
+                        };
+        ret = mpv_render_context_render(mpvRenderContext, params);
+    }
+    else
+    {
+        int rgbaBitsPerPixel = 32;
+        size_t stride = (postPicture->width * rgbaBitsPerPixel + 7) / 8;
+        std::unique_ptr<uint8_t[]> pixels = std::make_unique<uint8_t[]>(stride*postPicture->height);
+        int size[2] = {postPicture->width, postPicture->height};
+        mpv_render_param params[] = {
+                {MPV_RENDER_PARAM_SW_SIZE, size},
+                {MPV_RENDER_PARAM_SW_FORMAT, (void*)"rgb0"},
+                {MPV_RENDER_PARAM_SW_STRIDE, &stride},
+                {MPV_RENDER_PARAM_SW_POINTER, pixels.get()},
+                {MPV_RENDER_PARAM_INVALID,0}
+        };
+        ret = mpv_render_context_render(mpvRenderContext, params);
+        if(ret == 0)
+        {
+            glBindTexture(GL_TEXTURE_2D, postPicture->textureId);
+            glTexSubImage2D(GL_TEXTURE_2D,0,0,0,postPicture->width,postPicture->height,
+                            GL_RGBA,GL_UNSIGNED_BYTE,pixels.get());
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
+    }
 
-    //TODO: add option to switch between OpenGL and SW rendering. Should be easy.
-    /*int rgbaBitsPerPixel = 32;
-    size_t stride = (postPicture->width * rgbaBitsPerPixel + 7) / 8;
-    std::unique_ptr<uint8_t[]> pixels = std::make_unique<uint8_t[]>(stride*postPicture->height);
-    int size[2] = {postPicture->width, postPicture->height};
-    mpv_render_param params[] = {
-            {MPV_RENDER_PARAM_SW_SIZE, size},
-            {MPV_RENDER_PARAM_SW_FORMAT, (void*)"rgb0"},
-            {MPV_RENDER_PARAM_SW_STRIDE, &stride},
-            {MPV_RENDER_PARAM_SW_POINTER, pixels.get()},
-            {MPV_RENDER_PARAM_INVALID,0}
-    };*/
-    int ret = mpv_render_context_render(mpvRenderContext, params);
+
+    loadingPostContent = false;
+
     if(ret < 0)
     {
         std::cerr << "error rendering:"<<mpv_error_string(ret)<<std::endl;
-        return;
     }
-    /*glBindTexture(GL_TEXTURE_2D, postPicture->textureId);
-    glTexSubImage2D(GL_TEXTURE_2D,0,0,0,postPicture->width,postPicture->height,
-                    GL_RGBA,GL_UNSIGNED_BYTE,pixels.get());
-    glBindTexture(GL_TEXTURE_2D, 0);*/
-    loadingPostContent = false;
 }
 void PostContentViewer::setPostGif(unsigned char* data, int width, int height, int channels,
                 int count, int* delays)
