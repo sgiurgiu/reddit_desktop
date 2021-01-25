@@ -80,5 +80,5 @@ void RedditLoginConnection::responseReceivedComplete()
     {
         token.body = body;
     }
-    signal({},token);
+    signal({},std::move(token));
 }

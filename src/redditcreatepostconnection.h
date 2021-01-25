@@ -12,7 +12,7 @@
 class RedditCreatePostConnection : public RedditConnection<
         boost::beast::http::string_body,
         boost::beast::http::string_body,
-        const client_response<post_ptr>&
+        client_response<post_ptr>
     >
 {
 public:

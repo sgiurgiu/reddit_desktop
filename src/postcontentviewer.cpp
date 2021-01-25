@@ -284,6 +284,7 @@ void PostContentViewer::handleMpvEvents()
 }
 void PostContentViewer::mpvInt64PropertyChanged(std::string name, int64_t value)
 {
+    UNUSED(value);
     //std::cout << "prop change :"<<name<<", val:"<<value<<std::endl;
     if(name == "volume")
     {

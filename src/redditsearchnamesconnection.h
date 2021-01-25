@@ -13,7 +13,7 @@ using names_list = std::vector<std::string>;
 class RedditSearchNamesConnection : public RedditConnection<
         boost::beast::http::empty_body,
         boost::beast::http::string_body,
-        const client_response<names_list>&
+        client_response<names_list>
         >
 {
 public:

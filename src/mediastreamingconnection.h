@@ -15,7 +15,7 @@ using dummy_response = client_response<void*>;
 class MediaStreamingConnection : public RedditConnection<
         boost::beast::http::empty_body,
         boost::beast::http::string_body,
-        const dummy_response&
+        dummy_response
         >
 {
 public:

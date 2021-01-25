@@ -18,12 +18,13 @@ LoginWindow::LoginWindow(RedditClientProducer* client,
                          const boost::asio::any_io_executor& executor):
     client(client),loginConnection(client->makeLoginClientConnection()),uiExecutor(executor)
 {
-    loginConnection->connectionCompleteHandler([this](const boost::system::error_code& ec,const client_response<access_token>& token){
-        boost::asio::post(this->uiExecutor,std::bind(&LoginWindow::testingCompleted,this,ec,token));
+    loginConnection->connectionCompleteHandler([this](const boost::system::error_code& ec,
+                                               client_response<access_token> token){
+        boost::asio::post(this->uiExecutor,std::bind(&LoginWindow::testingCompleted,this,ec,std::move(token)));
     });
 }
 void LoginWindow::testingCompleted(const boost::system::error_code ec,
-                                   const client_response<access_token> token)
+                                   client_response<access_token> token)
 {
     tested = !ec;
     testingInProgress = false;

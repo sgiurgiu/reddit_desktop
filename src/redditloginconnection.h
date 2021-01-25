@@ -11,7 +11,7 @@
 class RedditLoginConnection : public RedditConnection<
         boost::beast::http::string_body,
         boost::beast::http::string_body,
-        const client_response<access_token>&
+        client_response<access_token>
         >
 {
 public:

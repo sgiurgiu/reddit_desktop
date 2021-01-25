@@ -82,5 +82,5 @@ void RedditMoreChildrenConnection::responseReceivedComplete()
     {
         resp.body = body;
     }
-    signal({},resp);
+    signal({},std::move(resp));
 }

@@ -42,7 +42,9 @@ void RedditDesktop::loginCurrentUser()
 void RedditDesktop::refreshLoginToken()
 {
     auto loginConnection = client.makeLoginClientConnection();
-    loginConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,const client_response<access_token>& token){
+    loginConnection->connectionCompleteHandler([weak=weak_from_this()]
+                                               (const boost::system::error_code& ec,
+                                               client_response<access_token> token){
         auto self = weak.lock();
         if(!self) return;
         if(ec)
@@ -94,7 +96,7 @@ void RedditDesktop::loadUserInformation()
 {
     auto userInformationConnection = client.makeListingClientConnection();
     userInformationConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
-                                                 const client_response<listing>& response)
+                                                 client_response<listing> response)
      {
         auto self = weak.lock();
         if(!self) return;
@@ -140,7 +142,7 @@ void RedditDesktop::loadMultis(const std::string& url, const access_token& token
 {
     auto multisConnection = client.makeListingClientConnection();
     multisConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
-                                                 const client_response<listing>& response)
+                                                 client_response<listing> response)
      {
         auto self = weak.lock();
         if(!self) return;
@@ -189,7 +191,7 @@ void RedditDesktop::loadSubreddits(const std::string& url, const access_token& t
 {
     auto subscribedSubredditsConnection = client.makeListingClientConnection();
     subscribedSubredditsConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
-                                                 const client_response<listing>& response)
+                                                 client_response<listing> response)
      {
         auto self = weak.lock();
         if(!self) return;
@@ -735,7 +737,7 @@ void RedditDesktop::searchSubreddits()
     {
         searchNamesConnection = client.makeRedditSearchNamesClientConnection();
         searchNamesConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
-                                                     const client_response<names_list>& response)
+                                                     client_response<names_list> response)
          {
             auto self = weak.lock();
             if(!self) return;

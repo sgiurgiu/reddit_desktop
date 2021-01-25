@@ -750,9 +750,11 @@ void SubredditWindow::setFocused()
 void SubredditWindow::submitNewPost(const post_ptr& p)
 {
     auto createPostConnection = client->makeCreatePostClientConnection();
-    createPostConnection->connectionCompleteHandler([self=shared_from_this()](const boost::system::error_code& ec,
-                                const client_response<post_ptr>& response)
+    createPostConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
+                                client_response<post_ptr> response)
     {
+       auto self = weak.lock();
+       if(!self) return;
        if(ec)
        {
            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,ec.message()));

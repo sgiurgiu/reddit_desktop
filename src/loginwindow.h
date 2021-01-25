@@ -23,7 +23,7 @@ public:
         configuredUser = user;
     }
 private:
-    void testingCompleted(const boost::system::error_code ec,const client_response<access_token> token);
+    void testingCompleted(const boost::system::error_code ec,client_response<access_token> token);
 private:
     bool showLoginInfoWindow = false;
     char username[255] = { 0 };
