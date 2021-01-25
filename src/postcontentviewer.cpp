@@ -163,6 +163,12 @@ PostContentViewer::~PostContentViewer()
         mpv_terminate_destroy(mpv);
         mpv = nullptr;
     }
+
+    if(mediaFramebufferObject > 0)
+    {
+        glDeleteFramebuffers(1, &mediaFramebufferObject);
+        mediaFramebufferObject = 0;
+    }
 }
 void PostContentViewer::setErrorMessage(std::string errorMessage)
 {
@@ -448,11 +454,11 @@ void PostContentViewer::setupMediaContext(std::string file)
     //mpv_set_property(mpv, "gpu-hwdec-interop",MPV_FORMAT_STRING, &hwdecInteropProp);
 
 
-   // mpv_opengl_init_params gl_params = {get_proc_address_mpv, nullptr, nullptr};
+    mpv_opengl_init_params gl_params = {get_proc_address_mpv, nullptr, nullptr};
     int mpv_advanced_control = 1;
     mpv_render_param params[] = {
-        {MPV_RENDER_PARAM_API_TYPE, const_cast<char*>(MPV_RENDER_API_TYPE_SW)},
-//        {MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_params},
+        {MPV_RENDER_PARAM_API_TYPE, const_cast<char*>(MPV_RENDER_API_TYPE_OPENGL)},
+        {MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_params},
         {MPV_RENDER_PARAM_ADVANCED_CONTROL, &mpv_advanced_control},
         {MPV_RENDER_PARAM_INVALID, 0}
     };
@@ -518,6 +524,9 @@ void PostContentViewer::setPostMediaFrame()
 
     if(!postPicture)
     {
+        glGenFramebuffers(1, &mediaFramebufferObject);
+        glBindFramebuffer(GL_FRAMEBUFFER, mediaFramebufferObject);
+
         postPicture = std::make_unique<ResizableGLImage>();
         glGenTextures(1, &postPicture->textureId);
         glBindTexture(GL_TEXTURE_2D, postPicture->textureId);
@@ -530,13 +539,26 @@ void PostContentViewer::setPostMediaFrame()
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (int)mediaState.width, (int)mediaState.height, 0,
                      GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                                       postPicture->textureId, 0);
         postPicture->width = (int)mediaState.width;
         postPicture->height = (int)mediaState.height;
-        glBindTexture(GL_TEXTURE_2D, 0);
-
+        //glBindTexture(GL_TEXTURE_2D, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
     if(postPicture->width <= 0 || postPicture->height <=0 ) return;
-    int rgbaBitsPerPixel = 32;
+    mpv_opengl_fbo mpfbo{(int)mediaFramebufferObject,
+                    postPicture->width,
+                    postPicture->height, GL_RGBA};
+    int flip_y{0};
+    mpv_render_param params[] = {
+                        {MPV_RENDER_PARAM_OPENGL_FBO, &mpfbo},
+                        {MPV_RENDER_PARAM_FLIP_Y, &flip_y},
+                        {MPV_RENDER_PARAM_INVALID,0}
+                    };
+
+    //TODO: add option to switch between OpenGL and SW rendering. Should be easy.
+    /*int rgbaBitsPerPixel = 32;
     size_t stride = (postPicture->width * rgbaBitsPerPixel + 7) / 8;
     std::unique_ptr<uint8_t[]> pixels = std::make_unique<uint8_t[]>(stride*postPicture->height);
     int size[2] = {postPicture->width, postPicture->height};
@@ -546,17 +568,17 @@ void PostContentViewer::setPostMediaFrame()
             {MPV_RENDER_PARAM_SW_STRIDE, &stride},
             {MPV_RENDER_PARAM_SW_POINTER, pixels.get()},
             {MPV_RENDER_PARAM_INVALID,0}
-    };
+    };*/
     int ret = mpv_render_context_render(mpvRenderContext, params);
     if(ret < 0)
     {
         std::cerr << "error rendering:"<<mpv_error_string(ret)<<std::endl;
         return;
     }
-    glBindTexture(GL_TEXTURE_2D, postPicture->textureId);
+    /*glBindTexture(GL_TEXTURE_2D, postPicture->textureId);
     glTexSubImage2D(GL_TEXTURE_2D,0,0,0,postPicture->width,postPicture->height,
                     GL_RGBA,GL_UNSIGNED_BYTE,pixels.get());
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);*/
     loadingPostContent = false;
 }
 void PostContentViewer::setPostGif(unsigned char* data, int width, int height, int channels,
