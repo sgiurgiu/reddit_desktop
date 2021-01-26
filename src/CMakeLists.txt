@@ -54,6 +54,19 @@ set (MARKDOWN_RENDERER_SRCS
     markdown/markdownnodetext.cpp
     markdown/markdownnodedocument.cpp)
 
+set(REDDIT_CONNECTIONS_SRCS
+    connections/redditloginconnection.cpp
+    connections/redditlistingconnection.cpp
+    connections/redditresourceconnection.cpp
+    connections/mediastreamingconnection.cpp
+    connections/redditcreatepostconnection.cpp
+    connections/redditsearchnamesconnection.cpp
+    connections/redditvoteconnection.cpp
+    connections/redditmorechildrenconnection.cpp
+    connections/redditcreatecommentconnection.cpp
+    connections/redditmarkreplyreadconnection.cpp
+    )
+
 set(REDDIT_DESKTOP_SRCS main.cpp
         utils.cpp
         redditdesktop.cpp
@@ -61,24 +74,14 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         database.cpp
         loginwindow.cpp
         redditclientproducer.cpp
-        redditloginconnection.cpp
-        redditlistingconnection.cpp
         entities.cpp
-        redditresourceconnection.cpp
         commentswindow.cpp
         markdownrenderer.cpp
-        mediastreamingconnection.cpp
         htmlparser.cpp
         postcontentviewer.cpp
         resizableglimage.cpp
-        redditcreatepostconnection.cpp
-        redditsearchnamesconnection.cpp
         userinformationwindow.cpp
-        redditvoteconnection.cpp
-        redditmorechildrenconnection.cpp
-        redditcreatecommentconnection.cpp
         resizableinputtextmultiline.cpp
-        redditmarkreplyreadconnection.cpp
         subredditslistwindow.cpp
         )
 
@@ -93,6 +96,7 @@ add_executable(${EXECUTABLE_NAME}
     ${GUMBO_PARSER_SRCS}
     ${MD4C_SRC}
     ${MARKDOWN_RENDERER_SRCS}
+    ${REDDIT_CONNECTIONS_SRCS}
     )
 
 #Disable warnings for glad and gumbo, they're thousands and I really don't care about them

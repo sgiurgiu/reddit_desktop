@@ -163,6 +163,9 @@ void RedditDesktop::addSubredditWindow(std::string title)
                                                                  &client,uiExecutor);
         using namespace std::placeholders;
         subredditWindow->showCommentsListener(std::bind(&RedditDesktop::addCommentsWindow,this,_1,_2));
+        subredditWindow->showSubredditListener([this](const std::string& title){
+            addSubredditWindow(title);
+        });
         subredditWindow->loadSubreddit();
         subredditWindows.push_back(std::move(subredditWindow));
     }
@@ -266,9 +269,9 @@ void RedditDesktop::showDesktop()
         });
     }
 
-    ImGui::SetNextWindowPos(ImVec2(0,topPosAfterMenuBar));
     if(subredditsListWindow)
     {
+        ImGui::SetNextWindowPos(ImVec2(0,topPosAfterMenuBar));
         subredditsListWindow->showWindow(appFrameWidth,appFrameHeight);
     }
     showOpenSubredditWindow();

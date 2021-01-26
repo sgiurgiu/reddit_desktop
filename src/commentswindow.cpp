@@ -20,9 +20,7 @@ CommentsWindow::CommentsWindow(const std::string& postId,
 {    
     windowName = fmt::format("{}##{}",title,postId);
 }
-CommentsWindow::~CommentsWindow()
-{
-}
+
 void CommentsWindow::setupListingConnections()
 {
     if(moreChildrenConnection && listingConnection) return;

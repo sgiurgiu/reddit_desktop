@@ -461,6 +461,19 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Bold)]);
         ImGui::Text("%s",p.post->subreddit.c_str());
         ImGui::PopFont();
+
+        if(ImGui::IsItemHovered() && p.post->subreddit != subreddit)
+        {
+            ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted("Open Subreddit");
+            ImGui::EndTooltip();
+        }
+        if(ImGui::IsItemClicked(ImGuiMouseButton_Left) && p.post->subreddit != subreddit)
+        {
+            subredditSignal(p.post->subreddit);
+        }
+
         ImGui::SameLine();        
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Light)]);
         ImGui::Text("Posted by %s %s",p.post->author.c_str(),p.post->humanReadableTimeDifference.c_str());

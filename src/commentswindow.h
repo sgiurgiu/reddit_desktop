@@ -8,7 +8,6 @@
 #include <boost/signals2.hpp>
 #include "entities.h"
 #include "redditclientproducer.h"
-#include "redditlistingconnection.h"
 #include "utils.h"
 #include "postcontentviewer.h"
 #include "markdownrenderer.h"
@@ -21,7 +20,7 @@ public:
                    const access_token& token,
                    RedditClientProducer* client,
                    const boost::asio::any_io_executor& executor);
-    ~CommentsWindow();
+
     void loadComments();
     bool isWindowOpen() const {return windowOpen;}
     void showWindow(int appFrameWidth,int appFrameHeight);

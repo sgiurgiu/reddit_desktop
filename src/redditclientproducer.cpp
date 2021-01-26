@@ -1,6 +1,5 @@
 #include "redditclientproducer.h"
 #include <boost/beast/ssl.hpp>
-#include "redditloginconnection.h"
 #include <fmt/format.h>
 
 #ifdef RD_WINDOWS

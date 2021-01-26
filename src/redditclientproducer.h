@@ -2,16 +2,16 @@
 #define REDDITCLIENTPRODUCER_H
 
 #include "entities.h"
-#include "redditloginconnection.h"
-#include "redditlistingconnection.h"
-#include "redditresourceconnection.h"
-#include "mediastreamingconnection.h"
-#include "redditcreatepostconnection.h"
-#include "redditsearchnamesconnection.h"
-#include "redditvoteconnection.h"
-#include "redditmorechildrenconnection.h"
-#include "redditcreatecommentconnection.h"
-#include "redditmarkreplyreadconnection.h"
+#include "connections/redditloginconnection.h"
+#include "connections/redditlistingconnection.h"
+#include "connections/redditresourceconnection.h"
+#include "connections/mediastreamingconnection.h"
+#include "connections/redditcreatepostconnection.h"
+#include "connections/redditsearchnamesconnection.h"
+#include "connections/redditvoteconnection.h"
+#include "connections/redditmorechildrenconnection.h"
+#include "connections/redditcreatecommentconnection.h"
+#include "connections/redditmarkreplyreadconnection.h"
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <thread>

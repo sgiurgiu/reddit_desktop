@@ -26,6 +26,11 @@ public:
     {
         commentsSignal.connect(slot);
     }
+    template<typename S>
+    void showSubredditListener(S slot)
+    {
+        subredditSignal.connect(slot);
+    }
     void setFocused();
     ~SubredditWindow();
     std::string getSubreddit() const
@@ -87,6 +92,7 @@ private:
     void setPostErrorMessage(PostDisplay* post,std::string msg);
 private:    
     using CommentsSignal = boost::signals2::signal<void(std::string id,std::string title)>;
+    using SubredditSignal = boost::signals2::signal<void(std::string)>;
     int id;
     std::string subreddit;
     std::string subredditName;
@@ -105,6 +111,7 @@ private:
     float maxScoreWidth = 0.f;
     float upvotesButtonsIdent = 0.f;
     CommentsSignal commentsSignal;
+    SubredditSignal subredditSignal;
     bool willBeFocused = false;
     std::optional<std::string> after;
     std::optional<std::string> before;
