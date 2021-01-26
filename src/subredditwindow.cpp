@@ -30,9 +30,9 @@ SubredditWindow::~SubredditWindow()
 void SubredditWindow::clearExistingPostsData()
 {
     std::vector<GLuint> textures;
-    std::vector<GLuint> fbos;
+    //std::vector<GLuint> fbos;
     textures.reserve(posts.size()*3);
-    fbos.reserve(posts.size());
+    //fbos.reserve(posts.size());
     for(auto&& p : posts)
     {
         if(p.thumbnailPicture && p.thumbnailPicture->textureId > 0)

@@ -1,11 +1,10 @@
-#include "redditcreatecommentconnection.h"
-
+#include "redditmarkreplyreadconnection.h"
 #include <fmt/format.h>
 #include "json.hpp"
 #include <charconv>
 #include "htmlparser.h"
 
-RedditCreateCommentConnection::RedditCreateCommentConnection(const boost::asio::any_io_executor& executor,
+RedditMarkReplyReadConnection::RedditMarkReplyReadConnection(const boost::asio::any_io_executor& executor,
                                                              boost::asio::ssl::context& ssl_context,
                                                              const std::string& host, const std::string& service,
                                                              const std::string& userAgent):
@@ -13,34 +12,37 @@ RedditCreateCommentConnection::RedditCreateCommentConnection(const boost::asio::
 {
 
 }
-void RedditCreateCommentConnection::createComment(const std::string& parentId,const std::string& text,
-                                                  const access_token& token, void* userData)
+void RedditMarkReplyReadConnection::markReplyRead(const std::vector<std::string>& ids,
+                                                  const access_token& token, bool read,
+                                                  void* userData)
 {
-    if(text.empty() || parentId.empty()) return;
     request_t request;
     request.clear();
     request.version(11);
     request.method(boost::beast::http::verb::post);
-    request.target("/api/comment");
+    request.target(read ? "/api/read_message" : "/api/unread_message");
     request.set(boost::beast::http::field::host, host);
     request.set(boost::beast::http::field::accept, "*/*");
     request.set(boost::beast::http::field::connection, "keep-alive");
     request.set(boost::beast::http::field::user_agent, userAgent);
     request.set(boost::beast::http::field::authorization,fmt::format("Bearer {}",token.token));
     request.set(boost::beast::http::field::content_type, "application/x-www-form-urlencoded");
-    auto escapedText = HtmlParser::escape(text);
-    request.body() = fmt::format("api_type=json&text={}"
-                                 "&thing_id={}",
-                                 escapedText,parentId);
+    std::string idsParam;
+    std::string commaSeparator;
+    for(const auto& id : ids)
+    {
+        idsParam+=std::exchange(commaSeparator,"%2C")+id;
+    }
+    request.body() = fmt::format("api_type=json&id={}",idsParam);
     request.prepare_payload();
     enqueueRequest(std::move(request), userData);
 }
 
-void RedditCreateCommentConnection::responseReceivedComplete(void* userData)
+void RedditMarkReplyReadConnection::responseReceivedComplete(void* userData)
 {
     auto status = responseParser->get().result_int();
     auto body = responseParser->get().body();
-    client_response<listing> resp;
+    client_response<std::string> resp;
     for(const auto& h : responseParser->get())
     {
         if(h.name() == boost::beast::http::field::content_length)
@@ -54,22 +56,7 @@ void RedditCreateCommentConnection::responseReceivedComplete(void* userData)
         }
     }
     resp.status = status;
-    if(status == 200)
-    {
-        try
-        {
-            resp.data.json = nlohmann::json::parse(body);
-        }
-        catch(const std::exception& ex)
-        {
-            resp.body = ex.what();
-            if(status < 500) resp.status = 500;
-        }
-    }
-    else
-    {
-        resp.body = body;
-    }
+    resp.body = body;
     resp.userData = userData;
     signal({},std::move(resp));
 }

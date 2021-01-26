@@ -8,7 +8,6 @@
 #include <imgui.h>
 #include "entities.h"
 #include "redditclientproducer.h"
-#include "redditlistingconnection.h"
 #include "resizableglimage.h"
 #include "postcontentviewer.h"
 

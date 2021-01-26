@@ -535,6 +535,7 @@ void PostContentViewer::setPostMediaFrame()
 
     if(!postPicture)
     {
+        if(mediaState.width <= 0 || mediaState.height <= 0) return;
         if(useMediaHwAccel)
         {
             glGenFramebuffers(1, &mediaFramebufferObject);
@@ -566,7 +567,11 @@ void PostContentViewer::setPostMediaFrame()
             glBindTexture(GL_TEXTURE_2D, 0);
         }
     }
-    if(postPicture->width <= 0 || postPicture->height <=0 ) return;
+    if(postPicture->width <= 0 || postPicture->height <=0 )
+    {
+        std::cerr << "eroneus picture width :"<<postPicture->width<<", and height:"<<postPicture->height<<std::endl;
+        return;
+    }
     int ret = 0;
     if(useMediaHwAccel)
     {
@@ -601,6 +606,10 @@ void PostContentViewer::setPostMediaFrame()
             glTexSubImage2D(GL_TEXTURE_2D,0,0,0,postPicture->width,postPicture->height,
                             GL_RGBA,GL_UNSIGNED_BYTE,pixels.get());
             glBindTexture(GL_TEXTURE_2D, 0);
+        }
+        else
+        {
+
         }
     }
 

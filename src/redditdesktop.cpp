@@ -13,7 +13,6 @@ namespace
 {
 constexpr auto OPENSUBREDDIT_WINDOW_POPUP_TITLE = "Open Subreddit";
 constexpr auto ERROR_WINDOW_POPUP_TITLE = "Error Occurred";
-constexpr auto SUBREDDITS_WINDOW_TITLE = "My Subreddits";
 }
 
 RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
@@ -21,9 +20,6 @@ RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
     client("api.reddit.com","oauth.reddit.com",3),
     loginWindow(&client,uiExecutor),loginTokenRefreshTimer(uiContext)
 {
-    subredditsSortMethod[SubredditsSorting::None] = "None";
-    subredditsSortMethod[SubredditsSorting::Alphabetical_Ascending] = "Alphabetical";
-    subredditsSortMethod[SubredditsSorting::Alphabetical_Descending] = "Alphabetical (Inverse)";
     current_user = Database::getInstance()->getRegisteredUser();
     shouldBlurPictures= Database::getInstance()->getBlurNSFWPictures();
     useMediaHwAccel = Database::getInstance()->getUseHWAccelerationForMedia();
@@ -70,7 +66,7 @@ void RedditDesktop::refreshLoginToken()
 
 void RedditDesktop::loginSuccessful(client_response<access_token> token)
 {
-    current_access_token = token;
+    current_access_token = token;    
     loginTokenRefreshTimer.expires_after(std::chrono::seconds(std::min(current_access_token.data.expires,10*60)));
     loginTokenRefreshTimer.async_wait([weak=weak_from_this()](const boost::system::error_code& ec){
         auto self = weak.lock();
@@ -135,111 +131,18 @@ void RedditDesktop::updateUserInformation(user_info info)
             userInfoDisplay.append(reinterpret_cast<const char*>(" " ICON_FA_BELL));
         }
     }
-    unsortedSubscribedSubreddits.clear();
-    loadSubreddits("/subreddits/mine/subscriber?show=all&limit=100",current_access_token.data);
-    loadMultis("/api/multi/mine",current_access_token.data);
-}
-void RedditDesktop::loadMultis(const std::string& url, const access_token& token)
-{
-    auto multisConnection = client.makeListingClientConnection();
-    multisConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
-                                                 client_response<listing> response)
-     {
-        auto self = weak.lock();
-        if(!self) return;
-        if(ec)
-        {
-            boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,ec.message()));
-        }
-        else
-        {
-            if(response.status >= 400)
-            {
-                boost::asio::post(self->uiExecutor,
-                                  std::bind(&RedditDesktop::setConnectionErrorMessage,self,response.body));
-            }
-            else
-            {
-                multireddit_list srs;
-                for(const auto& child: response.data.json)
-                {
-                    srs.emplace_back(child["data"]);
-                }
-
-                boost::asio::post(self->uiExecutor,
-                                  std::bind(&RedditDesktop::setUserMultis,self,std::move(srs)));
-            }
-        }
-     });
-     multisConnection->list(url,token);
-}
-void RedditDesktop::setUserMultis(multireddit_list multis)
-{
-    userMultis = std::move(multis);
-}
-void RedditDesktop::loadSubscribedSubreddits(subreddit_list srs)
-{
-    if(!srs.empty())
+    if(!subredditsListWindow)
     {
-        auto url = fmt::format("/subreddits/mine/subscriber?show=all&limit=100&after={}&count={}",srs.back().name,srs.size());
-        loadSubreddits(url,current_access_token.data);
-    }
-    std::move(srs.begin(), srs.end(), std::back_inserter(unsortedSubscribedSubreddits));
-    subscribedSubreddits = unsortedSubscribedSubreddits;
-    sortSubscribedSubreddits();
-}
-void RedditDesktop::loadSubreddits(const std::string& url, const access_token& token)
-{
-    auto subscribedSubredditsConnection = client.makeListingClientConnection();
-    subscribedSubredditsConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
-                                                 client_response<listing> response)
-     {
-        auto self = weak.lock();
-        if(!self) return;
-        if(ec)
-        {
-            boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,ec.message()));
-        }
-        else
-        {
-            if(response.status >= 400)
-            {
-                boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::setConnectionErrorMessage,self,response.body));
-            }
-            else
-            {
-                auto listingChildren = response.data.json["data"]["children"];
-                subreddit_list srs;
-                for(const auto& child: listingChildren)
-                {
-                    srs.emplace_back(child["data"]);
-                }
-
-                boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::loadSubscribedSubreddits,self,std::move(srs)));
-            }
-        }
-     });
-     subscribedSubredditsConnection->list(url,token);
-}
-void RedditDesktop::sortSubscribedSubreddits()
-{
-    if(currentSubredditsSorting != SubredditsSorting::None)
-    {
-        std::stable_sort(subscribedSubreddits.begin(),subscribedSubreddits.end(),[this](const auto& lhs,const auto& rhs){
-            auto ldisplayName = boost::to_lower_copy(lhs.sr.displayName);
-            auto rdisplayName = boost::to_lower_copy(rhs.sr.displayName);
-            if(currentSubredditsSorting == SubredditsSorting::Alphabetical_Ascending) {
-                return ldisplayName < rdisplayName;
-            } else {
-                return ldisplayName > rdisplayName;
-            }
+        subredditsListWindow = std::make_shared<SubredditsListWindow>(current_access_token.data,&client,uiExecutor);
+        subredditsListWindow->showSubredditListener([weak=weak_from_this()](std::string str){
+            auto self = weak.lock();
+            if(!self) return;
+            self->addSubredditWindow(str);
         });
     }
-    else
-    {
-        subscribedSubreddits = unsortedSubscribedSubreddits;
-    }
+    subredditsListWindow->loadSubredditsList();
 }
+
 void RedditDesktop::addSubredditWindow(std::string title)
 {    
     auto it = std::find_if(subredditWindows.cbegin(),subredditWindows.cend(),
@@ -301,6 +204,7 @@ void RedditDesktop::updateWindowsTokenData()
     {
         cm->setAccessToken(current_access_token.data);
     }
+    subredditsListWindow->setAccessToken(current_access_token.data);
 }
 void RedditDesktop::cleanupClosedWindows()
 {
@@ -359,7 +263,11 @@ void RedditDesktop::showDesktop()
         });
     }
 
-    showSubredditsWindow();
+    ImGui::SetNextWindowPos(ImVec2(0,topPosAfterMenuBar));
+    if(subredditsListWindow)
+    {
+        subredditsListWindow->showWindow(appFrameWidth,appFrameHeight);
+    }
     showOpenSubredditWindow();
 
     if(loginWindow.showLoginWindow())
@@ -385,116 +293,7 @@ void RedditDesktop::showDesktop()
 
     ImGui::PopFont();
 }
-void RedditDesktop::showSubredditsWindow()
-{
-    ImGui::SetNextWindowSize(ImVec2(appFrameWidth*0.2f,appFrameHeight*0.6f),ImGuiCond_FirstUseEver);
 
-    ImGui::SetNextWindowPos(ImVec2(0,topPosAfterMenuBar));
-    if(!ImGui::Begin(SUBREDDITS_WINDOW_TITLE,nullptr,ImGuiWindowFlags_NoMove))
-    {
-        ImGui::End();
-        return;
-    }
-
-    if (ImGui::BeginTabBar("SubredditsTabBar", ImGuiTabBarFlags_None))
-    {
-        if (ImGui::BeginTabItem("Subreddits"))
-        {
-            showSubredditsTab();
-            ImGui::EndTabItem();
-        }
-
-        if (ImGui::BeginTabItem("Multireddits"))
-        {
-            showMultisTab();
-            ImGui::EndTabItem();
-        }
-
-        ImGui::EndTabBar();
-    }
-    ImGui::End();
-}
-void RedditDesktop::showMultisTab()
-{
-    for(const auto& sr : userMultis)
-    {
-        if(ImGui::Selectable(sr.displayName.c_str()))
-        {
-            addSubredditWindow(sr.path);
-        }
-    }
-}
-void RedditDesktop::showSubredditsTab()
-{
-    if(ImGui::Button(reinterpret_cast<const char*>(ICON_FA_REFRESH)))
-    {
-        //this clear is just for show, to tell the user that we're working, doing something
-        subscribedSubreddits.clear();
-        unsortedSubscribedSubreddits.clear();
-        frontPageSubredditSelected = false;
-        allSubredditSelected = false;
-        loadSubreddits("/subreddits/mine/subscriber?show=all&limit=100",current_access_token.data);
-    }
-    ImGui::SameLine();
-    ImGui::Text("Sort:");
-    ImGui::SameLine();
-    if (ImGui::BeginCombo("##subreddits_sorting_combo", subredditsSortMethod[currentSubredditsSorting].c_str()))
-    {
-        for(const auto& p : subredditsSortMethod)
-        {
-            if (ImGui::Selectable(p.second.c_str(), currentSubredditsSorting == p.first))
-            {
-                currentSubredditsSorting = p.first;
-                sortSubscribedSubreddits();
-            }
-        }
-        ImGui::EndCombo();
-    }
-
-    if(ImGui::Selectable("Front Page",frontPageSubredditSelected,ImGuiSelectableFlags_AllowDoubleClick))
-    {
-        frontPageSubredditSelected = true;
-        allSubredditSelected = false;
-        std::for_each(subscribedSubreddits.begin(),subscribedSubreddits.end(),
-                       [](auto&& item){
-            item.selected = false;
-        });
-        if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-        {
-            addSubredditWindow("");
-        }
-    }
-    if(ImGui::Selectable("All",allSubredditSelected,ImGuiSelectableFlags_AllowDoubleClick))
-    {
-        std::for_each(subscribedSubreddits.begin(),subscribedSubreddits.end(),
-                       [](auto&& item){
-            item.selected = false;
-        });
-        frontPageSubredditSelected = false;
-        allSubredditSelected = true;
-        if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-        {
-            addSubredditWindow("r/all");
-        }
-    }
-    for(auto&& sr : subscribedSubreddits)
-    {        
-        if(ImGui::Selectable(sr.sr.displayName.c_str(),sr.selected,ImGuiSelectableFlags_AllowDoubleClick))
-        {
-            frontPageSubredditSelected = false;
-            allSubredditSelected = false;
-            std::for_each(subscribedSubreddits.begin(),subscribedSubreddits.end(),
-                           [](auto&& item){
-                item.selected = false;
-            });
-            if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-            {
-                addSubredditWindow(sr.sr.displayNamePrefixed);
-            }
-            sr.selected = true;
-        }
-    }
-}
 
 void RedditDesktop::showErrorDialog()
 {

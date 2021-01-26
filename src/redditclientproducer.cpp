@@ -95,3 +95,7 @@ RedditClientProducer::RedditCreateCommentClientConnection RedditClientProducer::
 {
     return std::make_shared<RedditCreateCommentConnection>(executor,ssl_context,server,service,userAgent);
 }
+RedditClientProducer::RedditMarkReplyReadClientConnection RedditClientProducer::makeRedditMarkReplyReadClientConnection()
+{
+    return std::make_shared<RedditMarkReplyReadConnection>(executor,ssl_context,server,service,userAgent);
+}

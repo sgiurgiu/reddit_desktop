@@ -24,7 +24,7 @@ void UserInformationWindow::loadMessages()
     {
         createCommentConnection = client->makeRedditCreateCommentClientConnection();
         createCommentConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
-                                   const client_response<listing>& response)
+                                   client_response<listing> response)
        {
            auto self = weak.lock();
            if(!self || !self->showWindow) return;
@@ -53,8 +53,9 @@ void UserInformationWindow::loadMessages()
                           {
                               for(const auto& msgResponse : things)
                               {
-                                  boost::asio::post(self->uiExecutor,std::bind(&UserInformationWindow::loadMessageResponse,
-                                                                               self,std::move(msgResponse)));
+                                  boost::asio::post(self->uiExecutor,
+                                                    std::bind(&UserInformationWindow::loadMessageResponse,
+                                                    self,std::move(msgResponse),(DisplayMessage*)response.userData));
                               }
                           }
                        }
@@ -63,10 +64,49 @@ void UserInformationWindow::loadMessages()
            }
        });
     }
+    if(!markReplyReadConnection)
+    {
+        markReplyReadConnection = client->makeRedditMarkReplyReadClientConnection();
+        markReplyReadConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
+                                   client_response<std::string> response)
+       {
+           auto self = weak.lock();
+           if(!self || !self->showWindow) return;
+           if(ec)
+           {
+               boost::asio::post(self->uiExecutor,
+                        std::bind(&UserInformationWindow::setErrorMessage,self,ec.message()));
+           }
+           else
+           {
+               if(response.status >= 400)
+               {
+                   boost::asio::post(self->uiExecutor,
+                                 std::bind(&UserInformationWindow::setErrorMessage,self,response.body));
+               }
+               else
+               {
+
+                    boost::asio::post(self->uiExecutor,
+                                    std::bind(&UserInformationWindow::setMessagesRead,
+                                    self,(MarkMessagesType*)response.userData));
+               }
+           }
+       });
+    }
 
     loadMoreUnreadMessages();
     loadMoreAllMessages();
     loadMoreSentMessages();
+}
+void UserInformationWindow::setMessagesRead(MarkMessagesType* markedMessages)
+{
+    for(const auto& message : markedMessages->first)
+    {
+        message->msg.isNew = !markedMessages->second;
+        message->updateButtonsText();
+    }
+    delete markedMessages;
 }
 void UserInformationWindow::loadMoreUnreadMessages()
 {
@@ -91,7 +131,7 @@ void UserInformationWindow::loadMessages(const std::string& kind,Messages* messa
     {
         listingConnection = client->makeListingClientConnection();
         listingConnection->connectionCompleteHandler([self=shared_from_this()](const boost::system::error_code& ec,
-                                              const client_response<listing>& response)
+                                              client_response<listing> response)
             {
                 if(ec)
                 {
@@ -143,7 +183,7 @@ void UserInformationWindow::loadListingsFromConnection(listing listingResponse,M
         }
     }
 }
-void UserInformationWindow::loadMessageResponse(nlohmann::json response)
+void UserInformationWindow::loadMessageResponse(nlohmann::json response,DisplayMessage* parentMessage)
 {
     std::string kind;
     if(response.contains("kind") && response["kind"].is_string())
@@ -153,20 +193,7 @@ void UserInformationWindow::loadMessageResponse(nlohmann::json response)
     if(response.contains("data") && response["data"].is_object())
     {
         message msg{response["data"], kind};
-        auto it = std::find_if(loadingMoreRepliesComments.begin(),loadingMoreRepliesComments.end(),
-                               [&msg](const DisplayMessage* c){
-            return msg.parentId == c->msg.name;
-        });
-
-        if(it != loadingMoreRepliesComments.end())
-        {
-            (*it)->replies.emplace((*it)->replies.begin(),std::move(msg));
-            loadingMoreRepliesComments.erase(it);
-        }
-        else
-        {
-            std::cerr<<"Cannot find message I just replied to. msg.parentId:"<<msg.parentId<<std::endl;
-        }
+        parentMessage->replies.emplace(parentMessage->replies.begin(),std::move(msg));
     }
 }
 void UserInformationWindow::setErrorMessage(std::string errorMessage)
@@ -190,6 +217,45 @@ void UserInformationWindow::DisplayMessage::updateButtonsText()
     titleText = fmt::format("{} - {}{}",msg.author,msg.subject,(msg.isNew?" (unread)":""));
 #endif
 }
+void UserInformationWindow::voteComment(DisplayMessage* c,Voted vote)
+{
+    listingErrorMessage.clear();
+    if(!commentVotingConnection)
+    {
+        commentVotingConnection = client->makeRedditVoteClientConnection();
+        commentVotingConnection->connectionCompleteHandler(
+            [weak = weak_from_this()](const boost::system::error_code& ec,
+                client_response<std::string> response)
+        {
+            auto self = weak.lock();
+            if (!self) return;
+            std::pair<DisplayMessage*, Voted>* p = static_cast<std::pair<DisplayMessage*, Voted>*>(response.userData);
+            if (!p) return;
+
+            if (ec)
+            {
+                boost::asio::post(self->uiExecutor, std::bind(&UserInformationWindow::setErrorMessage, self, ec.message()));
+            }
+            else if (response.status >= 400)
+            {
+                boost::asio::post(self->uiExecutor, std::bind(&UserInformationWindow::setErrorMessage, self, std::move(response.body)));
+            }
+            else
+            {
+                boost::asio::post(self->uiExecutor, std::bind(&UserInformationWindow::updateCommentVote, self, p->first, p->second));
+            }
+            delete p;
+        });
+    }
+    std::pair<DisplayMessage*, Voted>* pair = new std::pair<DisplayMessage*, Voted>(c, vote);
+    commentVotingConnection->vote(c->msg.name,token,vote,pair);
+}
+void UserInformationWindow::updateCommentVote(DisplayMessage* c,Voted vote)
+{
+    //auto oldVoted = c->msg.voted;
+    c->msg.voted = vote;
+    //c->updateButtonsText();
+}
 void UserInformationWindow::showUserInfoWindow(int appFrameWidth,int appFrameHeight)
 {
     if(!showWindow) return;
@@ -206,7 +272,15 @@ void UserInformationWindow::showUserInfoWindow(int appFrameWidth,int appFrameHei
         {
             if(unreadMessages.count > 0 && ImGui::Button("Mark All Read"))
             {
-
+                DisplayMessagePtrList messagesPtrList;
+                std::vector<std::string> ids;
+                for(auto&& msg : unreadMessages.messages)
+                {
+                    messagesPtrList.push_back(&msg);
+                    ids.push_back(msg.msg.name);
+                }
+                MarkMessagesType* markedMessages = new MarkMessagesType(std::move(messagesPtrList),true);
+                markReplyReadConnection->markReplyRead(ids,token,true,markedMessages);
             }
             for(auto&& msg : unreadMessages.messages)
             {
@@ -258,13 +332,45 @@ void UserInformationWindow::showMessage(DisplayMessage& msg)
     if(ImGui::TreeNodeEx(msg.titleText.c_str(),ImGuiTreeNodeFlags_DefaultOpen))
     {
         msg.renderer.RenderMarkdown();
+        ImGui::Dummy(ImVec2(0.0f, ImGui::GetFontSize()/2.f));
+        if(msg.msg.voted == Voted::UpVoted)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text,Utils::GetUpVoteColor());
+        }
+        if(ImGui::Button(msg.upvoteButtonText.c_str()))
+        {
+            voteComment(&msg,Voted::UpVoted);
+        }
+        if(msg.msg.voted == Voted::UpVoted)
+        {
+            ImGui::PopStyleColor(1);
+        }
+        ImGui::SameLine();
+        if(msg.msg.voted == Voted::DownVoted)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text,Utils::GetDownVoteColor());
+        }
+        if(ImGui::Button(msg.downvoteButtonText.c_str()))
+        {
+            voteComment(&msg,Voted::DownVoted);
+        }
+        if(msg.msg.voted == Voted::DownVoted)
+        {
+            ImGui::PopStyleColor(1);
+        }
+
+        ImGui::SameLine();
         if(ImGui::Button(msg.replyButtonText.c_str()))
         {
             msg.showingReplyArea = !msg.showingReplyArea;
         }
+        ImGui::SameLine();
         if(ImGui::Button(msg.markReadUnreadButtonText.c_str()))
         {
-
+            DisplayMessagePtrList messagesPtrList;
+            messagesPtrList.push_back(&msg);
+            MarkMessagesType* markedMessages = new MarkMessagesType(std::move(messagesPtrList),msg.msg.isNew);
+            markReplyReadConnection->markReplyRead({msg.msg.name},token,msg.msg.isNew,markedMessages);
         }
         if(msg.showingReplyArea)
         {
@@ -278,8 +384,7 @@ void UserInformationWindow::showMessage(DisplayMessage& msg)
             {
                 msg.showingReplyArea = false;
                 msg.postingReply = true;
-                loadingMoreRepliesComments.push_back(&msg);
-                createCommentConnection->createComment(msg.msg.name,msg.postReplyTextBuffer,token);
+                createCommentConnection->createComment(msg.msg.name,msg.postReplyTextBuffer,token,&msg);
             }
             ImGui::SameLine();
             if(ImGui::Checkbox(msg.postReplyPreviewCheckboxId.c_str(),&msg.showingPreview))

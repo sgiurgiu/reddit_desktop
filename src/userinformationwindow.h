@@ -75,7 +75,12 @@ private:
     void setErrorMessage(std::string errorMessage);
     void loadListingsFromConnection(listing listingResponse,Messages* messages);
     void showMessage(DisplayMessage& msg);
-    void loadMessageResponse(nlohmann::json);
+    void loadMessageResponse(nlohmann::json,DisplayMessage*);
+    using DisplayMessagePtrList = std::vector<DisplayMessage*>;
+    using MarkMessagesType = std::pair<DisplayMessagePtrList,bool>;
+    void setMessagesRead(MarkMessagesType*);
+    void updateCommentVote(DisplayMessage* c,Voted vote);
+    void voteComment(DisplayMessage* c,Voted vote);
 private:
     bool showWindow = false;
     access_token token;
@@ -85,9 +90,11 @@ private:
     Messages allMessages;
     Messages sentMessages;
     std::string listingErrorMessage;
-    std::vector<DisplayMessage*> loadingMoreRepliesComments;
     RedditClientProducer::RedditCreateCommentClientConnection createCommentConnection;
     RedditClientProducer::RedditListingClientConnection listingConnection;
+    RedditClientProducer::RedditMarkReplyReadClientConnection markReplyReadConnection;
+    RedditClientProducer::RedditVoteClientConnection commentVotingConnection;
+
 };
 
 #endif // USERINFORMATIONWINDOW_H

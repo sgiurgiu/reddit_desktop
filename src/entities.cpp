@@ -729,5 +729,10 @@ message::message(const nlohmann::json& json, const std::string& kind):kind(kind)
     {
         subject =json["subject"].get<std::string>();
     }
+    if(json.contains("score") && json["score"].is_number())
+    {
+        score = json["score"].get<int>();
+        humanScore = Utils::getHumanReadableNumber(score);
+    }
 }
 

@@ -286,7 +286,10 @@ struct message
     std::string id;
     bool isNew = false;
     std::string distinguished;
-    std::string subject;    
+    std::string subject;
+    Voted voted = Voted::NotVoted;
+    int score = 0;
+    std::string humanScore;
 };
 
 #endif // ENTITIES_H

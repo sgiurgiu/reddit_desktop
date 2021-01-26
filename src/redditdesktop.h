@@ -11,6 +11,7 @@
 #include "redditclientproducer.h"
 #include "commentswindow.h"
 #include "userinformationwindow.h"
+#include "subredditslistwindow.h"
 
 class RedditDesktop : public std::enable_shared_from_this<RedditDesktop>
 {
@@ -33,9 +34,6 @@ public:
         appFrameHeight = height;
     }
 private:
-    void showSubredditsWindow();
-    void showSubredditsTab();
-    void showMultisTab();
     void showMainMenuBar();
     void showMenuFile();
     void showOpenSubredditWindow();
@@ -44,18 +42,14 @@ private:
     void addSubredditWindow(std::string title);
     void loginSuccessful(client_response<access_token> token);
     void updateUserInformation(user_info info);
-    void loadSubscribedSubreddits(subreddit_list srs);
-    void loadSubreddits(const std::string& url, const access_token& token);
-    void sortSubscribedSubreddits();
-    void loadMultis(const std::string& url, const access_token& token);
-    void setUserMultis(multireddit_list multis);
-    void searchSubreddits();
-    void setSearchResultsNames(names_list names);
     void addCommentsWindow(std::string postId,std::string title);
     void refreshLoginToken();
     void loadUserInformation();
     void updateWindowsTokenData();
     void cleanupClosedWindows();
+    void searchSubreddits();
+    void setSearchResultsNames(names_list names);
+
 private:
     boost::asio::any_io_executor uiExecutor;
     RedditClientProducer client;
@@ -73,30 +67,7 @@ private:
     client_response<access_token> current_access_token;
     bool showConnectionErrorDialog = false;
     std::string connectionErrorMessage;
-    struct DisplayedSubredditItem
-    {
-        DisplayedSubredditItem(subreddit sr):
-            sr(std::move(sr))
-        {}
-        subreddit sr;
-        bool selected = false;
-    };
-    using DisplayedSubredditsList = std::vector<DisplayedSubredditItem>;
-    DisplayedSubredditsList subscribedSubreddits;
-    DisplayedSubredditsList unsortedSubscribedSubreddits;
-    bool frontPageSubredditSelected = false;
-    bool allSubredditSelected = false;
-    multireddit_list userMultis;
-    names_list searchedNamesList;
     float topPosAfterMenuBar = 0.0f;
-    enum class SubredditsSorting
-    {
-        None,
-        Alphabetical_Ascending,
-        Alphabetical_Descending
-    };
-    std::map<SubredditsSorting,std::string> subredditsSortMethod;
-    SubredditsSorting currentSubredditsSorting = SubredditsSorting::None;
     bool shouldBlurPictures = true;
     RedditClientProducer::RedditSearchNamesClientConnection searchNamesConnection;
     bool searchingSubreddits = false;
@@ -105,6 +76,8 @@ private:
     boost::asio::steady_timer loginTokenRefreshTimer;
     std::string userInfoDisplay;
     bool useMediaHwAccel = true;
+    std::shared_ptr<SubredditsListWindow> subredditsListWindow;
+    names_list searchedNamesList;
 };
 
 
