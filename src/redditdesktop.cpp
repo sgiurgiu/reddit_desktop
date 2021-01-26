@@ -76,6 +76,18 @@ void RedditDesktop::loginSuccessful(client_response<access_token> token)
         }
     });
 
+    if(!subredditsListWindow)
+    {
+        subredditsListWindow = std::make_shared<SubredditsListWindow>(current_access_token.data,&client,uiExecutor);
+        subredditsListWindow->showSubredditListener([weak=weak_from_this()](std::string str){
+            auto self = weak.lock();
+            if(!self) return;
+            self->addSubredditWindow(str);
+        });
+        subredditsListWindow->setUserName(current_user->username);
+    }
+    subredditsListWindow->loadSubredditsList();
+
     loadUserInformation();
 
     if(loggedInFirstTime)
@@ -130,17 +142,8 @@ void RedditDesktop::updateUserInformation(user_info info)
         {
             userInfoDisplay.append(reinterpret_cast<const char*>(" " ICON_FA_BELL));
         }
+
     }
-    if(!subredditsListWindow)
-    {
-        subredditsListWindow = std::make_shared<SubredditsListWindow>(current_access_token.data,&client,uiExecutor);
-        subredditsListWindow->showSubredditListener([weak=weak_from_this()](std::string str){
-            auto self = weak.lock();
-            if(!self) return;
-            self->addSubredditWindow(str);
-        });
-    }
-    subredditsListWindow->loadSubredditsList();
 }
 
 void RedditDesktop::addSubredditWindow(std::string title)

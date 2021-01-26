@@ -18,6 +18,11 @@ SubredditsListWindow::SubredditsListWindow(const access_token& token,
 }
 void SubredditsListWindow::loadSubredditsList()
 {
+    subscribedSubreddits.clear();
+    filteredSubscribedSubreddits.clear();
+    userMultis.clear();
+    filteredUserMultis.clear();
+
     loadSubreddits("/subreddits/mine/subscriber?show=all&limit=100",token);
     loadMultis("/api/multi/mine",token);
 }
@@ -258,8 +263,13 @@ void SubredditsListWindow::setUserMultis(multireddit_list multis)
     all.displayName = "All";
     all.path = "/r/all";
     userMultis.emplace_back(std::move(all));
-
     std::move(multis.begin(), multis.end(), std::back_inserter(userMultis));
+
+    multireddit saved;
+    saved.displayName = "saved";
+    saved.path = "/user/"+username+"/saved";
+    userMultis.emplace_back(std::move(saved));
+
     filteredUserMultis = userMultis;
 }
 void SubredditsListWindow::loadSubscribedSubreddits(subreddit_list srs)

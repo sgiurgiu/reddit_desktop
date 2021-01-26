@@ -232,13 +232,13 @@ ResizableGLImagePtr Utils::loadBlurredImage(unsigned char* data, int width, int 
 
     float sigma = 15;
     iir_gauss_blur(width, height, channels, data, sigma);
-    GLuint FramebufferName = 0;
+    /*GLuint FramebufferName = 0;
     glGenFramebuffers(1, &FramebufferName);
-    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);*/
 
     auto image = loadImage(data,width,height,channels);
 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+    /*glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
                            image->textureId, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
     glViewport( 0, 0, width, height );
@@ -254,7 +254,7 @@ ResizableGLImagePtr Utils::loadBlurredImage(unsigned char* data, int width, int 
     glEnd();
     glPopMatrix();
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glDeleteFramebuffers(1, &FramebufferName);
+    glDeleteFramebuffers(1, &FramebufferName);*/
 
     return image;
 }

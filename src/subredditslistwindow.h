@@ -27,6 +27,10 @@ public:
     {
         this->token = token;
     }
+    void setUserName(const std::string& userName)
+    {
+        this->username = userName;
+    }
 private:
     void loadSubscribedSubreddits(subreddit_list srs);
     void loadSubreddits(const std::string& url, const access_token& token);
@@ -85,6 +89,7 @@ private:
     bool searchingSubreddits = false;
     std::string search;
     std::string errorMessage;
+    std::string username;
 };
 
 #endif // SUBREDDITSLISTWINDOW_H
