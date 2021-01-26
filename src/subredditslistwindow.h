@@ -35,9 +35,11 @@ private:
     void searchSubreddits();
     void setSearchResultsNames(names_list names);
     void setErrorMessage(std::string message);
+    void showSubredditsNodes();
+    void showMultisNodes();
+    void clearSelections();
     void showSubredditsTab();
-    void showMultisTab();
-
+    void showSearchTab();
 private:
     using SubredditSignal = boost::signals2::signal<void(std::string)>;
     access_token token;
@@ -52,24 +54,36 @@ private:
         subreddit sr;
         bool selected = false;
     };
-    using DisplayedSubredditsList = std::vector<DisplayedSubredditItem>;
-    DisplayedSubredditsList subscribedSubreddits;
-    DisplayedSubredditsList unsortedSubscribedSubreddits;
-    bool frontPageSubredditSelected = false;
-    bool allSubredditSelected = false;
-    multireddit_list userMultis;
-    names_list searchedNamesList;
-
-    enum class SubredditsSorting
+    struct DisplayedMultiItem
     {
-        None,
-        Alphabetical_Ascending,
-        Alphabetical_Descending
+        DisplayedMultiItem(multireddit sr):
+            sr(std::move(sr))
+        {}
+        multireddit sr;
+        bool selected = false;
     };
-    std::map<SubredditsSorting,std::string> subredditsSortMethod;
-    SubredditsSorting currentSubredditsSorting = SubredditsSorting::None;
+    struct DisplayedSearchResultItem
+    {
+        DisplayedSearchResultItem(std::string sr):
+            sr(std::move(sr))
+        {}
+        std::string sr;
+        bool selected = false;
+    };
+
+    using DisplayedSubredditsList = std::vector<DisplayedSubredditItem>;
+    using DisplayedMultisList = std::vector<DisplayedMultiItem>;
+    DisplayedSubredditsList subscribedSubreddits;
+    DisplayedSubredditsList filteredSubscribedSubreddits;
+    DisplayedMultisList userMultis;
+    DisplayedMultisList filteredUserMultis;
+    std::vector<DisplayedSearchResultItem> searchedNamesList;
+    std::string subredditsFilter;
+    RedditClientProducer::RedditListingClientConnection loadSubscribedSubredditsConnection;
+    RedditClientProducer::RedditListingClientConnection loadMultisConnection;
     RedditClientProducer::RedditSearchNamesClientConnection searchNamesConnection;
     bool searchingSubreddits = false;
+    std::string search;
     std::string errorMessage;
 };
 

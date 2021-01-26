@@ -1,9 +1,10 @@
 #include "subredditslistwindow.h"
 #include <fmt/format.h>
-#include "imgui.h"
+#include <imgui.h>
+#include <imgui_stdlib.h>
 #include "fonts/IconsFontAwesome4.h"
 #include "utils.h"
-
+#include <boost/algorithm/string/case_conv.hpp>
 namespace
 {
 constexpr auto SUBREDDITS_WINDOW_TITLE = "My Subreddits";
@@ -37,26 +38,89 @@ void SubredditsListWindow::showWindow(int appFrameWidth,int appFrameHeight)
             showSubredditsTab();
             ImGui::EndTabItem();
         }
-
-        if (ImGui::BeginTabItem("Multireddits"))
+        if (ImGui::BeginTabItem("Search"))
         {
-            showMultisTab();
+            showSearchTab();
             ImGui::EndTabItem();
         }
-
         ImGui::EndTabBar();
     }
+
+
     ImGui::End();
 }
-void SubredditsListWindow::showMultisTab()
+void SubredditsListWindow::showSearchTab()
 {
-    for(const auto& sr : userMultis)
+    if(ImGui::InputTextWithHint("##searchsubreddits","Search (hit Enter to search)",&search,
+                                ImGuiInputTextFlags_EnterReturnsTrue) && !searchingSubreddits)
     {
-        if(ImGui::Selectable(sr.displayName.c_str()))
+        searchSubreddits();
+    }
+    ImGui::SameLine();
+    if(searchingSubreddits)
+    {
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+    }
+    if(ImGui::Button(reinterpret_cast<const char*>(ICON_FA_SEARCH "##searchSubredditsbutton")) && !searchingSubreddits)
+    {
+        searchSubreddits();
+    }
+    if (searchingSubreddits)
+    {
+        ImGui::PopStyleVar();
+    }
+    for(auto&& name : searchedNamesList)
+    {
+        if(ImGui::Selectable(name.sr.c_str(),name.selected,ImGuiSelectableFlags_AllowDoubleClick))
         {
-            subredditSignal(sr.path);
+            std::for_each(searchedNamesList.begin(),searchedNamesList.end(),
+                           [](auto&& item){
+                item.selected = false;
+            });
+            if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+            {
+                subredditSignal(name.sr);
+            }
+            name.selected = true;
         }
     }
+}
+void SubredditsListWindow::searchSubreddits()
+{
+    searchedNamesList.clear();
+    searchingSubreddits = true;
+    if(!searchNamesConnection)
+    {
+        searchNamesConnection = client->makeRedditSearchNamesClientConnection();
+        searchNamesConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
+                                                     client_response<names_list> response)
+         {
+            auto self = weak.lock();
+            if(!self) return;
+            if(ec)
+            {
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditsListWindow::setErrorMessage,self,ec.message()));
+            }
+            else
+            {
+                if(response.status >= 400)
+                {
+                    boost::asio::post(self->uiExecutor,std::bind(&SubredditsListWindow::setErrorMessage,self,response.body));
+                }
+                else
+                {
+                    boost::asio::post(self->uiExecutor,std::bind(&SubredditsListWindow::setSearchResultsNames,self,std::move(response.data)));
+                }
+            }
+         });
+    }
+
+    searchNamesConnection->search(search,token);
+}
+void SubredditsListWindow::setSearchResultsNames(names_list names)
+{
+    std::move(names.begin(), names.end(), std::back_inserter(searchedNamesList));
+    searchingSubreddits = false;
 }
 void SubredditsListWindow::showSubredditsTab()
 {
@@ -64,49 +128,77 @@ void SubredditsListWindow::showSubredditsTab()
     {
         //this clear is just for show, to tell the user that we're working, doing something
         subscribedSubreddits.clear();
-        unsortedSubscribedSubreddits.clear();
-        frontPageSubredditSelected = false;
-        allSubredditSelected = false;
+        filteredSubscribedSubreddits.clear();
+        userMultis.clear();
+        filteredUserMultis.clear();
         loadSubreddits("/subreddits/mine/subscriber?show=all&limit=100",token);
+        loadMultis("/api/multi/mine",token);
     }
-
-
-    if(ImGui::Selectable("Front Page",frontPageSubredditSelected,ImGuiSelectableFlags_AllowDoubleClick))
+    ImGui::SameLine();
+    if(ImGui::InputTextWithHint("##filtersubreddits","Filter",&subredditsFilter))
     {
-        frontPageSubredditSelected = true;
-        allSubredditSelected = false;
-        std::for_each(subscribedSubreddits.begin(),subscribedSubreddits.end(),
-                       [](auto&& item){
-            item.selected = false;
-        });
-        if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+        filteredSubscribedSubreddits.clear();
+        filteredUserMultis.clear();
+        if(subredditsFilter.empty())
         {
-            subredditSignal("");
+            filteredSubscribedSubreddits = subscribedSubreddits;
+            filteredUserMultis = userMultis;
+        }
+        else
+        {
+            auto comparator = [filter=subredditsFilter](const auto& item){
+                return boost::algorithm::to_lower_copy(item.sr.displayName).find(boost::algorithm::to_lower_copy(filter)) != std::string::npos;
+            };
+            std::copy_if(subscribedSubreddits.begin(),subscribedSubreddits.end(),
+                         std::back_inserter(filteredSubscribedSubreddits),comparator);
+            std::copy_if(userMultis.begin(),userMultis.end(),std::back_inserter(filteredUserMultis),comparator);
         }
     }
-    if(ImGui::Selectable("All",allSubredditSelected,ImGuiSelectableFlags_AllowDoubleClick))
+
+    if(ImGui::TreeNodeEx("Multis",ImGuiTreeNodeFlags_DefaultOpen))
     {
-        std::for_each(subscribedSubreddits.begin(),subscribedSubreddits.end(),
-                       [](auto&& item){
-            item.selected = false;
-        });
-        frontPageSubredditSelected = false;
-        allSubredditSelected = true;
-        if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-        {
-            subredditSignal("r/all");
-        }
+        showMultisNodes();
+        ImGui::TreePop();
     }
-    for(auto&& sr : subscribedSubreddits)
+    if(ImGui::TreeNodeEx("Subscribed",ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        showSubredditsNodes();
+        ImGui::TreePop();
+    }
+}
+void SubredditsListWindow::clearSelections()
+{
+    std::for_each(filteredUserMultis.begin(),filteredUserMultis.end(),
+                   [](auto&& item){
+        item.selected = false;
+    });
+    std::for_each(filteredSubscribedSubreddits.begin(),filteredSubscribedSubreddits.end(),
+                   [](auto&& item){
+        item.selected = false;
+    });
+}
+void SubredditsListWindow::showMultisNodes()
+{
+    for(auto&& sr : filteredUserMultis)
     {
         if(ImGui::Selectable(sr.sr.displayName.c_str(),sr.selected,ImGuiSelectableFlags_AllowDoubleClick))
         {
-            frontPageSubredditSelected = false;
-            allSubredditSelected = false;
-            std::for_each(subscribedSubreddits.begin(),subscribedSubreddits.end(),
-                           [](auto&& item){
-                item.selected = false;
-            });
+            clearSelections();
+            if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+            {
+                subredditSignal(sr.sr.path);
+            }
+            sr.selected = true;
+        }
+    }
+}
+void SubredditsListWindow::showSubredditsNodes()
+{
+    for(auto&& sr : filteredSubscribedSubreddits)
+    {
+        if(ImGui::Selectable(sr.sr.displayName.c_str(),sr.selected,ImGuiSelectableFlags_AllowDoubleClick))
+        {
+            clearSelections();
             if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
             {
                 subredditSignal(sr.sr.displayNamePrefixed);
@@ -121,41 +213,54 @@ void SubredditsListWindow::setErrorMessage(std::string message)
 }
 void SubredditsListWindow::loadMultis(const std::string& url, const access_token& token)
 {
-    auto multisConnection = client->makeListingClientConnection();
-    multisConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
+    if(!loadMultisConnection)
+    {
+        loadMultisConnection = client->makeListingClientConnection();
+        loadMultisConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
                                                  client_response<listing> response)
-     {
-        auto self = weak.lock();
-        if(!self) return;
-        if(ec)
         {
-            boost::asio::post(self->uiExecutor,std::bind(&SubredditsListWindow::setErrorMessage,self,ec.message()));
-        }
-        else
-        {
-            if(response.status >= 400)
+            auto self = weak.lock();
+            if(!self) return;
+            if(ec)
             {
-                boost::asio::post(self->uiExecutor,
-                                  std::bind(&SubredditsListWindow::setErrorMessage,self,response.body));
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditsListWindow::setErrorMessage,self,ec.message()));
             }
             else
             {
-                multireddit_list srs;
-                for(const auto& child: response.data.json)
+                if(response.status >= 400)
                 {
-                    srs.emplace_back(child["data"]);
+                    boost::asio::post(self->uiExecutor,
+                                      std::bind(&SubredditsListWindow::setErrorMessage,self,response.body));
                 }
+                else
+                {
+                    multireddit_list srs;
+                    for(const auto& child: response.data.json)
+                    {
+                        srs.emplace_back(child["data"]);
+                    }
 
-                boost::asio::post(self->uiExecutor,
-                                  std::bind(&SubredditsListWindow::setUserMultis,self,std::move(srs)));
+                    boost::asio::post(self->uiExecutor,
+                                      std::bind(&SubredditsListWindow::setUserMultis,self,std::move(srs)));
+                }
             }
-        }
-     });
-     multisConnection->list(url,token);
+        });
+    }
+    loadMultisConnection->list(url,token);
 }
 void SubredditsListWindow::setUserMultis(multireddit_list multis)
 {
-    userMultis = std::move(multis);
+    multireddit frontPage;
+    frontPage.displayName = "Front Page";
+    frontPage.path = "";
+    userMultis.emplace_back(std::move(frontPage));
+    multireddit all;
+    all.displayName = "All";
+    all.path = "/r/all";
+    userMultis.emplace_back(std::move(all));
+
+    std::move(multis.begin(), multis.end(), std::back_inserter(userMultis));
+    filteredUserMultis = userMultis;
 }
 void SubredditsListWindow::loadSubscribedSubreddits(subreddit_list srs)
 {
@@ -164,40 +269,43 @@ void SubredditsListWindow::loadSubscribedSubreddits(subreddit_list srs)
         auto url = fmt::format("/subreddits/mine/subscriber?show=all&limit=100&after={}&count={}",srs.back().name,srs.size());
         loadSubreddits(url,token);
     }
-    std::move(srs.begin(), srs.end(), std::back_inserter(unsortedSubscribedSubreddits));
-    subscribedSubreddits = unsortedSubscribedSubreddits;
+    std::move(srs.begin(), srs.end(), std::back_inserter(subscribedSubreddits));
+    filteredSubscribedSubreddits = subscribedSubreddits;
 }
 void SubredditsListWindow::loadSubreddits(const std::string& url, const access_token& token)
 {
-    auto subscribedSubredditsConnection = client->makeListingClientConnection();
-    subscribedSubredditsConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
-                                                 client_response<listing> response)
-     {
-        auto self = weak.lock();
-        if(!self) return;
-        if(ec)
-        {
-            boost::asio::post(self->uiExecutor,std::bind(&SubredditsListWindow::setErrorMessage,self,ec.message()));
-        }
-        else
-        {
-            if(response.status >= 400)
+    if(!loadSubscribedSubredditsConnection)
+    {
+        loadSubscribedSubredditsConnection = client->makeListingClientConnection();
+        loadSubscribedSubredditsConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
+                                                     client_response<listing> response)
+         {
+            auto self = weak.lock();
+            if(!self) return;
+            if(ec)
             {
-                boost::asio::post(self->uiExecutor,std::bind(&SubredditsListWindow::setErrorMessage,self,response.body));
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditsListWindow::setErrorMessage,self,ec.message()));
             }
             else
             {
-                auto listingChildren = response.data.json["data"]["children"];
-                subreddit_list srs;
-                for(const auto& child: listingChildren)
+                if(response.status >= 400)
                 {
-                    srs.emplace_back(child["data"]);
+                    boost::asio::post(self->uiExecutor,std::bind(&SubredditsListWindow::setErrorMessage,self,response.body));
                 }
+                else
+                {
+                    auto listingChildren = response.data.json["data"]["children"];
+                    subreddit_list srs;
+                    for(const auto& child: listingChildren)
+                    {
+                        srs.emplace_back(child["data"]);
+                    }
 
-                boost::asio::post(self->uiExecutor,std::bind(&SubredditsListWindow::loadSubscribedSubreddits,self,std::move(srs)));
+                    boost::asio::post(self->uiExecutor,std::bind(&SubredditsListWindow::loadSubscribedSubreddits,self,std::move(srs)));
+                }
             }
-        }
-     });
-     subscribedSubredditsConnection->list(url,token);
+        });
+    }
+    loadSubscribedSubredditsConnection->list(url,token);
 }
 
