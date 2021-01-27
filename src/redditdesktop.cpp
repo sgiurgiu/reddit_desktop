@@ -18,7 +18,7 @@ constexpr auto ERROR_WINDOW_POPUP_TITLE = "Error Occurred";
 RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
     uiExecutor(uiContext.get_executor()),
     client("api.reddit.com","oauth.reddit.com",3),
-    loginWindow(&client,uiExecutor),loginTokenRefreshTimer(uiContext)
+    loginWindow(&client,uiExecutor),loginTokenRefreshTimer(uiExecutor)
 {
     current_user = Database::getInstance()->getRegisteredUser();
     shouldBlurPictures= Database::getInstance()->getBlurNSFWPictures();

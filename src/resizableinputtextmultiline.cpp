@@ -21,15 +21,18 @@ bool ResizableInputTextMultiline::InputText(const char* label, std::string* buf,
 
     bool hovered = false;
     bool held = false;
-    ImRect border_rect(lowerLeftCorner - ImVec2(triangleLength,triangleLength),
+    ImRect buttonRectangle(lowerLeftCorner - ImVec2(triangleLength,triangleLength),
                        lowerLeftCorner);
+    ImRect holdingActiveArea = buttonRectangle;
+    holdingActiveArea.Expand(triangleLength);
     ImGui::PushID("#RESIZE_TEXTMULTILINE");
-    window->DC.CursorPos = border_rect.Min;
-    ImGui::InvisibleButton("", border_rect.GetSize());
-    hovered = ImGui::IsItemHovered();
-    held = ImGui::IsMouseDown(ImGuiMouseButton_Left);
+    window->DC.CursorPos = buttonRectangle.Min;
 
-    ImU32 color = ImGui::GetColorU32(held ? ImGuiCol_ResizeGripActive :
+    ImGui::InvisibleButton("", buttonRectangle.GetSize());
+    hovered = ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly);
+    held = ImGui::IsMouseDown(ImGuiMouseButton_Left) && holdingActiveArea.Contains(ImGui::GetMousePos());
+
+    ImU32 color = ImGui::GetColorU32((held && hovered) ? ImGuiCol_ResizeGripActive :
                                             hovered ? ImGuiCol_ResizeGripHovered :
                                                       ImGuiCol_ResizeGrip);
     window->DrawList->AddTriangleFilled(lowerLeftCorner-ImVec2(triangleLength,0.f),
