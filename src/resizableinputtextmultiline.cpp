@@ -23,8 +23,12 @@ bool ResizableInputTextMultiline::InputText(const char* label, std::string* buf,
     bool held = false;
     ImRect border_rect(lowerLeftCorner - ImVec2(triangleLength,triangleLength),
                        lowerLeftCorner);
-
     ImGui::PushID("#RESIZE_TEXTMULTILINE");
+    window->DC.CursorPos = border_rect.Min;
+    ImGui::InvisibleButton("", border_rect.GetSize());
+    hovered = ImGui::IsItemHovered();
+    held = ImGui::IsMouseDown(ImGuiMouseButton_Left);
+
     ImU32 color = ImGui::GetColorU32(held ? ImGuiCol_ResizeGripActive :
                                             hovered ? ImGuiCol_ResizeGripHovered :
                                                       ImGuiCol_ResizeGrip);
@@ -32,14 +36,11 @@ bool ResizableInputTextMultiline::InputText(const char* label, std::string* buf,
                                         lowerLeftCorner-ImVec2(0.f,triangleLength),
                                         lowerLeftCorner,
                                         color);
-    ImGui::ButtonBehavior(border_rect, window->GetID(0),
-                          &hovered, &held,
-                          ImGuiButtonFlags_FlattenChildren | ImGuiButtonFlags_NoNavFocus);
 
     ImVec2 maxSize(window->SizeFull - ImVec2(triangleLength,triangleLength));
     if(hovered || held)
     {
-        g.MouseCursor = ImGuiMouseCursor_ResizeNESW;
+        g.MouseCursor = ImGuiMouseCursor_ResizeNWSE;
     }
     if(held)
     {
