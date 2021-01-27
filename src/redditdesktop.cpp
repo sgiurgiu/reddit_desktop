@@ -163,10 +163,11 @@ void RedditDesktop::addSubredditWindow(std::string title)
                                                                  &client,uiExecutor);
         using namespace std::placeholders;
         subredditWindow->showCommentsListener(std::bind(&RedditDesktop::addCommentsWindow,this,_1,_2));
-        subredditWindow->showSubredditListener([this](const std::string& title){
-            addSubredditWindow(title);
+        subredditWindow->showSubredditListener([this](std::string title){
+            boost::asio::post(this->uiExecutor, std::bind(&RedditDesktop::addSubredditWindow, this, std::move(title)));
         });
         subredditWindow->loadSubreddit();
+        subredditWindow->setFocused();
         subredditWindows.push_back(std::move(subredditWindow));
     }
 }

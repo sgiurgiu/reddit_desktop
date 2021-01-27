@@ -298,7 +298,8 @@ HtmlParser::MediaLink HtmlParser::getMediaLink(const std::string& domain) const
     {
         link.url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:video:url");
     }
-    else if (domain == "streamja.com" || domain == "streamvi.com" || domain == "streamwo.com")
+    else if (domain == "streamja.com" || domain == "streamvi.com" || 
+        domain == "streamwo.com" || domain == "streamye.com")
     {
         link.url = this->template lookupVideoSourceVideoUrl<GumboNode>(output->root);
     }

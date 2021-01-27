@@ -72,6 +72,7 @@ private:
         std::string openLinkButtonText;
         std::string errorMessageText;
         std::string votesChildText;
+        std::string subredditLinkText;
         void updateShowContentText();
     };
     using posts_list = std::vector<PostDisplay>;

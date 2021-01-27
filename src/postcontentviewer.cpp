@@ -22,6 +22,7 @@ const std::vector<std::string> mediaDomains ={
     "streamja.com",
     "streamvi.com",
     "streamwo.com",
+    "streamye.com",
     "v.redd.it",
     "youtube.com",
     "www.youtube.com",

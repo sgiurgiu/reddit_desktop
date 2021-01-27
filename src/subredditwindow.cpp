@@ -216,7 +216,8 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
         p.openLinkButtonText = fmt::format("{}##openLink{}",
                                            reinterpret_cast<const char*>(ICON_FA_EXTERNAL_LINK_SQUARE " Open Link"),
                                            p.post->name);
-        p.votesChildText = fmt::format("##{}_votes_child",p.post->name).c_str();
+        p.votesChildText = fmt::format("##{}_votes_child",p.post->name);
+        p.subredditLinkText = fmt::format("##{}_subredditlink", p.post->name);
         p.updateShowContentText();
         if(!p.post->thumbnail.empty())
         {
@@ -457,21 +458,28 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         }
 
         ImGui::BeginGroup();
-
-        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Bold)]);
-        ImGui::Text("%s",p.post->subreddit.c_str());
-        ImGui::PopFont();
-
-        if(ImGui::IsItemHovered() && p.post->subreddit != subreddit)
         {
-            ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted("Open Subreddit");
-            ImGui::EndTooltip();
-        }
-        if(ImGui::IsItemClicked(ImGuiMouseButton_Left) && p.post->subreddit != subreddit)
-        {
-            subredditSignal(p.post->subreddit);
+            ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Bold)]);
+            ImVec2 p0 = ImGui::GetCursorScreenPos();
+            ImGui::Text("%s",p.post->subreddit.c_str());
+            ImGui::PopFont();
+            auto rectMax = ImGui::GetItemRectMax();
+            auto rectMin = ImGui::GetItemRectMin();
+            rectMin.y = rectMax.y;
+            ImGui::SetCursorScreenPos(p0);
+            auto subredditTextSize = ImGui::GetItemRectSize();
+            if (ImGui::InvisibleButton(p.subredditLinkText.c_str(), subredditTextSize) && p.post->subreddit != subreddit)
+            {
+                subredditSignal(p.post->subreddit);
+            }
+            if (ImGui::IsItemHovered() && p.post->subreddit != subreddit)
+            {
+                ImGui::GetWindowDrawList()->AddLine(rectMin, rectMax, ImGui::GetColorU32(ImGuiCol_Text));
+                ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted("Open Subreddit");
+                ImGui::EndTooltip();
+            }
         }
 
         ImGui::SameLine();        
