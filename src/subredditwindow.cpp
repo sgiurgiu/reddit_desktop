@@ -19,7 +19,7 @@ SubredditWindow::SubredditWindow(int id, const std::string& subreddit,
                                  RedditClientProducer* client,
                                  const boost::asio::any_io_executor& executor):
     id(id),subreddit(subreddit),token(token),client(client),
-    uiExecutor(executor)
+    uiExecutor(executor),postsContentDestroyerTimer(uiExecutor)
 {
     shouldBlurPictures= Database::getInstance()->getBlurNSFWPictures();
 }
@@ -81,7 +81,33 @@ void SubredditWindow::loadSubreddit()
 
     if(!target.starts_with("/")) target = "/" + target;
     loadSubredditListings(target,token);
+    lookAndDestroyPostsContents();
 }
+
+void SubredditWindow::lookAndDestroyPostsContents()
+{
+    postsContentDestroyerTimer.expires_after(std::chrono::seconds(5));
+    postsContentDestroyerTimer.async_wait([weak=weak_from_this()](const boost::system::error_code& ec){
+        auto self = weak.lock();
+        if(self && !ec)
+        {
+            for(auto&& p : self->posts)
+            {
+                if(!p.showingContent && p.postContentViewer)
+                {
+                    auto duration = std::chrono::steady_clock::now() - p.lastPostShowTime;
+                    if(duration > std::chrono::seconds(20))
+                    {
+                        p.postContentViewer.reset();
+                    }
+                }
+            }
+
+            self->lookAndDestroyPostsContents();
+        }
+    });
+}
+
 void SubredditWindow::loadSubredditListings(const std::string& target,const access_token& token)
 {
 
@@ -563,6 +589,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
                 p.postContentViewer->loadContent(p.post);
             }
             p.postContentViewer->showPostContent();
+            p.lastPostShowTime = std::chrono::steady_clock::now();
         }        
 
         ImGui::EndGroup();

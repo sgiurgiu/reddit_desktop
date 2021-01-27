@@ -145,6 +145,7 @@ void PostContentViewer::stopPlayingMedia(bool flag)
 
 PostContentViewer::~PostContentViewer()
 {
+    std::cerr << "PostcontentViewer going down: " << (currentPost ? currentPost->title : "<no post>") << std::endl;
     //stopPlayingMedia();
     destroying = true;
 

@@ -4,7 +4,9 @@
 #include <boost/asio/io_context.hpp>
 #include <string>
 #include <memory>
+#include <chrono>
 #include <boost/signals2.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <imgui.h>
 #include "entities.h"
 #include "redditclientproducer.h"
@@ -58,7 +60,8 @@ public:
 private:
     struct PostDisplay
     {
-        PostDisplay(post_ptr p):post(std::move(p))
+        PostDisplay(post_ptr p):
+            post(std::move(p))
         {}
         post_ptr post;
         ResizableGLImagePtr thumbnailPicture;
@@ -73,6 +76,7 @@ private:
         std::string errorMessageText;
         std::string votesChildText;
         std::string subredditLinkText;
+        std::chrono::steady_clock::time_point lastPostShowTime;
         void updateShowContentText();
     };
     using posts_list = std::vector<PostDisplay>;
@@ -91,6 +95,7 @@ private:
     void updatePostVote(post* p,Voted voted);
     void pauseAllPosts();
     void setPostErrorMessage(PostDisplay* post,std::string msg);
+    void lookAndDestroyPostsContents();
 private:    
     using CommentsSignal = boost::signals2::signal<void(std::string id,std::string title)>;
     using SubredditSignal = boost::signals2::signal<void(std::string)>;
@@ -129,6 +134,7 @@ private:
     bool windowPositionAndSizeSet = false;
     ImVec2 windowPos;
     ImVec2 windowSize;
+    boost::asio::steady_timer postsContentDestroyerTimer;
 };
 
 using SubredditWindowPtr = std::shared_ptr<SubredditWindow>;
