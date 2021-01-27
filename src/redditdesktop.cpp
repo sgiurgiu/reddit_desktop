@@ -161,8 +161,10 @@ void RedditDesktop::addSubredditWindow(std::string title)
         auto subredditWindow = std::make_shared<SubredditWindow>(windowsCount++,
                                                                  title,current_access_token.data,
                                                                  &client,uiExecutor);
-        using namespace std::placeholders;
-        subredditWindow->showCommentsListener(std::bind(&RedditDesktop::addCommentsWindow,this,_1,_2));
+
+        subredditWindow->showCommentsListener([this](std::string id, std::string title){
+            boost::asio::post(this->uiExecutor, std::bind(&RedditDesktop::addCommentsWindow, this,std::move(id), std::move(title)));
+        });
         subredditWindow->showSubredditListener([this](std::string title){
             boost::asio::post(this->uiExecutor, std::bind(&RedditDesktop::addSubredditWindow, this, std::move(title)));
         });
@@ -183,8 +185,11 @@ void RedditDesktop::addCommentsWindow(std::string postId,std::string title)
                                                                current_access_token.data,
                                                                &client,uiExecutor);
         using namespace std::placeholders;
-        commentsWindow->addOpenSubredditHandler(std::bind(&RedditDesktop::addSubredditWindow,this,_1));
+        commentsWindow->addOpenSubredditHandler([this](std::string title){
+            boost::asio::post(this->uiExecutor, std::bind(&RedditDesktop::addSubredditWindow, this, std::move(title)));
+        });
         commentsWindow->loadComments();
+        commentsWindow->setFocused();
         commentsWindows.push_back(std::move(commentsWindow));
     }
     else
