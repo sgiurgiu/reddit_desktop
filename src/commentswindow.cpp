@@ -339,11 +339,11 @@ void CommentsWindow::showComment(DisplayComment& c)
             ImGui::PopStyleColor(1);
         }
 
-        ImGui::SameLine();
+       /* ImGui::SameLine();
         if(ImGui::Button(c.saveButtonText.c_str()))
         {
 
-        }
+        }*/
         if(parentPost && !parentPost->locked)
         {
             ImGui::SameLine();
@@ -638,10 +638,22 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
             {
                 postPreviewRenderer.SetText(postCommentTextBuffer);
             }
-            if(ImGui::Button(commentButtonText.c_str()) && !postingComment)
+            if(postingComment || postCommentTextBuffer.empty())
+            {
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+                ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+                ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+            }
+            if(ImGui::Button(commentButtonText.c_str()) && !postingComment && !postCommentTextBuffer.empty())
             {
                 postingComment = true;
                 createCommentConnection->createComment(parentPost->name,postCommentTextBuffer,token);
+            }
+            if(postingComment || postCommentTextBuffer.empty())
+            {
+                ImGui::PopStyleColor(3);
+                ImGui::PopStyleVar();
             }
             ImGui::SameLine();
             if(ImGui::Checkbox(postCommentPreviewCheckboxId.c_str(),&showingPostPreview))
@@ -659,6 +671,7 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
                 }
                 ImGui::EndChild();
             }
+
         }
         ImGui::NewLine();
     }
