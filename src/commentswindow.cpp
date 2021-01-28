@@ -344,42 +344,45 @@ void CommentsWindow::showComment(DisplayComment& c)
         {
 
         }
-        ImGui::SameLine();
-        if(ImGui::Button(c.replyButtonText.c_str()))
+        if(parentPost && !parentPost->locked)
         {
-            c.showingReplyArea = !c.showingReplyArea;
-        }
-        if(c.showingReplyArea)
-        {
-
-            if(ResizableInputTextMultiline::InputText(c.replyIdText.c_str(),&c.postReplyTextBuffer,
-                                      &c.postReplyTextFieldSize) && c.showingPreview)
-            {
-                c.previewRenderer.SetText(c.postReplyTextBuffer);
-            }
-
-            if(ImGui::Button(c.saveReplyButtonText.c_str()) && !c.postingReply)
-            {
-                c.showingReplyArea = false;
-                c.postingReply = true;
-                loadingMoreRepliesComments.push_back(&c);
-                createCommentConnection->createComment(c.commentData.name,c.postReplyTextBuffer,token);
-            }
             ImGui::SameLine();
-            if(ImGui::Checkbox(c.postReplyPreviewCheckboxId.c_str(),&c.showingPreview))
+            if(ImGui::Button(c.replyButtonText.c_str()))
             {
-                c.previewRenderer.SetText(c.postReplyTextBuffer);
+                c.showingReplyArea = !c.showingReplyArea;
             }
-            if(c.showingPreview)
+            if(c.showingReplyArea)
             {
-                if(ImGui::BeginChild(c.liveReplyPreviewText.c_str(),c.postReplyPreviewSize,true))
-                {
-                    c.previewRenderer.RenderMarkdown();
-                    auto endPos = ImGui::GetCursorPos();
-                    c.postReplyPreviewSize.y = endPos.y + ImGui::GetTextLineHeight();
 
+                if(ResizableInputTextMultiline::InputText(c.replyIdText.c_str(),&c.postReplyTextBuffer,
+                                          &c.postReplyTextFieldSize) && c.showingPreview)
+                {
+                    c.previewRenderer.SetText(c.postReplyTextBuffer);
                 }
-                ImGui::EndChild();
+
+                if(ImGui::Button(c.saveReplyButtonText.c_str()) && !c.postingReply)
+                {
+                    c.showingReplyArea = false;
+                    c.postingReply = true;
+                    loadingMoreRepliesComments.push_back(&c);
+                    createCommentConnection->createComment(c.commentData.name,c.postReplyTextBuffer,token);
+                }
+                ImGui::SameLine();
+                if(ImGui::Checkbox(c.postReplyPreviewCheckboxId.c_str(),&c.showingPreview))
+                {
+                    c.previewRenderer.SetText(c.postReplyTextBuffer);
+                }
+                if(c.showingPreview)
+                {
+                    if(ImGui::BeginChild(c.liveReplyPreviewText.c_str(),c.postReplyPreviewSize,true))
+                    {
+                        c.previewRenderer.RenderMarkdown();
+                        auto endPos = ImGui::GetCursorPos();
+                        c.postReplyPreviewSize.y = endPos.y + ImGui::GetTextLineHeight();
+
+                    }
+                    ImGui::EndChild();
+                }
             }
         }
 
@@ -532,7 +535,6 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
     }
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_W)) && ImGui::GetIO().KeyCtrl && ImGui::IsWindowFocused())
     {
-        if(postContentViewer) postContentViewer->stopPlayingMedia();
         windowOpen = false;
     }
     if(windowPositionAndSizeSet)
@@ -555,6 +557,11 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
 
     if(parentPost)
     {
+        if(parentPost->locked)
+        {
+            ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "Post is locked, you cannot comment.");
+        }
+
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Bold)]);
         ImGui::TextWrapped("%s",parentPost->title.c_str());
         ImGui::PopFont();
@@ -624,31 +631,34 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
             }
         }
         ImGui::Separator();
-        if(ResizableInputTextMultiline::InputText(postCommentTextFieldId.c_str(),&postCommentTextBuffer,
-                                  &postCommentTextFieldSize) && showingPostPreview)
+        if(!parentPost->locked)
         {
-            postPreviewRenderer.SetText(postCommentTextBuffer);
-        }
-        if(ImGui::Button(commentButtonText.c_str()) && !postingComment)
-        {
-            postingComment = true;
-            createCommentConnection->createComment(parentPost->name,postCommentTextBuffer,token);
-        }
-        ImGui::SameLine();
-        if(ImGui::Checkbox(postCommentPreviewCheckboxId.c_str(),&showingPostPreview))
-        {
-            postPreviewRenderer.SetText(postCommentTextBuffer);
-        }
-        if(showingPostPreview)
-        {
-            if(ImGui::BeginChild("Live Preview##commentLivePreview",postCommentPreviewSize,true))
+            if(ResizableInputTextMultiline::InputText(postCommentTextFieldId.c_str(),&postCommentTextBuffer,
+                                      &postCommentTextFieldSize) && showingPostPreview)
             {
-                postPreviewRenderer.RenderMarkdown();
-                auto endPos = ImGui::GetCursorPos();
-                postCommentPreviewSize.y = endPos.y + ImGui::GetTextLineHeight();
-
+                postPreviewRenderer.SetText(postCommentTextBuffer);
             }
-            ImGui::EndChild();
+            if(ImGui::Button(commentButtonText.c_str()) && !postingComment)
+            {
+                postingComment = true;
+                createCommentConnection->createComment(parentPost->name,postCommentTextBuffer,token);
+            }
+            ImGui::SameLine();
+            if(ImGui::Checkbox(postCommentPreviewCheckboxId.c_str(),&showingPostPreview))
+            {
+                postPreviewRenderer.SetText(postCommentTextBuffer);
+            }
+            if(showingPostPreview)
+            {
+                if(ImGui::BeginChild("Live Preview##commentLivePreview",postCommentPreviewSize,true))
+                {
+                    postPreviewRenderer.RenderMarkdown();
+                    auto endPos = ImGui::GetCursorPos();
+                    postCommentPreviewSize.y = endPos.y + ImGui::GetTextLineHeight();
+
+                }
+                ImGui::EndChild();
+            }
         }
         ImGui::NewLine();
     }
