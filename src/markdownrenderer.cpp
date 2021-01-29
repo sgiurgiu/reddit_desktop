@@ -282,7 +282,7 @@ void MarkdownRenderer::ParseCurrentText()
 {
     MD_PARSER parser = {
             0,
-            MD_DIALECT_GITHUB,
+            MD_DIALECT_GITHUB|MD_FLAG_UNDERLINE|MD_FLAG_NOHTML,
             enter_block_callback,
             leave_block_callback,
             enter_span_callback,
