@@ -96,6 +96,8 @@ private:
     void pauseAllPosts();
     void setPostErrorMessage(PostDisplay* post,std::string msg);
     void lookAndDestroyPostsContents();
+    void refreshPosts();
+    void rearmRefreshTimer();
 private:    
     using CommentsSignal = boost::signals2::signal<void(std::string id,std::string title)>;
     using SubredditSignal = boost::signals2::signal<void(std::string)>;
@@ -135,6 +137,8 @@ private:
     ImVec2 windowPos;
     ImVec2 windowSize;
     boost::asio::steady_timer postsContentDestroyerTimer;
+    boost::asio::steady_timer refreshTimer;
+    bool refreshEnabled = false;
 };
 
 using SubredditWindowPtr = std::shared_ptr<SubredditWindow>;

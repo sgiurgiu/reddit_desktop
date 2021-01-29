@@ -20,9 +20,11 @@ RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
     client("api.reddit.com","oauth.reddit.com",3),
     loginWindow(&client,uiExecutor),loginTokenRefreshTimer(uiExecutor)
 {
-    current_user = Database::getInstance()->getRegisteredUser();
-    shouldBlurPictures= Database::getInstance()->getBlurNSFWPictures();
-    useMediaHwAccel = Database::getInstance()->getUseHWAccelerationForMedia();
+    auto db = Database::getInstance();
+    current_user = db->getRegisteredUser();
+    shouldBlurPictures= db->getBlurNSFWPictures();
+    useMediaHwAccel = db->getUseHWAccelerationForMedia();
+    subredditsAutoRefreshTimeout = db->getAutoRefreshTimeout();
 }
 
 void RedditDesktop::loginCurrentUser()
@@ -357,6 +359,17 @@ void RedditDesktop::showMainMenuBar()
             {
                 ImGui::BeginTooltip();
                 ImGui::TextUnformatted("Disable this if you experience crashes when playing media");
+                ImGui::EndTooltip();
+            }            
+            if(ImGui::InputInt("Refresh (s)", &subredditsAutoRefreshTimeout, 30, 120))
+            {
+                if(subredditsAutoRefreshTimeout < 30) subredditsAutoRefreshTimeout = 30;
+                Database::getInstance()->setAutoRefreshTimeout(subredditsAutoRefreshTimeout);
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted("Subreddits refresh timeout, in seconds");
                 ImGui::EndTooltip();
             }
 

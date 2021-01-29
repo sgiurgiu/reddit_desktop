@@ -19,7 +19,7 @@ SubredditWindow::SubredditWindow(int id, const std::string& subreddit,
                                  RedditClientProducer* client,
                                  const boost::asio::any_io_executor& executor):
     id(id),subreddit(subreddit),token(token),client(client),
-    uiExecutor(executor),postsContentDestroyerTimer(uiExecutor)
+    uiExecutor(executor),postsContentDestroyerTimer(uiExecutor),refreshTimer(uiExecutor)
 {
     shouldBlurPictures= Database::getInstance()->getBlurNSFWPictures();
 }
@@ -298,6 +298,32 @@ void SubredditWindow::pauseAllPosts()
         }
     }
 }
+void SubredditWindow::refreshPosts()
+{
+    listingErrorMessage.clear();
+    clearExistingPostsData();
+    posts.clear();
+    loadSubredditListings(target,token);
+    rearmRefreshTimer();
+}
+void SubredditWindow::rearmRefreshTimer()
+{
+    if(refreshEnabled)
+    {
+        refreshTimer.expires_after(std::chrono::seconds(Database::getInstance()->getAutoRefreshTimeout()));
+        refreshTimer.async_wait([weak=weak_from_this()](const boost::system::error_code& ec){
+            auto self = weak.lock();
+            if(self && !ec)
+            {
+                self->refreshPosts();
+            }
+        });
+    }
+    else
+    {
+        refreshTimer.cancel();
+    }
+}
 void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
 {
 
@@ -336,7 +362,6 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         loadSubredditListings(target,token);
     }
 
-
     if(scrollToTop)
     {
         ImGui::SetScrollHereY(0.0f);
@@ -363,9 +388,23 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
     {
         newLinkPostDialog = true;
     }
+    ImGui::SameLine();
+    if(ImGui::Checkbox("Auto Refresh",&refreshEnabled))
     {
-        bool refreshDisabled = posts.empty();
-        if(refreshDisabled)
+        rearmRefreshTimer();
+    }
+    if(refreshEnabled)
+    {
+        ImGui::SameLine();
+        auto diff = std::chrono::duration_cast<std::chrono::seconds>(refreshTimer.expiry() - std::chrono::steady_clock::now());
+        std::string text = Utils::formatDuration(diff);
+        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Light)]);
+        ImGui::TextUnformatted(text.c_str());
+        ImGui::PopFont();
+    }
+    {
+        bool refreshButtonDisabled = posts.empty();
+        if(refreshButtonDisabled)
         {
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetColorU32(ImGuiCol_TextDisabled));
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetColorU32(ImGuiCol_TextDisabled));
@@ -375,12 +414,9 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::SameLine(ImGui::GetWindowContentRegionMax().x-(ImGui::GetStyle().FramePadding.x)-ImGui::GetFontSize());
         if(ImGui::Button(reinterpret_cast<const char*>(ICON_FA_REFRESH)))
         {
-            listingErrorMessage.clear();
-            clearExistingPostsData();
-            posts.clear();
-            loadSubredditListings(target,token);
+            refreshPosts();
         }
-        if(refreshDisabled)
+        if(refreshButtonDisabled)
         {
             ImGui::PopStyleColor(3);
             ImGui::PopStyleVar();

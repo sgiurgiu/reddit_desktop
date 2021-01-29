@@ -40,9 +40,13 @@ public:
     bool getBlurNSFWPictures() const;
     void setUseHWAccelerationForMedia(bool flag);
     bool getUseHWAccelerationForMedia() const;
+    int getAutoRefreshTimeout() const;
+    void setAutoRefreshTimeout(int value);
 private:
     void setBoolProperty(bool flag, const std::string& propName);
     bool getBoolProperty(const std::string& propName, bool defaultValue) const;
+    void setIntProperty(int value, const std::string& propName);
+    int getIntProperty(const std::string& propName, int defaultValue) const;
 private:
     std::unique_ptr<sqlite3,connection_deleter> db;
     static std::unique_ptr<Database> instance;

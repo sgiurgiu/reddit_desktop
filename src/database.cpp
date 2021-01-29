@@ -45,7 +45,24 @@ Database* Database::getInstance()
     }
     return instance.get();
 }
+
+int Database::getAutoRefreshTimeout() const
+{
+    return getIntProperty("SUBREDDIT_AUTO_REFRESH",60);
+}
+void Database::setAutoRefreshTimeout(int value)
+{
+    setIntProperty(value,"SUBREDDIT_AUTO_REFRESH");
+}
 void Database::setBoolProperty(bool flag, const std::string& propName)
+{
+    setIntProperty(flag ? 1 : 0,propName);
+}
+bool Database::getBoolProperty(const std::string& propName, bool defaultValue) const
+{
+    return getIntProperty(propName, defaultValue ? 1 : 0) != 0;
+}
+void Database::setIntProperty(int value, const std::string& propName)
 {
     std::string sql("DELETE FROM PROPERTIES WHERE NAME='");
     sql+=propName;
@@ -58,14 +75,14 @@ void Database::setBoolProperty(bool flag, const std::string& propName)
     DB_ERR_CHECK("Cannot insert "+propName);
     rc = sqlite3_bind_text(stmt.get(),1,propName.c_str(),-1,nullptr);
     DB_ERR_CHECK("Cannot bind values to "+propName)
-    rc = sqlite3_bind_int(stmt.get(),2,flag?1:0);
+    rc = sqlite3_bind_int(stmt.get(),2,value);
     DB_ERR_CHECK("Cannot bind values to "+propName);
     rc = sqlite3_step(stmt.get());
     DB_ERR_CHECK("Cannot insert "+propName);
 }
-bool Database::getBoolProperty(const std::string& propName, bool defaultValue) const
+int Database::getIntProperty(const std::string& propName, int defaultValue) const
 {
-    bool flag = defaultValue;
+    int value = defaultValue;
     std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
     sqlite3_stmt *stmt_ptr;
     std::string sql="SELECT NAME,PROP_VAL FROM PROPERTIES WHERE NAME='";
@@ -80,10 +97,10 @@ bool Database::getBoolProperty(const std::string& propName, bool defaultValue) c
         auto val = sqlite3_column_int(stmt.get(),1);
         if(propName == std::string(reinterpret_cast<const char*>(name)))
         {
-             flag = (val != 0);
+             value = val;
         }
     }
-    return flag;
+    return value;
 }
 
 void Database::setBlurNSFWPictures(bool flag)
@@ -105,37 +122,11 @@ bool Database::getUseHWAccelerationForMedia() const
 
 void Database::setMediaAudioVolume(int volume)
 {
-    sqlite3_exec(db.get(),"DELETE FROM PROPERTIES WHERE NAME='VOLUME'",nullptr,nullptr,nullptr);
-    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
-    sqlite3_stmt *stmt_ptr;
-    int rc = sqlite3_prepare_v2(db.get(),"INSERT INTO PROPERTIES(NAME,PROP_VAL) VALUES(?,?)",-1,&stmt_ptr, nullptr);
-    stmt.reset(stmt_ptr);
-    DB_ERR_CHECK("Cannot insert volume");
-    rc = sqlite3_bind_text(stmt.get(),1,"VOLUME",-1,nullptr);
-    DB_ERR_CHECK("Cannot bind values to volume")
-    rc = sqlite3_bind_int(stmt.get(),2,volume);
-    DB_ERR_CHECK("Cannot bind values to volume");
-    rc = sqlite3_step(stmt.get());
-    DB_ERR_CHECK("Cannot insert volume");
+    setIntProperty(volume,"VOLUME");
 }
 int Database::getMediaAudioVolume()
 {
-    int volume = 100;
-    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
-    sqlite3_stmt *stmt_ptr;
-    int rc = sqlite3_prepare_v2(db.get(),"SELECT NAME,PROP_VAL FROM PROPERTIES WHERE NAME='VOLUME'",-1,&stmt_ptr, nullptr);
-    stmt.reset(stmt_ptr);
-    DB_ERR_CHECK("Cannot find volume");
-    if(sqlite3_step(stmt.get()) == SQLITE_ROW)
-    {
-        auto name = sqlite3_column_text(stmt.get(),0);
-        auto val = sqlite3_column_int(stmt.get(),1);
-        if(std::string("VOLUME") == std::string(reinterpret_cast<const char*>(name)))
-        {
-             volume = val;
-        }
-    }
-    return volume;
+    return getIntProperty("VOLUME",100);
 }
 
 void Database::getMainWindowDimensions(int *x, int *y, int *width,int *height)

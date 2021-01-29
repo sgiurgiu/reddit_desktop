@@ -78,6 +78,7 @@ private:
     bool useMediaHwAccel = true;
     std::shared_ptr<SubredditsListWindow> subredditsListWindow;
     names_list searchedNamesList;
+    int subredditsAutoRefreshTimeout;
 };
 
 

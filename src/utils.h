@@ -65,6 +65,7 @@ public:
     static void LoadRedditThumbnails();
     static void ReleaseRedditThumbnails();
     static ResizableGLImagePtr GetRedditThumbnail(const std::string& kind);
+    static std::string formatDuration(std::chrono::seconds diff);
 private:
     static void AddFont(const unsigned int* fontData, const unsigned int fontDataSize, float fontSize);
 private:

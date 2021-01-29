@@ -352,6 +352,30 @@ std::string Utils::getHumanReadableTimeAgo(uint64_t time)
     const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(diff);
     return fmt::format("{} miliseconds ago", ms.count());
 }
+std::string Utils::formatDuration(std::chrono::seconds diff)
+{
+    std::string text;
+    const auto h = std::chrono::duration_cast<std::chrono::hours>(diff);
+    auto hours_count = h.count();
+    if(hours_count > 0)
+    {
+        if(hours_count < 10) text="0";
+        text+= std::to_string(hours_count) + "h:";
+    }
+    diff = diff - h;
+    const auto m = std::chrono::duration_cast<std::chrono::minutes>(diff);
+    auto min_count = m.count();
+    if(hours_count > 0 || min_count > 0)
+    {
+        if(min_count < 10) text+="0";
+        text += std::to_string(min_count) + "m:";
+    }
+    diff = diff - m;
+    auto sec_count = diff.count();
+    if(sec_count < 10) text+="0";
+    text += std::to_string(sec_count)+"s";
+    return text;
+}
 void Utils::openInBrowser(const std::string& url)
 {
 
