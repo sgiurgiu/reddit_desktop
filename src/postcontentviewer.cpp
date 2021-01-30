@@ -62,6 +62,18 @@ void PostContentViewer::loadContent(post_ptr currentPost)
 {
     this->currentPost = currentPost;
     currentPostSet = true;
+    mediaButtonRestartText = fmt::format("{}##_restartMedia_{}",reinterpret_cast<const char*>(ICON_FA_REPEAT),currentPost->name);
+    mediaButtonFastBackwardText = fmt::format("{}##_fastBackward_{}",reinterpret_cast<const char*>(ICON_FA_FAST_BACKWARD),currentPost->name);
+    mediaButtonBackwardText = fmt::format("{}##_Backward_{}",reinterpret_cast<const char*>(ICON_FA_BACKWARD),currentPost->name);
+    mediaButtonPlayText = fmt::format("{}##_playMedia_{}",reinterpret_cast<const char*>(ICON_FA_PLAY),currentPost->name);
+    mediaButtonPauseText = fmt::format("{}##_pauseMedia_{}",reinterpret_cast<const char*>(ICON_FA_PAUSE),currentPost->name);
+    mediaButtonForwardText = fmt::format("{}##_Forward_{}",reinterpret_cast<const char*>(ICON_FA_FORWARD),currentPost->name);
+    mediaButtonFastForwardText = fmt::format("{}##_fastForward_{}",reinterpret_cast<const char*>(ICON_FA_FAST_FORWARD),currentPost->name);
+    mediaSliderVolumeText = fmt::format("##_volumeMedia_{}",currentPost->name);
+    galleryButtonPreviousText = fmt::format("{}##_previmage_{}",reinterpret_cast<const char*>(ICON_FA_ARROW_LEFT),currentPost->name);
+    galleryButtonNextText = fmt::format("{}##_nextimage_{}",reinterpret_cast<const char*>(ICON_FA_ARROW_RIGHT),currentPost->name);
+    loopCheckboxText = fmt::format("Loop##_loop_{}",currentPost->name);
+
     if(!currentPost->selfText.empty())
     {
         markdown = std::make_unique<MarkdownRenderer>(currentPost->selfText);
@@ -202,6 +214,7 @@ void PostContentViewer::handleMpvEvents()
        case MPV_EVENT_END_FILE:
        {
             mediaState.finished = true;
+            mediaState.timePosition = mediaState.duration;
        }
            break;
        case MPV_EVENT_START_FILE:
@@ -226,6 +239,7 @@ void PostContentViewer::handleMpvEvents()
                else if (name == "duration")
                {
                    mediaState.duration = value;
+                   durationText = Utils::formatDuration(std::chrono::seconds((int)value));
                }
                else if (name == "width")
                {
@@ -806,40 +820,113 @@ void PostContentViewer::showPostContent()
             gif->height = display_image->resizedHeight;
         }
 
-        if(mediaState.duration > 0.0f)
+        if(mediaState.duration > 0.0f && mpvRenderContext)
         {
             float progress = mediaState.timePosition / mediaState.duration;
             auto progressHeight = 5.f;
             ImGui::ProgressBar(progress, ImVec2(display_image->resizedWidth, progressHeight),"");
+            if(ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted(fmt::format("{}%%",(int)progress).c_str());
+                ImGui::EndTooltip();
+            }
             if(mediaState.finished)
             {
-                if(ImGui::Button(reinterpret_cast<const char*>(ICON_FA_REPEAT "##_restartMedia")))
+                if(ImGui::Button(mediaButtonRestartText.c_str()))
                 {
                     const char *cmd[] = {"playlist-play-index","0", nullptr};
                     mpv_command_async(mpv,0,cmd);
                 }
-                ImGui::SameLine();
             }
-            if(ImGui::Button(reinterpret_cast<const char*>(mediaState.paused ? ICON_FA_PLAY "##_playPauseMedia" : ICON_FA_PAUSE "##_playPauseMedia")))
+            else
             {
-                int shouldPause = !mediaState.paused;
-                mpv_set_property_async(mpv,0,"pause",MPV_FORMAT_FLAG,&shouldPause);
+                if(ImGui::Button(mediaButtonFastBackwardText.c_str()))
+                {
+                    const char *cmd[] = {"seek","-60", nullptr};
+                    mpv_command_async(mpv,0,cmd);
+                }
+                if(ImGui::IsItemHovered())
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted("Seek backwards 60 seconds");
+                    ImGui::EndTooltip();
+                }
+                ImGui::SameLine();
+                if(ImGui::Button(mediaButtonBackwardText.c_str()))
+                {
+                    const char *cmd[] = {"seek","-10", nullptr};
+                    mpv_command_async(mpv,0,cmd);
+                }
+                if(ImGui::IsItemHovered())
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted("Seek backwards 10 seconds");
+                    ImGui::EndTooltip();
+                }
+                ImGui::SameLine();
+                if(ImGui::Button(mediaState.paused ? mediaButtonPlayText.c_str() : mediaButtonPauseText.c_str()))
+                {
+                    int shouldPause = !mediaState.paused;
+                    mpv_set_property_async(mpv,0,"pause",MPV_FORMAT_FLAG,&shouldPause);
+                }
+                if(ImGui::IsItemHovered())
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted("Play/Pause media");
+                    ImGui::EndTooltip();
+                }
+
+                ImGui::SameLine();
+                if(ImGui::Button(mediaButtonForwardText.c_str()))
+                {
+                    const char *cmd[] = {"seek","10", nullptr};
+                    mpv_command_async(mpv,0,cmd);
+                }
+                if(ImGui::IsItemHovered())
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted("Seek forward 10 seconds");
+                    ImGui::EndTooltip();
+                }
+
+                ImGui::SameLine();
+                if(ImGui::Button(mediaButtonFastForwardText.c_str()))
+                {
+                    const char *cmd[] = {"seek","60", nullptr};
+                    mpv_command_async(mpv,0,cmd);
+                }
+                if(ImGui::IsItemHovered())
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted("Seek forward 60 seconds");
+                    ImGui::EndTooltip();
+                }
+
             }
             ImGui::SameLine();
             ImGui::TextUnformatted(reinterpret_cast<const char*>(ICON_FA_VOLUME_UP));
             ImGui::SameLine();
             ImGui::SetNextItemWidth(100.f);
             int volume = mediaState.mediaAudioVolume;
-            if(ImGui::SliderInt("##_volumeMedia",&volume,0,100,""))
+            if(ImGui::SliderInt(mediaSliderVolumeText.c_str(),&volume,0,100,std::to_string(volume).c_str()))
             {
                 mediaState.mediaAudioVolume = volume;
                 double vold = volume;
                 mpv_set_property_async(mpv,0,"volume",MPV_FORMAT_DOUBLE,&vold);
             }
+            ImGui::SameLine();
+            ImGui::Text("%s/%s",Utils::formatDuration(std::chrono::seconds((int)mediaState.timePosition)).c_str(),durationText.c_str());
+            /*ImGui::SameLine();
+            if(ImGui::Checkbox(loopCheckboxText.c_str(),&mediaLoop))
+            {
+                const char *cmd[] = {"loop-file",mediaLoop ? "inf" : "no", nullptr};
+                mpv_command_async(mpv,0,cmd);
+            }*/
         }
         if(currentPost->isGallery && !gallery.images.empty())
         {
-            if(ImGui::Button(fmt::format(reinterpret_cast<const char*>(ICON_FA_ARROW_LEFT "##{}_previmage"),currentPost->id).c_str()))
+            if(ImGui::Button(galleryButtonPreviousText.c_str()))
             {
                 gallery.currentImage--;
                 if(gallery.currentImage < 0) gallery.currentImage = (int)gallery.images.size() - 1;
@@ -853,7 +940,7 @@ void PostContentViewer::showPostContent()
             auto windowWidth = ImGui::GetWindowContentRegionMax().x;
             auto remainingWidth = windowWidth - display_image->resizedWidth;
             ImGui::SameLine(windowWidth-remainingWidth-btnSize.x*2.f/3.f);
-            if(ImGui::Button(fmt::format(reinterpret_cast<const char*>(ICON_FA_ARROW_RIGHT "##{}_nextimage"),currentPost->id).c_str()))
+            if(ImGui::Button(galleryButtonNextText.c_str()))
             {
                 gallery.currentImage++;
                 if(gallery.currentImage >= (int)gallery.images.size()) gallery.currentImage = 0;

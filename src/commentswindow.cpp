@@ -638,7 +638,8 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
             {
                 postPreviewRenderer.SetText(postCommentTextBuffer);
             }
-            if(postingComment || postCommentTextBuffer.empty())
+            bool saveDisabled = (postingComment || postCommentTextBuffer.empty());
+            if(saveDisabled)
             {
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetColorU32(ImGuiCol_TextDisabled));
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetColorU32(ImGuiCol_TextDisabled));
@@ -650,7 +651,7 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
                 postingComment = true;
                 createCommentConnection->createComment(parentPost->name,postCommentTextBuffer,token);
             }
-            if(postingComment || postCommentTextBuffer.empty())
+            if(saveDisabled)
             {
                 ImGui::PopStyleColor(3);
                 ImGui::PopStyleVar();

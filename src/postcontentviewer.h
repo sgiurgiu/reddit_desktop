@@ -58,13 +58,13 @@ private:
     mpv_render_context *mpvRenderContext = nullptr;
     GLuint mediaFramebufferObject = 0;
     struct MediaState {
-        std::atomic_int mediaAudioVolume;
-        std::atomic_bool paused;
-        std::atomic<float> duration;
-        std::atomic<float> timePosition;
-        std::atomic<double> width;
-        std::atomic<double> height;
-        std::atomic_bool finished;
+        int mediaAudioVolume = 0;
+        bool paused = false;
+        float duration = 0.0f;
+        float timePosition = 0.0f;
+        double width = 0.0;
+        double height = 0.0;
+        bool finished = false;
     };
     MediaState mediaState;
     struct gif_image
@@ -99,6 +99,19 @@ private:
     bool currentPostSet = false;
     std::atomic_bool destroying = {false};
     bool useMediaHwAccel = true;
+    std::string mediaButtonRestartText;
+    std::string mediaButtonFastBackwardText;
+    std::string mediaButtonBackwardText;
+    std::string mediaButtonPlayText;
+    std::string mediaButtonPauseText;
+    std::string mediaButtonForwardText;
+    std::string mediaButtonFastForwardText;
+    std::string galleryButtonPreviousText;
+    std::string galleryButtonNextText;
+    std::string mediaSliderVolumeText;
+    std::string durationText;
+    std::string loopCheckboxText;
+    bool mediaLoop = false;
 };
 
 #endif // POSTCONTENTVIEWER_H
