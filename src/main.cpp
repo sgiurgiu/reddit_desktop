@@ -1,8 +1,6 @@
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
-#include "imgui/freetype/imgui_freetype.h"
-#include "imgui/freetype/imgui_freetype.cpp"
 
 #include <iostream>
 #include <vector>
@@ -41,77 +39,6 @@ using namespace gl;
 #endif
 
 void runMainLoop(SDL_Window* window,ImGuiIO& io);
-
-struct FreeTypeTest
-{
-    enum FontBuildMode
-    {
-        FontBuildMode_FreeType,
-        FontBuildMode_Stb
-    };
-
-    FontBuildMode BuildMode;
-    bool          WantRebuild;
-    float         FontsMultiply;
-    int           FontsPadding;
-    unsigned int  FontsFlags;
-
-    FreeTypeTest()
-    {
-        BuildMode = FontBuildMode_FreeType;
-        WantRebuild = true;
-        FontsMultiply = 1.0f;
-        FontsPadding = 1;
-        FontsFlags = 0;
-    }
-
-
-    // Call _BEFORE_ NewFrame()
-     bool UpdateRebuild()
-     {
-         if (!WantRebuild)
-             return false;
-         ImGuiIO& io = ImGui::GetIO();
-         io.Fonts->TexGlyphPadding = FontsPadding;
-         for (int n = 0; n < io.Fonts->ConfigData.Size; n++)
-         {
-             ImFontConfig* font_config = (ImFontConfig*)&io.Fonts->ConfigData[n];
-             font_config->RasterizerMultiply = FontsMultiply;
-             font_config->RasterizerFlags = (BuildMode == FontBuildMode_FreeType) ? FontsFlags : 0x00;
-         }
-         if (BuildMode == FontBuildMode_FreeType)
-             ImGuiFreeType::BuildFontAtlas(io.Fonts, FontsFlags);
-         else if (BuildMode == FontBuildMode_Stb)
-             io.Fonts->Build();
-         WantRebuild = false;
-         return true;
-     }
-
-     // Call to draw interface
-      void ShowFreetypeOptionsWindow()
-      {
-          ImGui::Begin("FreeType Options");
-          ImGui::ShowFontSelector("Fonts");
-          WantRebuild |= ImGui::RadioButton("FreeType", (int*)&BuildMode, FontBuildMode_FreeType);
-          ImGui::SameLine();
-          WantRebuild |= ImGui::RadioButton("Stb (Default)", (int*)&BuildMode, FontBuildMode_Stb);
-          WantRebuild |= ImGui::DragFloat("Multiply", &FontsMultiply, 0.001f, 0.0f, 2.0f);
-          WantRebuild |= ImGui::DragInt("Padding", &FontsPadding, 0.1f, 0, 16);
-          if (BuildMode == FontBuildMode_FreeType)
-          {
-              WantRebuild |= ImGui::CheckboxFlags("NoHinting",     &FontsFlags, ImGuiFreeType::NoHinting);
-              WantRebuild |= ImGui::CheckboxFlags("NoAutoHint",    &FontsFlags, ImGuiFreeType::NoAutoHint);
-              WantRebuild |= ImGui::CheckboxFlags("ForceAutoHint", &FontsFlags, ImGuiFreeType::ForceAutoHint);
-              WantRebuild |= ImGui::CheckboxFlags("LightHinting",  &FontsFlags, ImGuiFreeType::LightHinting);
-              WantRebuild |= ImGui::CheckboxFlags("MonoHinting",   &FontsFlags, ImGuiFreeType::MonoHinting);
-              WantRebuild |= ImGui::CheckboxFlags("Bold",          &FontsFlags, ImGuiFreeType::Bold);
-              WantRebuild |= ImGui::CheckboxFlags("Oblique",       &FontsFlags, ImGuiFreeType::Oblique);
-              WantRebuild |= ImGui::CheckboxFlags("Monochrome",    &FontsFlags, ImGuiFreeType::Monochrome);
-          }
-          ImGui::End();
-      }
-
-};
 
 #if defined(WIN32_WINMAIN)
 int WINAPI WinMain(
@@ -237,7 +164,7 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
 {
 #ifdef REDDIT_DESKTOP_DEBUG
     bool show_demo_window = true;
-    bool show_markdown_window = false;
+    bool show_markdown_window = true;
 #endif
     boost::asio::io_context uiContext;    
     auto work = boost::asio::make_work_guard(uiContext);
@@ -246,7 +173,6 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
     desktop->loginCurrentUser();
 
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-    FreeTypeTest freetype_test;
 
     // Main loop
     bool done = false;
@@ -270,14 +196,6 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
                  done = true;
         }
 
-
-        if (freetype_test.UpdateRebuild())
-       {
-          // REUPLOAD FONT TEXTURE TO GPU
-          ImGui_ImplOpenGL3_DestroyDeviceObjects();
-          ImGui_ImplOpenGL3_CreateDeviceObjects();
-       }
-
         // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame(window);
@@ -290,7 +208,6 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
         if(show_markdown_window)
             ShowMarkdownWindow(&show_markdown_window);
 
-        freetype_test.ShowFreetypeOptionsWindow();
 #endif
         int windowWidth;
         int windowHeight;

@@ -9,6 +9,8 @@ SET(IMGUI_SRCS
     imgui/imgui_impl_opengl3.cpp
     imgui/imgui_widgets.cpp
     imgui/imgui_stdlib.cpp
+    imgui/imgui_tables.cpp
+    imgui/misc/freetype/imgui_freetype.cpp
     spinner/spinner.cpp)
 
 SET(GLAD_SRCS glad/glad.c)

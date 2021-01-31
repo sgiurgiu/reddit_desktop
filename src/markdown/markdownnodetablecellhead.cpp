@@ -8,9 +8,9 @@ MarkdownNodeTableCellHead::MarkdownNodeTableCellHead(const MD_BLOCK_TD_DETAIL* d
 }
 void MarkdownNodeTableCellHead::Render()
 {    
+    ImGui::TableNextColumn();
     for(const auto& child : children)
     {
         child->Render();
     }
-    ImGui::NextColumn();
 }

@@ -13,7 +13,7 @@ public:
         return NodeType::Table;
     }
 private:
-    int colums = -1;
+    int columns = -1;
 };
 
 #endif // MARKDOWNNODETABLE_H
