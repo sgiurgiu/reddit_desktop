@@ -46,6 +46,7 @@ else()
     set(ENV{PKG_CONFIG_PATH} "/usr/local/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
+    pkg_check_modules(FREETYPE REQUIRED IMPORTED_TARGET freetype2)
 endif()
 
 if(UNIX AND NOT APPLE)

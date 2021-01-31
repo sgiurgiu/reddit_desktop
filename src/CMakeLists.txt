@@ -112,7 +112,7 @@ if(VCPKG_TOOLCHAIN)
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${LIBMPV} "crypt32.lib")
     target_include_directories(${EXECUTABLE_NAME} PRIVATE ${LIBMPV_INCLUDE})
 else()
-    target_link_libraries(${EXECUTABLE_NAME} PRIVATE PkgConfig::MPV)
+    target_link_libraries(${EXECUTABLE_NAME} PRIVATE PkgConfig::MPV PkgConfig::FREETYPE)
 endif()
 
 

@@ -58,21 +58,15 @@ namespace {
 
 ResizableGLImagePtr Utils::redditThumbnails;
 
-void Utils::AddFont(const unsigned int* fontData, const unsigned int fontDataSize, float fontSize)
+ImFont* Utils::AddFont(const unsigned int* fontData, const unsigned int fontDataSize, float fontSize)
 {
     ImFontConfig fontAwesomeConfig;
     fontAwesomeConfig.MergeMode = true;
     fontAwesomeConfig.GlyphMinAdvanceX = fontSize; // Use if you want to make the icon monospaced
     static const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
 
-    ImFontConfig emojiConfig;
-    emojiConfig.MergeMode = true;
-    emojiConfig.GlyphMinAdvanceX = fontSize; // Use if you want to make the icon monospaced
-    /*
-     static const ImWchar emoji_icon_ranges[] = { 0x231A, 0x26CF,
-                                                // 0x26D1, 0x1F251,
-                                                 0 };
-    */
+
+
     static const ImWchar romanian_ranges[] = { 0x0100, 0x017F,
                                                0x0180, 0x024F,
                                                0 };
@@ -89,18 +83,14 @@ void Utils::AddFont(const unsigned int* fontData, const unsigned int fontDataSiz
     ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(fontData,fontDataSize, fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesVietnamese());
     ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(fontData,fontDataSize, fontSize,&config,romanian_ranges);
 
-    ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(FontAwesome_compressed_data,
+    return ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(FontAwesome_compressed_data,
                                                          FontAwesome_compressed_size, fontSize,
                                                          &fontAwesomeConfig, icon_ranges);
-
-    /*ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(NotoColorEmoji_ttf_compressed_data,
-                                                         NotoColorEmoji_ttf_compressed_size, fontSize,
-                                                         &emojiConfig,emoji_icon_ranges);*/
 }
 
 void Utils::LoadFonts()
 {
-#ifdef WIN32
+#ifdef RD_WINDOWS
     const float normalFontSize = 18.f;
     const float bigFontSize = 22.f;
 #else
@@ -111,6 +101,16 @@ void Utils::LoadFonts()
     AddFont(NotoSans_Black_ttf_compressed_data,NotoSans_Black_ttf_compressed_size,normalFontSize);
     AddFont(NotoSans_BlackItalic_ttf_compressed_data,NotoSans_BlackItalic_ttf_compressed_size,normalFontSize);
     AddFont(NotoSans_Bold_ttf_compressed_data,NotoSans_Bold_ttf_compressed_size,normalFontSize);
+    /*ImFontConfig emojiConfig;
+    emojiConfig.MergeMode = true;
+    //emojiConfig.GlyphMinAdvanceX = fontSize;
+    static const ImWchar emoji_icon_ranges[] = { 0x231A, 0x26CF,
+                                                 0x26D1, 0x1F251,
+                                                 0 };
+    ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(NotoColorEmoji_ttf_compressed_data,
+                                                         NotoColorEmoji_ttf_compressed_size, normalFontSize,
+                                                         &emojiConfig,emoji_icon_ranges);*/
+
     AddFont(NotoSans_BoldItalic_ttf_compressed_data,NotoSans_BoldItalic_ttf_compressed_size,normalFontSize);
     AddFont(NotoSans_Italic_ttf_compressed_data,NotoSans_Italic_ttf_compressed_size,normalFontSize);
     AddFont(NotoSans_Light_ttf_compressed_data,NotoSans_Light_ttf_compressed_size,normalFontSize);
@@ -118,6 +118,7 @@ void Utils::LoadFonts()
     AddFont(NotoSans_Medium_ttf_compressed_data,NotoSans_Medium_ttf_compressed_size, normalFontSize);
     AddFont(NotoSans_MediumItalic_ttf_compressed_data,NotoSans_MediumItalic_ttf_compressed_size, normalFontSize);
     AddFont(NotoSans_Regular_ttf_compressed_data,NotoSans_Regular_ttf_compressed_size,normalFontSize);
+
     AddFont(NotoSans_Thin_ttf_compressed_data,NotoSans_Thin_ttf_compressed_size,normalFontSize);
     AddFont(NotoSans_ThinItalic_ttf_compressed_data,NotoSans_ThinItalic_ttf_compressed_size,normalFontSize);
     AddFont(NotoSans_Medium_ttf_compressed_data,NotoSans_Medium_ttf_compressed_size, bigFontSize);
