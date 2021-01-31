@@ -42,6 +42,7 @@ find_package(OpenSSL REQUIRED)
 
 if(VCPKG_TOOLCHAIN)
     find_library(LIBMPV mpv ${LIBMPV_DIR})
+    find_package(freetype CONFIG REQUIRED)
 else()
     set(ENV{PKG_CONFIG_PATH} "/usr/local/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
     find_package(PkgConfig REQUIRED)
