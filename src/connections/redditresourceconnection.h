@@ -18,10 +18,10 @@ public:
     RedditResourceConnection(const boost::asio::any_io_executor& executor,
                              boost::asio::ssl::context& ssl_context,                             
                              const std::string& userAgent);
-    void getResource(const std::string& url, void* userData = nullptr);
+    void getResource(const std::string& url, std::any userData = std::any());
 protected:
     virtual void sendRequest(request_t request) override;
-    virtual void responseReceivedComplete(void* userData) override;
+    virtual void responseReceivedComplete(std::any userData) override;
     virtual void handleLocationChange(const std::string& location) override;
     virtual void performRequest(request_t request) override;
 

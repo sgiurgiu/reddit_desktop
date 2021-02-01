@@ -92,13 +92,15 @@ private:
     void setComments(comments_list receivedComments, bool append);
     void setParentPost(post_ptr receivedParentPost);
     void showComment(DisplayComment& c);
-    void voteParentPost(post_ptr p, Voted vote);
-    void updatePostVote(post* p, Voted vote);
+    void voteParentPost(Voted vote);
+    void updatePostVote(Voted vote);
     void voteComment(DisplayComment* c,Voted vote);
-    void updateCommentVote(DisplayComment* c,Voted vote);
+    void updateCommentVote(std::string commentName,Voted vote);
     void setupListingConnections();
     void setUnloadedComments(std::optional<unloaded_children> children);
     void loadUnloadedChildren(const std::optional<unloaded_children>& children);
+    DisplayComment* getComment(std::string commentName);
+    DisplayComment* getChildComment(DisplayComment& c,const std::string& commentName);
 private:
     std::string postId;
     std::string title;

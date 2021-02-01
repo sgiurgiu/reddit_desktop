@@ -17,7 +17,7 @@ RedditListingConnection::RedditListingConnection(const boost::asio::any_io_execu
 {
 }
 
-void RedditListingConnection::list(const std::string& target, const access_token& token, void* userData)
+void RedditListingConnection::list(const std::string& target, const access_token& token, std::any userData)
 {
     auto raw_json_target = target;
     if(raw_json_target.find('?') == std::string::npos)
@@ -40,7 +40,7 @@ void RedditListingConnection::list(const std::string& target, const access_token
     request.set(boost::beast::http::field::authorization,fmt::format("Bearer {}",token.token));
     request.prepare_payload();
 
-    enqueueRequest(std::move(request),userData);
+    enqueueRequest(std::move(request),std::move(userData));
 }
 void RedditListingConnection::handleLocationChange(const std::string& location)
 {
@@ -50,13 +50,13 @@ void RedditListingConnection::handleLocationChange(const std::string& location)
     {
         std::lock_guard<std::mutex> _(queuedRequestsMutex);
         BOOST_ASSERT(!queuedRequests.empty());
-        auto userData = queuedRequests.front().userData;
+        auto userData = std::move(queuedRequests.front().userData);
         queuedRequests.pop_front();
-        targetChangedSignal(std::move(target),userData);
+        targetChangedSignal(std::move(target),std::move(userData));
     }
 }
 
-void RedditListingConnection::responseReceivedComplete(void* userData)
+void RedditListingConnection::responseReceivedComplete(std::any userData)
 {
     auto status = responseParser->get().result_int();
     auto body = responseParser->get().body();
@@ -90,6 +90,6 @@ void RedditListingConnection::responseReceivedComplete(void* userData)
     {
         resp.body = body;
     }
-    resp.userData = userData;
+    resp.userData = std::move(userData);
     signal({},std::move(resp));
 }

@@ -15,6 +15,7 @@
 #include <optional>
 #include <deque>
 #include <mutex>
+#include <any>
 
 template<typename RequestBody,typename ResponseBody, typename ClientResponse>
 class RedditConnection :
@@ -115,16 +116,16 @@ private:
 protected:
     struct queued_request
     {
-        queued_request(request_t request, void* userData):
-            request(std::move(request)),userData(userData)
+        queued_request(request_t request, std::any userData):
+            request(std::move(request)),userData(std::move(userData))
         {}
         request_t request;
-        void* userData;
+        std::any userData;
     };
-    void enqueueRequest(request_t request, void* userData = nullptr)
+    void enqueueRequest(request_t request, std::any userData)
     {
         std::lock_guard<std::mutex> _(queuedRequestsMutex);
-        queuedRequests.emplace_back(std::move(request),userData);
+        queuedRequests.emplace_back(std::move(request),std::move(userData));
         if(queuedRequests.size() == 1)
         {
             performRequest(std::move(queuedRequests.front().request));
@@ -287,7 +288,7 @@ protected:
             }
             else
             {
-                responseReceivedComplete(queuedRequests.front().userData);
+                responseReceivedComplete(std::move(queuedRequests.front().userData));
                 queuedRequests.pop_front();
                 if(!queuedRequests.empty())
                 {
@@ -298,7 +299,7 @@ protected:
     }
 
     virtual void responseReceivedComplete() {};
-    virtual void responseReceivedComplete(void* userData) {
+    virtual void responseReceivedComplete(std::any userData) {
         boost::ignore_unused(userData);
     };
 protected:    

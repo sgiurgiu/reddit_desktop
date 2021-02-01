@@ -7,6 +7,7 @@
 #include <memory>
 #include <chrono>
 #include <optional>
+#include <any>
 
 struct user
 {
@@ -41,8 +42,7 @@ struct listing
     nlohmann::json json;
 };
 
-//TODO: get std::any in here
-template <typename T, typename U = void>
+template <typename T>
 struct client_response
 {
     T data;
@@ -50,7 +50,7 @@ struct client_response
     int64_t contentLength;
     std::string contentType;
     std::string body;
-    U* userData;
+    std::any userData;
 };
 struct image_target
 {

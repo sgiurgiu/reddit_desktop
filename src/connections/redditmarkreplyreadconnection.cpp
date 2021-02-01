@@ -14,7 +14,7 @@ RedditMarkReplyReadConnection::RedditMarkReplyReadConnection(const boost::asio::
 }
 void RedditMarkReplyReadConnection::markReplyRead(const std::vector<std::string>& ids,
                                                   const access_token& token, bool read,
-                                                  void* userData)
+                                                  std::any userData)
 {
     request_t request;
     request.clear();
@@ -35,10 +35,10 @@ void RedditMarkReplyReadConnection::markReplyRead(const std::vector<std::string>
     }
     request.body() = fmt::format("api_type=json&id={}",idsParam);
     request.prepare_payload();
-    enqueueRequest(std::move(request), userData);
+    enqueueRequest(std::move(request), std::move(userData));
 }
 
-void RedditMarkReplyReadConnection::responseReceivedComplete(void* userData)
+void RedditMarkReplyReadConnection::responseReceivedComplete(std::any userData)
 {
     auto status = responseParser->get().result_int();
     auto body = responseParser->get().body();
@@ -57,6 +57,6 @@ void RedditMarkReplyReadConnection::responseReceivedComplete(void* userData)
     }
     resp.status = status;
     resp.body = body;
-    resp.userData = userData;
+    resp.userData = std::move(userData);
     signal({},std::move(resp));
 }

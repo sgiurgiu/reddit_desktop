@@ -22,9 +22,9 @@ public:
 
     void markReplyRead(const std::vector<std::string>& ids,
                        const access_token& token, bool read,
-                       void* userData = nullptr);
+                       std::any userData = std::any());
 protected:
-    virtual void responseReceivedComplete(void* userData) override;
+    virtual void responseReceivedComplete(std::any userData) override;
 private:
     std::string userAgent;
 };

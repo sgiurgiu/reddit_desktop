@@ -16,19 +16,19 @@ public:
                   const std::string& host, const std::string& service,
                   const std::string& userAgent );
 
-    void list(const std::string& target, const access_token& token, void* userData = nullptr);
+    void list(const std::string& target, const access_token& token, std::any userData = std::any());
     template<typename S>
     void targetChangedHandler(S slot)
     {
         targetChangedSignal.connect(slot);
     }
 protected:
-    virtual void responseReceivedComplete(void* userData) override;
+    virtual void responseReceivedComplete(std::any userData) override;
     virtual void handleLocationChange(const std::string& location) override;
 
 private:
     std::string userAgent;
-    boost::signals2::signal<void(std::string newTarget, void* userData)> targetChangedSignal;
+    boost::signals2::signal<void(std::string newTarget, std::any userData)> targetChangedSignal;
 };
 
 #endif // REDDITLISTING_H

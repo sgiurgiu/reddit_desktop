@@ -14,7 +14,7 @@ RedditCreateCommentConnection::RedditCreateCommentConnection(const boost::asio::
 
 }
 void RedditCreateCommentConnection::createComment(const std::string& parentId,const std::string& text,
-                                                  const access_token& token, void* userData)
+                                                  const access_token& token, std::any userData)
 {
     if(text.empty() || parentId.empty()) return;
     request_t request;
@@ -33,10 +33,10 @@ void RedditCreateCommentConnection::createComment(const std::string& parentId,co
                                  "&thing_id={}",
                                  escapedText,parentId);
     request.prepare_payload();
-    enqueueRequest(std::move(request), userData);
+    enqueueRequest(std::move(request), std::move(userData));
 }
 
-void RedditCreateCommentConnection::responseReceivedComplete(void* userData)
+void RedditCreateCommentConnection::responseReceivedComplete(std::any userData)
 {
     auto status = responseParser->get().result_int();
     auto body = responseParser->get().body();
@@ -70,6 +70,6 @@ void RedditCreateCommentConnection::responseReceivedComplete(void* userData)
     {
         resp.body = body;
     }
-    resp.userData = userData;
+    resp.userData = std::move(userData);
     signal({},std::move(resp));
 }

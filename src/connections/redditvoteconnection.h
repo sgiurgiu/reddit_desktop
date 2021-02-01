@@ -18,9 +18,9 @@ public:
                          boost::asio::ssl::context& ssl_context,
                          const std::string& host, const std::string& service,
                          const std::string& userAgent);
-    void vote(const std::string& id,const access_token& token, Voted vote, void* userData);
+    void vote(const std::string& id,const access_token& token, Voted vote, std::any userData);
 protected:
-    virtual void responseReceivedComplete(void* userData) override;
+    virtual void responseReceivedComplete(std::any userData) override;
 private:
     std::string userAgent;
     std::string id;

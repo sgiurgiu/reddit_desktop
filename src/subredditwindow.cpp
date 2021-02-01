@@ -133,7 +133,7 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
                                                             self,std::move(response.data)));
             }
         });
-        listingConnection->targetChangedHandler([weak = weak_from_this()](std::string newTarget,void*) {
+        listingConnection->targetChangedHandler([weak = weak_from_this()](std::string newTarget,std::any) {
             auto self = weak.lock();
             if (!self) return;
 
@@ -151,23 +151,24 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
         {
             auto self = weak.lock();
             if(!self) return;
-            PostDisplay* post = static_cast<PostDisplay*>(response.userData);
-            if(!post) return;
+            std::string postName = std::any_cast<std::string>(response.userData);
+
             if(ec)
             {
                 auto message = "Cannot load thumbnail:" + ec.message();
-                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,post,std::move(message)));
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,std::move(postName),std::move(message)));
             }
             else if(response.status >= 400)
             {
                 auto message = "Cannot load thumbnail:" + response.body;
-                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,post,std::move(message)));
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,std::move(postName),std::move(message)));
             }
             else if(response.status == 200)
             {
                 int width, height, channels;
                 auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
-                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,self,post,data,width,height,channels));
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,self,
+                                                             std::move(postName),data,width,height,channels));
             }
         });
     }
@@ -180,8 +181,7 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
         {
             auto self = weak.lock();
             if (!self) return;
-            std::pair<post_ptr,Voted>* p = static_cast<std::pair<post_ptr, Voted>*>(response.userData);
-            if (!p) return;
+            auto p = std::any_cast<std::pair<std::string, Voted>>(response.userData);
 
             if (ec)
             {
@@ -193,9 +193,8 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
             }
             else
             {
-                boost::asio::post(self->uiExecutor, std::bind(&SubredditWindow::updatePostVote, self, p->first.get(), p->second));
+                boost::asio::post(self->uiExecutor, std::bind(&SubredditWindow::updatePostVote, self, std::move(p.first), p.second));
             }
-            delete p;
         });
     }
 
@@ -271,14 +270,18 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
             p.thumbnailPicture = Utils::GetRedditThumbnail(p.post->thumbnail);
             if(!p.thumbnailPicture)
             {
-                resourceConnection->getResource(p.post->thumbnail,&p);
+                resourceConnection->getResource(p.post->thumbnail,p.post->name);
             }
         }
     }
 }
-void SubredditWindow::setPostErrorMessage(PostDisplay* post,std::string msg)
+void SubredditWindow::setPostErrorMessage(std::string postName,std::string msg)
 {
-    post->errorMessageText = std::move(msg);
+    auto it = std::find_if(posts.begin(),posts.end(),[name = std::move(postName)](const auto& p){return p.post->name == name;});
+    if(it != posts.end())
+    {
+        it->errorMessageText = std::move(msg);
+    }
 }
 void SubredditWindow::PostDisplay::updateShowContentText()
 {
@@ -287,27 +290,35 @@ void SubredditWindow::PostDisplay::updateShowContentText()
                                               showingContent ? ICON_FA_MINUS_SQUARE_O:ICON_FA_PLUS_SQUARE_O),
                                           post->name);
 }
-void SubredditWindow::setPostThumbnail(PostDisplay* p,unsigned char* data, int width, int height, int channels)
+void SubredditWindow::setPostThumbnail(std::string postName,unsigned char* data, int width, int height, int channels)
 {
     ((void)channels);
-    p->thumbnailPicture = Utils::loadImage(data,width,height,STBI_rgb_alpha);
-    if(p->post->over18 && shouldBlurPictures)
+    auto it = std::find_if(posts.begin(),posts.end(),[name = std::move(postName)](const auto& p){return p.post->name == name;});
+    if(it != posts.end())
     {
-        p->blurredThumbnailPicture = Utils::loadBlurredImage(data,width,height,STBI_rgb_alpha);
+        it->thumbnailPicture = Utils::loadImage(data,width,height,STBI_rgb_alpha);
+        if(it->post->over18 && shouldBlurPictures)
+        {
+            it->blurredThumbnailPicture = Utils::loadBlurredImage(data,width,height,STBI_rgb_alpha);
+        }
     }
     stbi_image_free(data);    
 }
 void SubredditWindow::votePost(post_ptr p,Voted voted)
 {
     listingErrorMessage.clear();
-    std::pair<post_ptr, Voted>* pair = new std::pair<post_ptr, Voted>(p,voted);
-    voteConnection->vote(p->name,token,voted,pair);
+    std::pair<std::string, Voted> pair = std::make_pair<>(p->name,voted);
+    voteConnection->vote(p->name,token,voted,std::move(pair));
 }
-void SubredditWindow::updatePostVote(post* p,Voted voted)
+void SubredditWindow::updatePostVote(std::string postName,Voted voted)
 {
-    auto oldVoted = p->voted;
-    p->voted = voted;
-    p->humanScore = Utils::CalculateScore(p->score,oldVoted,voted);
+    auto it = std::find_if(posts.begin(),posts.end(),[name = std::move(postName)](const auto& p){return p.post->name == name;});
+    if(it != posts.end())
+    {
+        auto oldVoted = it->post->voted;
+        it->post->voted = voted;
+        it->post->humanScore = Utils::CalculateScore(it->post->score,oldVoted,voted);
+    }
 }
 void SubredditWindow::pauseAllPosts()
 {

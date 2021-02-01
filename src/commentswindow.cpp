@@ -23,8 +23,6 @@ CommentsWindow::CommentsWindow(const std::string& postId,
 
 void CommentsWindow::setupListingConnections()
 {
-    if(moreChildrenConnection && listingConnection) return;
-
     auto completeHandler = [weak=weak_from_this()](const boost::system::error_code& ec,
             client_response<listing> response)
     {
@@ -425,15 +423,15 @@ void CommentsWindow::DisplayComment::updateButtonsText()
     postReplyPreviewCheckboxId = fmt::format("Show Preview##{}_postReplyPreview",commentData.name);
     liveReplyPreviewText = fmt::format("Live Preview##{}_commentLivePreview",commentData.name);
 #ifdef REDDIT_DESKTOP_DEBUG
-    titleText = fmt::format("{} - {} points, {} ({})",commentData.author,
+    titleText = fmt::format("{}  {} points, {} ({})",commentData.author,
                             commentData.humanScore,commentData.humanReadableTimeDifference,
                             commentData.name);
 #else
-    titleText = fmt::format("{} - {} points, {}",commentData.author,
+    titleText = fmt::format("{}  {} points, {}",commentData.author,
                             commentData.humanScore,commentData.humanReadableTimeDifference);
 #endif
 }
-void CommentsWindow::voteParentPost(post_ptr p, Voted vote)
+void CommentsWindow::voteParentPost(Voted vote)
 {
     listingErrorMessage.clear();
     if(!postVotingConnection)
@@ -445,8 +443,7 @@ void CommentsWindow::voteParentPost(post_ptr p, Voted vote)
         {
             auto self = weak.lock();
             if(!self) return;
-            std::pair<post_ptr, Voted>* p = static_cast<std::pair<post_ptr, Voted>*>(response.userData);
-            if (!p) return;
+            Voted voted = std::any_cast<Voted>(response.userData);
 
             if(ec)
             {
@@ -458,19 +455,17 @@ void CommentsWindow::voteParentPost(post_ptr p, Voted vote)
             }
             else
             {
-                boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::updatePostVote,self, p->first.get(), p->second));
+                boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::updatePostVote,self, voted));
             }
-            delete p;
         });
     }
-    std::pair<post_ptr, Voted>* pair = new std::pair<post_ptr, Voted>(p, vote);
-    postVotingConnection->vote(p->name,token,vote, pair);
+    postVotingConnection->vote(parentPost->name,token,vote, vote);
 }
-void CommentsWindow::updatePostVote(post* p, Voted vote)
+void CommentsWindow::updatePostVote(Voted vote)
 {
-    auto oldVoted = p->voted;
-    p->voted = vote;
-    p->humanScore = Utils::CalculateScore(p->score,oldVoted,vote);
+    auto oldVoted = parentPost->voted;
+    parentPost->voted = vote;
+    parentPost->humanScore = Utils::CalculateScore(parentPost->score,oldVoted,vote);
 }
 void CommentsWindow::voteComment(DisplayComment* c,Voted vote)
 {
@@ -484,9 +479,7 @@ void CommentsWindow::voteComment(DisplayComment* c,Voted vote)
         {
             auto self = weak.lock();
             if (!self) return;
-            std::pair<DisplayComment*, Voted>* p = static_cast<std::pair<DisplayComment*, Voted>*>(response.userData);
-            if (!p) return;
-
+            auto p = std::any_cast<std::pair<std::string, Voted>>(response.userData);
             if (ec)
             {
                 boost::asio::post(self->uiExecutor, std::bind(&CommentsWindow::setErrorMessage, self, ec.message()));
@@ -497,20 +490,44 @@ void CommentsWindow::voteComment(DisplayComment* c,Voted vote)
             }
             else
             {
-                boost::asio::post(self->uiExecutor, std::bind(&CommentsWindow::updateCommentVote, self, p->first, p->second));
+                boost::asio::post(self->uiExecutor, std::bind(&CommentsWindow::updateCommentVote, self, std::move(p.first), p.second));
             }
-            delete p;
         });
     }
-    std::pair<DisplayComment*, Voted>* pair = new std::pair<DisplayComment*, Voted>(c, vote);
+    auto pair = std::make_pair<>(c->commentData.name, vote);
     commentVotingConnection->vote(c->commentData.name,token,vote,pair);
 }
-void CommentsWindow::updateCommentVote(DisplayComment* c,Voted vote)
+void CommentsWindow::updateCommentVote(std::string commentName,Voted vote)
 {
-    auto oldVoted = c->commentData.voted;
-    c->commentData.voted = vote;
-    c->commentData.humanScore = Utils::CalculateScore(c->commentData.score,oldVoted,vote);
-    c->updateButtonsText();
+    auto c = getComment(std::move(commentName));
+    if(c)
+    {
+        auto oldVoted = c->commentData.voted;
+        c->commentData.voted = vote;
+        c->commentData.humanScore = Utils::CalculateScore(c->commentData.score,oldVoted,vote);
+        c->updateButtonsText();
+    }
+}
+CommentsWindow::DisplayComment* CommentsWindow::getComment(std::string commentName)
+{
+    for(auto&& c : comments)
+    {
+        if(c.commentData.name == commentName) return &c;
+        auto child = getChildComment(c,commentName);
+        if(child) return child;
+    }
+
+    return nullptr;
+}
+CommentsWindow::DisplayComment* CommentsWindow::getChildComment(DisplayComment& c,const std::string& commentName)
+{
+    for(auto&& child : c.replies)
+    {
+        if(child.commentData.name == commentName) return &child;
+        auto subChild = getChildComment(child,commentName);
+        if(subChild) return subChild;
+    }
+    return nullptr;
 }
 
 void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
@@ -578,7 +595,7 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
         }
         if(ImGui::Button(postUpvoteButtonText.c_str()))
         {
-            voteParentPost(parentPost,parentPost->voted == Voted::UpVoted ? Voted::NotVoted : Voted::UpVoted);
+            voteParentPost(parentPost->voted == Voted::UpVoted ? Voted::NotVoted : Voted::UpVoted);
         }
         if(parentPost->voted == Voted::UpVoted)
         {
@@ -593,7 +610,7 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
         }
         if(ImGui::Button(postDownvoteButtonText.c_str()))
         {
-            voteParentPost(parentPost,parentPost->voted == Voted::DownVoted ? Voted::NotVoted : Voted::DownVoted);
+            voteParentPost(parentPost->voted == Voted::DownVoted ? Voted::NotVoted : Voted::DownVoted);
         }
         if(parentPost->voted == Voted::DownVoted)
         {

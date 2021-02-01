@@ -19,7 +19,7 @@ RedditResourceConnection::RedditResourceConnection(const boost::asio::any_io_exe
 {    
 }
 
-void RedditResourceConnection::getResource(const std::string& url,void* userData)
+void RedditResourceConnection::getResource(const std::string& url,std::any userData)
 {
     boost::url_view urlParts(url);
 
@@ -48,7 +48,7 @@ void RedditResourceConnection::getResource(const std::string& url,void* userData
     request.set(boost::beast::http::field::accept, "*/*");
     request.set(boost::beast::http::field::user_agent, userAgent);    
     request.prepare_payload();    
-    enqueueRequest(std::move(request),userData);
+    enqueueRequest(std::move(request),std::move(userData));
 }
 void RedditResourceConnection::performRequest(request_t request)
 {
@@ -70,7 +70,7 @@ void RedditResourceConnection::sendRequest(request_t request)
     responseParser->body_limit(BUFFER_SIZE);
     RedditConnection::sendRequest(std::move(request));
 }
-void RedditResourceConnection::responseReceivedComplete(void* userData)
+void RedditResourceConnection::responseReceivedComplete(std::any userData)
 {
     auto status = responseParser->get().result_int();
     resource_response resp;
@@ -89,7 +89,7 @@ void RedditResourceConnection::responseReceivedComplete(void* userData)
             resp.contentType = h.value().to_string();
         }
     }
-    resp.userData = userData;
+    resp.userData = std::move(userData);
     signal({},std::move(resp));
 }
 

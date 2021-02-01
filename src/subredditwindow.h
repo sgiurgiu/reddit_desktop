@@ -86,15 +86,15 @@ private:
     void loadListingsFromConnection(const listing& listingResponse);
     void setListings(posts_list receivedPosts, nlohmann::json beforeJson,nlohmann::json afterJson);
     void setErrorMessage(std::string errorMessage);
-    void setPostThumbnail(PostDisplay* p,unsigned char* data, int width, int height, int channels);
+    void setPostThumbnail(std::string postName,unsigned char* data, int width, int height, int channels);
     void showNewTextPostDialog();
     void showNewLinkPostDialog();
     void submitNewPost(const post_ptr& p);
     void clearExistingPostsData();
     void votePost(post_ptr p,Voted voted);
-    void updatePostVote(post* p,Voted voted);
+    void updatePostVote(std::string postName,Voted voted);
     void pauseAllPosts();
-    void setPostErrorMessage(PostDisplay* post,std::string msg);
+    void setPostErrorMessage(std::string postName,std::string msg);
     void lookAndDestroyPostsContents();
     void refreshPosts();
     void rearmRefreshTimer();

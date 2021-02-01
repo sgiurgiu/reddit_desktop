@@ -9,6 +9,7 @@
 #include "redditclientproducer.h"
 #include "markdownrenderer.h"
 #include <imgui.h>
+#include <map>
 
 class UserInformationWindow : public std::enable_shared_from_this<UserInformationWindow>
 {
@@ -68,27 +69,28 @@ private:
         int count = 0;
         DisplayMessageList messages;
     };
+    using ParentMessageResponseData = std::pair<std::string,std::string>;
     void loadMoreUnreadMessages();
     void loadMoreAllMessages();
     void loadMoreSentMessages();
-    void loadMessages(const std::string& kind,Messages* messages);
+    void loadMessages(const std::string& kind);
     void setErrorMessage(std::string errorMessage);
-    void loadListingsFromConnection(listing listingResponse,Messages* messages);
-    void showMessage(DisplayMessage& msg);
-    void loadMessageResponse(nlohmann::json,DisplayMessage*);
-    using DisplayMessagePtrList = std::vector<DisplayMessage*>;
-    using MarkMessagesType = std::pair<DisplayMessagePtrList,bool>;
-    void setMessagesRead(MarkMessagesType*);
-    void updateCommentVote(DisplayMessage* c,Voted vote);
-    void voteComment(DisplayMessage* c,Voted vote);
+    void loadListingsFromConnection(listing listingResponse,std::string messagesKind);
+    void showMessage(DisplayMessage& msg, const std::string& kind);
+    void loadMessageResponse(nlohmann::json,ParentMessageResponseData parentMsg);
+    using DisplayMessageIds = std::vector<ParentMessageResponseData>;
+    using MarkMessagesType = std::pair<DisplayMessageIds,bool>;
+    void setMessagesRead(MarkMessagesType);
+    void updateCommentVote(std::string kind, std::string msgName,Voted vote);
+    void voteComment(const std::string& kind, DisplayMessage& c,Voted vote);
+    DisplayMessage* getMessage(const std::string& kind,const std::string& name);
+    DisplayMessage* getChildMessage(DisplayMessage& msg, const std::string& name);
 private:
     bool showWindow = false;
     access_token token;
     RedditClientProducer* client;
     const boost::asio::any_io_executor& uiExecutor;
-    Messages unreadMessages;
-    Messages allMessages;
-    Messages sentMessages;
+    std::map<std::string,Messages> messages;
     std::string listingErrorMessage;
     RedditClientProducer::RedditCreateCommentClientConnection createCommentConnection;
     RedditClientProducer::RedditListingClientConnection listingConnection;

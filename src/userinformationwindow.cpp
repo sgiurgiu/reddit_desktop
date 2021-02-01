@@ -10,6 +10,9 @@
 namespace
 {
     constexpr auto USER_INFO_WINDOW_TITLE = "Messages and information";
+    constexpr auto UNREAD_MESSAGES = "unread";
+    constexpr auto INBOX_MESSAGES = "inbox";
+    constexpr auto SENT_MESSAGES = "sent";
 }
 
 UserInformationWindow::UserInformationWindow(const access_token& token,
@@ -55,7 +58,8 @@ void UserInformationWindow::loadMessages()
                               {
                                   boost::asio::post(self->uiExecutor,
                                                     std::bind(&UserInformationWindow::loadMessageResponse,
-                                                    self,std::move(msgResponse),(DisplayMessage*)response.userData));
+                                                    self,std::move(msgResponse),
+                                                    std::any_cast<ParentMessageResponseData>(response.userData)));
                               }
                           }
                        }
@@ -89,7 +93,7 @@ void UserInformationWindow::loadMessages()
 
                     boost::asio::post(self->uiExecutor,
                                     std::bind(&UserInformationWindow::setMessagesRead,
-                                    self,(MarkMessagesType*)response.userData));
+                                    self,std::any_cast<MarkMessagesType>(response.userData)));
                }
            }
        });
@@ -99,33 +103,36 @@ void UserInformationWindow::loadMessages()
     loadMoreAllMessages();
     loadMoreSentMessages();
 }
-void UserInformationWindow::setMessagesRead(MarkMessagesType* markedMessages)
+void UserInformationWindow::setMessagesRead(MarkMessagesType markedMessages)
 {
-    for(const auto& message : markedMessages->first)
+    for(const auto& messageId : markedMessages.first)
     {
-        message->msg.isNew = !markedMessages->second;
-        message->updateButtonsText();
+        auto msg = getMessage(messageId.first,messageId.second);
+        if(msg)
+        {
+            msg->msg.isNew = !markedMessages.second;
+            msg->updateButtonsText();
+        }
     }
-    delete markedMessages;
 }
 void UserInformationWindow::loadMoreUnreadMessages()
 {
-    loadMessages("unread",&unreadMessages);
+    loadMessages(UNREAD_MESSAGES);
 }
 void UserInformationWindow::loadMoreAllMessages()
 {
-    loadMessages("inbox",&allMessages);
+    loadMessages(INBOX_MESSAGES);
 }
 void UserInformationWindow::loadMoreSentMessages()
 {
-    loadMessages("sent",&sentMessages);
+    loadMessages(SENT_MESSAGES);
 }
-void UserInformationWindow::loadMessages(const std::string& kind,Messages* messages)
+void UserInformationWindow::loadMessages(const std::string& kind)
 {
-    std::string url = "/message/"+kind+"?count="+std::to_string(messages->count);
-    if(!messages->after.empty())
+    std::string url = "/message/"+kind+"?count="+std::to_string(messages[kind].count);
+    if(!messages[kind].after.empty())
     {
-        url+= "&after="+messages->after;
+        url+= "&after="+messages[kind].after;
     }
     if(!listingConnection)
     {
@@ -146,14 +153,15 @@ void UserInformationWindow::loadMessages(const std::string& kind,Messages* messa
                     else
                     {
                         boost::asio::post(self->uiExecutor,std::bind(&UserInformationWindow::loadListingsFromConnection,
-                                                                     self,std::move(response.data),(Messages*)response.userData));
+                                                                     self,std::move(response.data),
+                                                                     std::any_cast<std::string>(response.userData)));
                     }
             }
         });
     }
-    listingConnection->list(url,token,messages);
+    listingConnection->list(url,token,kind);
 }
-void UserInformationWindow::loadListingsFromConnection(listing listingResponse,Messages* messages)
+void UserInformationWindow::loadListingsFromConnection(listing listingResponse,std::string messagesKind)
 {
     std::string kind;
     if(listingResponse.json.contains("kind") && listingResponse.json["kind"].is_string())
@@ -171,19 +179,19 @@ void UserInformationWindow::loadListingsFromConnection(listing listingResponse,M
                 auto kind = child["kind"].get<std::string>();
                 if (kind == "t4" || kind == "t1")
                 {
-                    messages->messages.emplace_back(message{child["data"], kind});
+                    messages[messagesKind].messages.emplace_back(message{child["data"], kind});
                 }
             }
-            messages->count = messages->messages.size();
-            if(messages->count > 0)
+            messages[messagesKind].count = messages[messagesKind].messages.size();
+            if(messages[messagesKind].count > 0)
             {
-                messages->before = messages->messages.front().msg.name;
-                messages->after = messages->messages.back().msg.name;
+                messages[messagesKind].before = messages[messagesKind].messages.front().msg.name;
+                messages[messagesKind].after = messages[messagesKind].messages.back().msg.name;
             }
         }
     }
 }
-void UserInformationWindow::loadMessageResponse(nlohmann::json response,DisplayMessage* parentMessage)
+void UserInformationWindow::loadMessageResponse(nlohmann::json response,ParentMessageResponseData parentMsg)
 {
     std::string kind;
     if(response.contains("kind") && response["kind"].is_string())
@@ -193,8 +201,32 @@ void UserInformationWindow::loadMessageResponse(nlohmann::json response,DisplayM
     if(response.contains("data") && response["data"].is_object())
     {
         message msg{response["data"], kind};
-        parentMessage->replies.emplace(parentMessage->replies.begin(),std::move(msg));
+        auto parent = getMessage(parentMsg.first,parentMsg.second);
+        if(parent)
+        {
+            parent->replies.emplace(parent->replies.begin(),std::move(msg));
+        }
     }
+}
+UserInformationWindow::DisplayMessage* UserInformationWindow::getMessage(const std::string& kind,const std::string& name)
+{
+    for(auto&& msg: messages.at(kind).messages)
+    {
+        if(msg.msg.name == name) return &msg;
+        auto child = getChildMessage(msg,name);
+        if(child) return child;
+    }
+    return nullptr;
+}
+UserInformationWindow::DisplayMessage* UserInformationWindow::getChildMessage(DisplayMessage& msg, const std::string& name)
+{
+    for(auto&& child: msg.replies)
+    {
+        if(child.msg.name == name) return &child;
+        auto subChild = getChildMessage(child,name);
+        if(subChild) return subChild;
+    }
+    return nullptr;
 }
 void UserInformationWindow::setErrorMessage(std::string errorMessage)
 {
@@ -217,7 +249,7 @@ void UserInformationWindow::DisplayMessage::updateButtonsText()
     titleText = fmt::format("{} - {}{}",msg.author,msg.subject,(msg.isNew?" (unread)":""));
 #endif
 }
-void UserInformationWindow::voteComment(DisplayMessage* c,Voted vote)
+void UserInformationWindow::voteComment(const std::string& kind, DisplayMessage& c,Voted vote)
 {
     listingErrorMessage.clear();
     if(!commentVotingConnection)
@@ -229,8 +261,7 @@ void UserInformationWindow::voteComment(DisplayMessage* c,Voted vote)
         {
             auto self = weak.lock();
             if (!self) return;
-            std::pair<DisplayMessage*, Voted>* p = static_cast<std::pair<DisplayMessage*, Voted>*>(response.userData);
-            if (!p) return;
+            std::tuple<std::string, std::string, Voted> voted = std::any_cast<std::tuple<std::string, std::string, Voted>>(response.userData);
 
             if (ec)
             {
@@ -242,19 +273,22 @@ void UserInformationWindow::voteComment(DisplayMessage* c,Voted vote)
             }
             else
             {
-                boost::asio::post(self->uiExecutor, std::bind(&UserInformationWindow::updateCommentVote, self, p->first, p->second));
+                boost::asio::post(self->uiExecutor, std::bind(&UserInformationWindow::updateCommentVote, self,
+                                                              std::get<0>(voted), std::get<1>(voted),std::get<2>(voted)));
             }
-            delete p;
+
         });
     }
-    std::pair<DisplayMessage*, Voted>* pair = new std::pair<DisplayMessage*, Voted>(c, vote);
-    commentVotingConnection->vote(c->msg.name,token,vote,pair);
+    std::tuple<std::string, std::string, Voted> tuple(kind, c.msg.name, vote);
+    commentVotingConnection->vote(c.msg.name,token,vote,tuple);
 }
-void UserInformationWindow::updateCommentVote(DisplayMessage* c,Voted vote)
+void UserInformationWindow::updateCommentVote(std::string kind, std::string msgName,Voted vote)
 {
-    //auto oldVoted = c->msg.voted;
-    c->msg.voted = vote;
-    //c->updateButtonsText();
+    auto msg = getMessage(kind,msgName);
+    if(msg)
+    {
+        msg->msg.voted = vote;
+    }
 }
 void UserInformationWindow::showUserInfoWindow(int appFrameWidth,int appFrameHeight)
 {
@@ -270,24 +304,24 @@ void UserInformationWindow::showUserInfoWindow(int appFrameWidth,int appFrameHei
     {
         if (ImGui::BeginTabItem("Unread"))
         {
-            if(unreadMessages.count > 0 && ImGui::Button("Mark All Read"))
+            if(messages[UNREAD_MESSAGES].count > 0 && ImGui::Button("Mark All Read"))
             {
-                DisplayMessagePtrList messagesPtrList;
+                DisplayMessageIds messagesList;
                 std::vector<std::string> ids;
-                for(auto&& msg : unreadMessages.messages)
+                for(auto&& msg : messages[UNREAD_MESSAGES].messages)
                 {
-                    messagesPtrList.push_back(&msg);
+                    messagesList.push_back(std::make_pair<>(UNREAD_MESSAGES,msg.msg.name));
                     ids.push_back(msg.msg.name);
                 }
-                MarkMessagesType* markedMessages = new MarkMessagesType(std::move(messagesPtrList),true);
+                MarkMessagesType markedMessages{std::move(messagesList),true};
                 markReplyReadConnection->markReplyRead(ids,token,true,markedMessages);
             }
-            for(auto&& msg : unreadMessages.messages)
+            for(auto&& msg : messages[UNREAD_MESSAGES].messages)
             {
-                showMessage(msg);
+                showMessage(msg, UNREAD_MESSAGES);
                 ImGui::Separator();
             }
-            if(!unreadMessages.messages.empty() && ImGui::Button("Load More"))
+            if(!messages[UNREAD_MESSAGES].messages.empty() && ImGui::Button("Load More"))
             {
                 loadMoreUnreadMessages();
             }
@@ -296,12 +330,12 @@ void UserInformationWindow::showUserInfoWindow(int appFrameWidth,int appFrameHei
 
         if (ImGui::BeginTabItem("Inbox"))
         {
-            for(auto&& msg : allMessages.messages)
+            for(auto&& msg : messages[INBOX_MESSAGES].messages)
             {
-                showMessage(msg);
+                showMessage(msg, INBOX_MESSAGES);
                 ImGui::Separator();
             }
-            if(!allMessages.messages.empty() && ImGui::Button("Load More"))
+            if(!messages[INBOX_MESSAGES].messages.empty() && ImGui::Button("Load More"))
             {
                 loadMoreAllMessages();
             }
@@ -310,12 +344,12 @@ void UserInformationWindow::showUserInfoWindow(int appFrameWidth,int appFrameHei
 
         if (ImGui::BeginTabItem("Sent"))
         {
-            for(auto&& msg : sentMessages.messages)
+            for(auto&& msg : messages[SENT_MESSAGES].messages)
             {
-                showMessage(msg);
+                showMessage(msg, SENT_MESSAGES);
                 ImGui::Separator();
             }
-            if(!sentMessages.messages.empty() && ImGui::Button("Load More"))
+            if(!messages[SENT_MESSAGES].messages.empty() && ImGui::Button("Load More"))
             {
                 loadMoreSentMessages();
             }
@@ -327,7 +361,7 @@ void UserInformationWindow::showUserInfoWindow(int appFrameWidth,int appFrameHei
     ImGui::End();
 }
 
-void UserInformationWindow::showMessage(DisplayMessage& msg)
+void UserInformationWindow::showMessage(DisplayMessage& msg, const std::string& kind)
 {
     if(ImGui::TreeNodeEx(msg.titleText.c_str(),ImGuiTreeNodeFlags_DefaultOpen))
     {
@@ -339,7 +373,7 @@ void UserInformationWindow::showMessage(DisplayMessage& msg)
         }
         if(ImGui::Button(msg.upvoteButtonText.c_str()))
         {
-            voteComment(&msg,Voted::UpVoted);
+            voteComment(kind,msg,Voted::UpVoted);
         }
         if(msg.msg.voted == Voted::UpVoted)
         {
@@ -352,7 +386,7 @@ void UserInformationWindow::showMessage(DisplayMessage& msg)
         }
         if(ImGui::Button(msg.downvoteButtonText.c_str()))
         {
-            voteComment(&msg,Voted::DownVoted);
+            voteComment(kind, msg,Voted::DownVoted);
         }
         if(msg.msg.voted == Voted::DownVoted)
         {
@@ -367,9 +401,9 @@ void UserInformationWindow::showMessage(DisplayMessage& msg)
         ImGui::SameLine();
         if(ImGui::Button(msg.markReadUnreadButtonText.c_str()))
         {
-            DisplayMessagePtrList messagesPtrList;
-            messagesPtrList.push_back(&msg);
-            MarkMessagesType* markedMessages = new MarkMessagesType(std::move(messagesPtrList),msg.msg.isNew);
+            DisplayMessageIds messagesList;
+            messagesList.push_back(std::make_pair<>(kind,msg.msg.name));
+            MarkMessagesType markedMessages{std::move(messagesList),msg.msg.isNew};
             markReplyReadConnection->markReplyRead({msg.msg.name},token,msg.msg.isNew,markedMessages);
         }
         if(msg.showingReplyArea)
@@ -384,7 +418,8 @@ void UserInformationWindow::showMessage(DisplayMessage& msg)
             {
                 msg.showingReplyArea = false;
                 msg.postingReply = true;
-                createCommentConnection->createComment(msg.msg.name,msg.postReplyTextBuffer,token,&msg);
+                ParentMessageResponseData responseData = std::make_pair<>(kind,msg.msg.name);
+                createCommentConnection->createComment(msg.msg.name,msg.postReplyTextBuffer,token,std::move(responseData));
             }
             ImGui::SameLine();
             if(ImGui::Checkbox(msg.postReplyPreviewCheckboxId.c_str(),&msg.showingPreview))
@@ -404,7 +439,7 @@ void UserInformationWindow::showMessage(DisplayMessage& msg)
         }
         for(auto&& reply : msg.replies)
         {
-            showMessage(reply);
+            showMessage(reply, kind);
         }
         ImGui::TreePop();
     }

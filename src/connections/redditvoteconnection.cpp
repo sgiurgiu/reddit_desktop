@@ -10,7 +10,7 @@ RedditVoteConnection::RedditVoteConnection(const boost::asio::any_io_executor& e
     RedditConnection(executor,ssl_context,host,service),userAgent(userAgent)
 {
 }
-void RedditVoteConnection::vote(const std::string& id,const access_token& token, Voted vote, void* userData)
+void RedditVoteConnection::vote(const std::string& id,const access_token& token, Voted vote, std::any userData)
 {
 
     request_t request;
@@ -29,10 +29,10 @@ void RedditVoteConnection::vote(const std::string& id,const access_token& token,
     this->id = id;
     request.prepare_payload();
 
-    enqueueRequest(std::move(request),userData);
+    enqueueRequest(std::move(request),std::move(userData));
 }
 
-void RedditVoteConnection::responseReceivedComplete(void* userData)
+void RedditVoteConnection::responseReceivedComplete(std::any userData)
 {
     auto status = responseParser->get().result_int();
     auto body = responseParser->get().body();
@@ -58,6 +58,6 @@ void RedditVoteConnection::responseReceivedComplete(void* userData)
     {
         resp.body = body;
     }
-    resp.userData = userData;
+    resp.userData = std::move(userData);
     signal({},std::move(resp));
 }
