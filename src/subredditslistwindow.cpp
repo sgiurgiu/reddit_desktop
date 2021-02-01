@@ -5,6 +5,8 @@
 #include "fonts/IconsFontAwesome4.h"
 #include "utils.h"
 #include <boost/algorithm/string/case_conv.hpp>
+#include "database.h"
+
 namespace
 {
 constexpr auto SUBREDDITS_WINDOW_TITLE = "My Subreddits";
@@ -15,6 +17,7 @@ SubredditsListWindow::SubredditsListWindow(const access_token& token,
                                            const boost::asio::any_io_executor& executor):
     token(token),client(client),uiExecutor(executor)
 {
+    showRandomNSFW = Database::getInstance()->getShowRandomNSFW();
 }
 void SubredditsListWindow::loadSubredditsList()
 {
@@ -269,6 +272,19 @@ void SubredditsListWindow::setUserMultis(multireddit_list multis)
     saved.displayName = "saved";
     saved.path = "/user/"+username+"/saved";
     userMultis.emplace_back(std::move(saved));
+
+    multireddit random;
+    random.displayName = "random";
+    random.path = "/r/random";
+    userMultis.emplace_back(std::move(random));
+
+    if(showRandomNSFW)
+    {
+        multireddit randomNsfw;
+        randomNsfw.displayName = "random nsfw";
+        randomNsfw.path = "/r/randnsfw";
+        userMultis.emplace_back(std::move(randomNsfw));
+    }
 
     filteredUserMultis = userMultis;
 }

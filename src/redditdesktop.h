@@ -79,6 +79,7 @@ private:
     std::shared_ptr<SubredditsListWindow> subredditsListWindow;
     names_list searchedNamesList;
     int subredditsAutoRefreshTimeout;
+    bool showRandomNSFW = false;
 };
 
 

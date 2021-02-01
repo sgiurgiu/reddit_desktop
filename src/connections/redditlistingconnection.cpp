@@ -2,6 +2,7 @@
 #include <boost/beast/core.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/beast/http.hpp>
+#include <boost/url.hpp>
 #include <charconv>
 #include <fmt/format.h>
 #include "json.hpp"
@@ -40,6 +41,19 @@ void RedditListingConnection::list(const std::string& target, const access_token
     request.prepare_payload();
 
     enqueueRequest(std::move(request),userData);
+}
+void RedditListingConnection::handleLocationChange(const std::string& location)
+{
+    boost::url_view urlParts(location);
+    auto target = urlParts.encoded_path().to_string();
+
+    {
+        std::lock_guard<std::mutex> _(queuedRequestsMutex);
+        BOOST_ASSERT(!queuedRequests.empty());
+        auto userData = queuedRequests.front().userData;
+        queuedRequests.pop_front();
+        targetChangedSignal(std::move(target),userData);
+    }
 }
 
 void RedditListingConnection::responseReceivedComplete(void* userData)

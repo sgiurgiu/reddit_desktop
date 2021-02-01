@@ -119,19 +119,26 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
         {
             auto self = weak.lock();
             if(!self) return;
-           if(ec)
-           {
-               boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,ec.message()));
-           }
-           else if(response.status >= 400)
-           {
-               boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,std::move(response.body)));
-           }
-           else
-           {
-               boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::loadListingsFromConnection,
+            if(ec)
+            {
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,ec.message()));
+            }
+            else if(response.status >= 400)
+            {
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,std::move(response.body)));
+            }
+            else
+            {
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::loadListingsFromConnection,
                                                             self,std::move(response.data)));
-           }
+            }
+        });
+        listingConnection->targetChangedHandler([weak = weak_from_this()](std::string newTarget,void*) {
+            auto self = weak.lock();
+            if (!self) return;
+
+            boost::asio::post(self->uiExecutor, std::bind(&SubredditWindow::changeSubreddit,
+                self, std::move(newTarget)));
         });
     }
 
@@ -194,7 +201,21 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
 
     listingConnection->list(target,token);
 }
+void SubredditWindow::changeSubreddit(std::string newSubreddit)
+{
+    std::string jsonStr = "/.json";
+    if (newSubreddit.ends_with(jsonStr))
+    {
+        newSubreddit.erase(newSubreddit.length() - jsonStr.length(), jsonStr.length());
+    }
+    if (newSubreddit.starts_with("/"))
+    {
+        newSubreddit.erase(newSubreddit.begin());
+    }
 
+    this->subreddit = std::move(newSubreddit);
+    loadSubreddit();
+}
 void SubredditWindow::setErrorMessage(std::string errorMessage)
 {
     listingErrorMessage = std::move(errorMessage);

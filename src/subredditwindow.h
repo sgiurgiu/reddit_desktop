@@ -98,6 +98,7 @@ private:
     void lookAndDestroyPostsContents();
     void refreshPosts();
     void rearmRefreshTimer();
+    void changeSubreddit(std::string newSubreddit);
 private:    
     using CommentsSignal = boost::signals2::signal<void(std::string id,std::string title)>;
     using SubredditSignal = boost::signals2::signal<void(std::string)>;

@@ -25,6 +25,7 @@ RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
     shouldBlurPictures= db->getBlurNSFWPictures();
     useMediaHwAccel = db->getUseHWAccelerationForMedia();
     subredditsAutoRefreshTimeout = db->getAutoRefreshTimeout();
+    showRandomNSFW = db->getShowRandomNSFW();
 }
 
 void RedditDesktop::loginCurrentUser()
@@ -350,6 +351,11 @@ void RedditDesktop::showMainMenuBar()
             if(ImGui::Checkbox("Blur NSFW Thumbnails", &shouldBlurPictures))
             {
                 Database::getInstance()->setBlurNSFWPictures(shouldBlurPictures);
+            }
+            if (ImGui::Checkbox("Show Random NSFW", &showRandomNSFW))
+            {
+                Database::getInstance()->setShowRandomNSFW(showRandomNSFW);
+                subredditsListWindow->setShowRandomNSFW(showRandomNSFW);
             }
             if(ImGui::Checkbox("Hardware Accelerated Media", &useMediaHwAccel))
             {

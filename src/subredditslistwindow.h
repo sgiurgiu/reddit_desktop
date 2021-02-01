@@ -31,6 +31,11 @@ public:
     {
         this->username = userName;
     }
+    void setShowRandomNSFW(bool flag)
+    {
+        showRandomNSFW = flag;
+        loadSubredditsList();
+    }
 private:
     void loadSubscribedSubreddits(subreddit_list srs);
     void loadSubreddits(const std::string& url, const access_token& token);
@@ -90,6 +95,7 @@ private:
     std::string search;
     std::string errorMessage;
     std::string username;
+    bool showRandomNSFW = false;
 };
 
 #endif // SUBREDDITSLISTWINDOW_H

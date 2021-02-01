@@ -102,6 +102,14 @@ int Database::getIntProperty(const std::string& propName, int defaultValue) cons
     }
     return value;
 }
+void Database::setShowRandomNSFW(bool flag)
+{
+    setBoolProperty(flag, "SHOW_RANDOM_NSFW");
+}
+bool Database::getShowRandomNSFW() const
+{
+    return getBoolProperty("SHOW_RANDOM_NSFW", false);
+}
 
 void Database::setBlurNSFWPictures(bool flag)
 {

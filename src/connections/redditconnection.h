@@ -318,7 +318,7 @@ protected:
 #else
     std::chrono::seconds streamTimeout{30};
 #endif
-private:    
+
     request_t privateRequest;
     std::deque<queued_request> queuedRequests;
     std::mutex queuedRequestsMutex;
