@@ -81,8 +81,7 @@ void SubredditsListWindow::showSearchTab()
     {
         if(ImGui::Selectable(name.sr.c_str(),name.selected,ImGuiSelectableFlags_AllowDoubleClick))
         {
-            std::for_each(searchedNamesList.begin(),searchedNamesList.end(),
-                           [](auto&& item){
+            std::ranges::for_each(searchedNamesList, [](auto&& item){
                 item.selected = false;
             });
             if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
@@ -157,9 +156,8 @@ void SubredditsListWindow::showSubredditsTab()
             auto comparator = [filter=subredditsFilter](const auto& item){
                 return boost::algorithm::to_lower_copy(item.sr.displayName).find(boost::algorithm::to_lower_copy(filter)) != std::string::npos;
             };
-            std::copy_if(subscribedSubreddits.begin(),subscribedSubreddits.end(),
-                         std::back_inserter(filteredSubscribedSubreddits),comparator);
-            std::copy_if(userMultis.begin(),userMultis.end(),std::back_inserter(filteredUserMultis),comparator);
+            std::ranges::copy_if(subscribedSubreddits,std::back_inserter(filteredSubscribedSubreddits),comparator);
+            std::ranges::copy_if(userMultis,std::back_inserter(filteredUserMultis),comparator);
         }
     }
 
@@ -176,14 +174,11 @@ void SubredditsListWindow::showSubredditsTab()
 }
 void SubredditsListWindow::clearSelections()
 {
-    std::for_each(filteredUserMultis.begin(),filteredUserMultis.end(),
-                   [](auto&& item){
+    auto predicate = [](auto&& item){
         item.selected = false;
-    });
-    std::for_each(filteredSubscribedSubreddits.begin(),filteredSubscribedSubreddits.end(),
-                   [](auto&& item){
-        item.selected = false;
-    });
+    };
+    std::ranges::for_each(filteredUserMultis, predicate);
+    std::ranges::for_each(filteredSubscribedSubreddits, predicate);
 }
 void SubredditsListWindow::showMultisNodes()
 {
