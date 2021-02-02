@@ -11,12 +11,10 @@
 #include "redditconnection.h"
 #include "htmlparser.h"
 
+//TODO: This class' meaning and function has changed, now it just reads the URL html and tries to
+// figure out the actual media URL from the HTML. Rename this, rethink this.
 using dummy_response = client_response<void*>;
-class MediaStreamingConnection : public RedditConnection<
-        boost::beast::http::empty_body,
-        boost::beast::http::string_body,
-        dummy_response
-        >
+class MediaStreamingConnection : public RedditGetConnection<dummy_response>
 {
 public:
     MediaStreamingConnection(const boost::asio::any_io_executor& executor,

@@ -7,10 +7,7 @@
 
 using ListingClientResponse = client_response<listing>;
 
-class RedditListingConnection : public RedditConnection<
-        boost::beast::http::empty_body,
-        boost::beast::http::string_body,
-        ListingClientResponse>
+class RedditListingConnection : public RedditGetConnection<ListingClientResponse>
 {
 
 public:

@@ -9,11 +9,7 @@
 #include <boost/signals2.hpp>
 #include <optional>
 
-class RedditCreatePostConnection : public RedditConnection<
-        boost::beast::http::string_body,
-        boost::beast::http::string_body,
-        client_response<post_ptr>
-    >
+class RedditCreatePostConnection : public RedditPostConnection<client_response<post_ptr>>
 {
 public:
     RedditCreatePostConnection(const boost::asio::any_io_executor& executor,

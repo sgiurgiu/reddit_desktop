@@ -7,11 +7,7 @@
 #include <boost/beast/http.hpp>
 
 
-class RedditCreateCommentConnection : public RedditConnection<
-        boost::beast::http::string_body,
-        boost::beast::http::string_body,
-        client_response<listing>
-    >
+class RedditCreateCommentConnection : public RedditPostConnection<client_response<listing>>
 {
 public:
     RedditCreateCommentConnection(const boost::asio::any_io_executor& executor,

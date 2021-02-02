@@ -335,4 +335,13 @@ protected:
     std::mutex queuedRequestsMutex;
 };
 
+template<typename T>
+using RedditGetConnection = RedditConnection<boost::beast::http::empty_body,
+                                        boost::beast::http::string_body,
+                                        T>;
+template<typename T>
+using RedditPostConnection = RedditConnection<boost::beast::http::string_body,
+                                        boost::beast::http::string_body,
+                                        T>;
+
 #endif // REDDITCONNECTION_H

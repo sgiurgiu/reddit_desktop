@@ -8,11 +8,7 @@
 #include <boost/beast/http.hpp>
 #include <boost/signals2.hpp>
 
-class RedditLoginConnection : public RedditConnection<
-        boost::beast::http::string_body,
-        boost::beast::http::string_body,
-        client_response<access_token>
-        >
+class RedditLoginConnection : public RedditPostConnection<client_response<access_token>>
 {
 public:
     RedditLoginConnection(const boost::asio::any_io_executor& executor,

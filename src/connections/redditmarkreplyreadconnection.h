@@ -8,11 +8,7 @@
 #include <vector>
 #include <string>
 
-class RedditMarkReplyReadConnection : public RedditConnection<
-        boost::beast::http::string_body,
-        boost::beast::http::string_body,
-        client_response<std::string>
-    >
+class RedditMarkReplyReadConnection : public RedditPostConnection<client_response<std::string>>
 {
 public:
     RedditMarkReplyReadConnection(const boost::asio::any_io_executor& executor,

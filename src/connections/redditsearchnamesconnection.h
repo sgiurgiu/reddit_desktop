@@ -10,11 +10,7 @@
 
 using names_list = std::vector<std::string>;
 
-class RedditSearchNamesConnection : public RedditConnection<
-        boost::beast::http::empty_body,
-        boost::beast::http::string_body,
-        client_response<names_list>
-        >
+class RedditSearchNamesConnection : public RedditGetConnection<client_response<names_list>>
 {
 public:
     RedditSearchNamesConnection(const boost::asio::any_io_executor& executor,
