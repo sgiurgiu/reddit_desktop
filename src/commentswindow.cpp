@@ -23,38 +23,61 @@ CommentsWindow::CommentsWindow(const std::string& postId,
 
 void CommentsWindow::setupListingConnections()
 {
-    auto completeHandler = [weak=weak_from_this()](const boost::system::error_code& ec,
-            client_response<listing> response)
-    {
-        auto self = weak.lock();
-        if(!self || !self->windowOpen) return;
-        if(ec)
-        {
-            boost::asio::post(self->uiExecutor,
-                     std::bind(&CommentsWindow::setErrorMessage,self,ec.message()));
-        }
-        else
-        {
-            if(response.status >= 400)
-            {
-                boost::asio::post(self->uiExecutor,
-                              std::bind(&CommentsWindow::setErrorMessage,self,response.body));
-            }
-            else
-            {
-                self->loadListingsFromConnection(std::move(response.data));
-            }
-        }
-    };
     if(!moreChildrenConnection)
     {
         moreChildrenConnection = client->makeRedditMoreChildrenClientConnection();
-        moreChildrenConnection->connectionCompleteHandler(completeHandler);
+        moreChildrenConnection->connectionCompleteHandler(
+          [weak=weak_from_this()](const boost::system::error_code& ec,
+                                  client_response<listing> response)
+          {
+              auto self = weak.lock();
+              if(!self || !self->windowOpen) return;
+              if(ec)
+              {
+                  boost::asio::post(self->uiExecutor,
+                           std::bind(&CommentsWindow::setErrorMessage,self,ec.message()));
+              }
+              else
+              {
+                  if(response.status >= 400)
+                  {
+                      boost::asio::post(self->uiExecutor,
+                                    std::bind(&CommentsWindow::setErrorMessage,self,response.body));
+                  }
+                  else
+                  {
+                      self->loadListingsFromConnection(std::move(response.data));
+                  }
+              }
+          });
     }
     if(!listingConnection)
     {
         listingConnection = client->makeListingClientConnection();
-        listingConnection->connectionCompleteHandler(completeHandler);
+        listingConnection->connectionCompleteHandler(
+            [weak=weak_from_this()](const boost::system::error_code& ec,
+                                             client_response<listing> response)
+        {
+             auto self = weak.lock();
+             if(!self || !self->windowOpen) return;
+             if(ec)
+             {
+                 boost::asio::post(self->uiExecutor,
+                          std::bind(&CommentsWindow::setErrorMessage,self,ec.message()));
+             }
+             else
+             {
+                 if(response.status >= 400)
+                 {
+                     boost::asio::post(self->uiExecutor,
+                                   std::bind(&CommentsWindow::setErrorMessage,self,response.body));
+                 }
+                 else
+                 {
+                     self->loadListingsFromConnection(std::move(response.data));
+                 }
+             }
+        });
     }
     if(!createCommentConnection)
     {

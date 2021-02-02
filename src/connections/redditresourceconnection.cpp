@@ -47,7 +47,7 @@ void RedditResourceConnection::getResource(const std::string& url,std::any userD
     request.set(boost::beast::http::field::host, newHost);
     request.set(boost::beast::http::field::accept, "*/*");
     request.set(boost::beast::http::field::user_agent, userAgent);    
-    request.prepare_payload();    
+    request.prepare_payload();
     enqueueRequest(std::move(request),std::move(userData));
 }
 void RedditResourceConnection::performRequest(request_t request)

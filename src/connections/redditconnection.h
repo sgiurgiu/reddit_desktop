@@ -114,15 +114,18 @@ private:
 
 
 protected:
+    template<typename U>
     struct queued_request
     {
-        queued_request(request_t request, std::any userData):
+
+        queued_request(request_t request, U userData):
             request(std::move(request)),userData(std::move(userData))
         {}
         request_t request;
-        std::any userData;
+        U userData;
     };
-    void enqueueRequest(request_t request, std::any userData)
+    template<typename U>
+    void enqueueRequest(request_t request, U userData)
     {
         std::lock_guard<std::mutex> _(queuedRequestsMutex);
         queuedRequests.emplace_back(std::move(request),std::move(userData));
@@ -250,6 +253,13 @@ protected:
                 readBuffer.clear();
                 responseParser.reset();
                 responseParser.emplace();
+                {
+                    std::lock_guard<std::mutex> _(queuedRequestsMutex);
+                    if(!queuedRequests.empty())
+                    {
+                        queuedRequests.pop_front();
+                    }
+                }
                 handleLocationChange(location);
             }
         }
@@ -298,8 +308,8 @@ protected:
         }
     }
 
-    virtual void responseReceivedComplete() {};
-    virtual void responseReceivedComplete(std::any userData) {
+    virtual void responseReceivedComplete() {};    
+    virtual void responseReceivedComplete(typename ClientResponse::user_type userData) {
         boost::ignore_unused(userData);
     };
 protected:    
@@ -319,9 +329,9 @@ protected:
 #else
     std::chrono::seconds streamTimeout{30};
 #endif
-
+    using queued_request_t = queued_request<typename ClientResponse::user_type>;
     request_t privateRequest;
-    std::deque<queued_request> queuedRequests;
+    std::deque<queued_request_t> queuedRequests;
     std::mutex queuedRequestsMutex;
 };
 

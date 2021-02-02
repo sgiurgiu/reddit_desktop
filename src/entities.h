@@ -42,15 +42,16 @@ struct listing
     nlohmann::json json;
 };
 
-template <typename T>
+template <typename T, typename U = std::any>
 struct client_response
 {
+    typedef U   user_type;
     T data;
     int status;
     int64_t contentLength;
     std::string contentType;
     std::string body;
-    std::any userData;
+    U userData;
 };
 struct image_target
 {

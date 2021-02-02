@@ -56,11 +56,11 @@ void RedditListingConnection::handleLocationChange(const std::string& location)
     }
 }
 
-void RedditListingConnection::responseReceivedComplete(std::any userData)
+void RedditListingConnection::responseReceivedComplete(ListingUserType userData)
 {
     auto status = responseParser->get().result_int();
     auto body = responseParser->get().body();
-    client_response<listing> resp;
+    ListingClientResponse resp;
     for(const auto& h : responseParser->get())
     {
         if(h.name() == boost::beast::http::field::content_length)

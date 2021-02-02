@@ -5,11 +5,14 @@
 #include "entities.h"
 #include <boost/signals2.hpp>
 
+using ListingClientResponse = client_response<listing>;
+
 class RedditListingConnection : public RedditConnection<
         boost::beast::http::empty_body,
         boost::beast::http::string_body,
-        client_response<listing>>
+        ListingClientResponse>
 {
+
 public:
     RedditListingConnection(const boost::asio::any_io_executor& executor,
                   boost::asio::ssl::context& ssl_context,
@@ -23,12 +26,13 @@ public:
         targetChangedSignal.connect(slot);
     }
 protected:
-    virtual void responseReceivedComplete(std::any userData) override;
+    using ListingUserType =  typename ListingClientResponse::user_type;
+    virtual void responseReceivedComplete(ListingUserType userData) override;
     virtual void handleLocationChange(const std::string& location) override;
 
 private:
     std::string userAgent;
-    boost::signals2::signal<void(std::string newTarget, std::any userData)> targetChangedSignal;
+    boost::signals2::signal<void(std::string newTarget, ListingUserType userData)> targetChangedSignal;
 };
 
 #endif // REDDITLISTING_H
