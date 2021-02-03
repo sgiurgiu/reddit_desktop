@@ -86,7 +86,12 @@ void SubredditsListWindow::showSearchTab()
             });
             if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
             {
-                subredditSignal(name.sr);
+                auto srName = name.sr;
+                if(!srName.starts_with("/r/") && !srName.starts_with("r/"))
+                {
+                    srName.insert(0,"r/");
+                }
+                subredditSignal(std::move(srName));
             }
             name.selected = true;
         }

@@ -5,6 +5,8 @@
 #include <boost/asio/io_context.hpp>
 #include <string>
 #include <memory>
+#include <tuple>
+
 #include <boost/signals2.hpp>
 #include "entities.h"
 #include "redditclientproducer.h"
@@ -85,11 +87,13 @@ private:
 
         void updateButtonsText();
     };
+    void loadMoreChildrenListing(const listing& listingResponse,std::any userData);
     void loadListingsFromConnection(const listing& listingResponse);
     void setErrorMessage(std::string errorMessage);
-    void loadListingChildren(const nlohmann::json& children,
-                             bool append);
-    void setComments(comments_list receivedComments, bool append);
+    void loadListingChildren(const nlohmann::json& children);
+    using comments_tuple = std::tuple<comments_list,std::optional<unloaded_children>>;
+    comments_tuple getJsonComments(const nlohmann::json& children);
+    void setComments(comments_list receivedComments);
     void setParentPost(post_ptr receivedParentPost);
     void showComment(DisplayComment& c);
     void voteParentPost(Voted vote);
@@ -98,9 +102,11 @@ private:
     void updateCommentVote(std::string commentName,Voted vote);
     void setupListingConnections();
     void setUnloadedComments(std::optional<unloaded_children> children);
-    void loadUnloadedChildren(const std::optional<unloaded_children>& children);
+    template<typename T>
+    void loadUnloadedChildren(const std::optional<unloaded_children>& children, T userData);
     DisplayComment* getComment(std::string commentName);
     DisplayComment* getChildComment(DisplayComment& c,const std::string& commentName);
+    void loadCommentReply(const listing& listingResponse,std::any userData);
 private:
     std::string postId;
     std::string title;
@@ -130,7 +136,6 @@ private:
     std::string moreRepliesButtonText;
     std::string loadingSpinnerIdText;
     std::string postCommentPreviewCheckboxId;
-    std::vector<DisplayComment*> loadingMoreRepliesComments;
     std::optional<unloaded_children> unloadedPostComments;
     bool loadingUnloadedReplies = false;
     std::string postCommentTextBuffer;
@@ -143,6 +148,11 @@ private:
     bool windowPositionAndSizeSet = false;
     ImVec2 windowPos;
     ImVec2 windowSize;
+    struct PostUserData {};
+    struct CommentUserData
+    {
+        std::string commentName;
+    };
 };
 
 using CommentsWindowPtr = std::shared_ptr<CommentsWindow>;

@@ -46,7 +46,9 @@ void CommentsWindow::setupListingConnections()
                   }
                   else
                   {
-                      self->loadListingsFromConnection(std::move(response.data));
+                      boost::asio::post(self->uiExecutor,
+                                    std::bind(&CommentsWindow::loadMoreChildrenListing,self,
+                                              std::move(response.data),std::move(response.userData)));
                   }
               }
           });
@@ -101,21 +103,55 @@ void CommentsWindow::setupListingConnections()
                }
                else
                {
-                   if(response.data.json.contains("json") && response.data.json["json"].is_object())
-                   {
-                       const auto& respJson = response.data.json["json"];
-                       if(respJson.contains("data") && respJson["data"].is_object() &&
-                               respJson["data"].contains("things") && respJson["data"]["things"].is_array())
-                       {
-                          auto& things = respJson["data"]["things"];
-                          self->loadListingChildren(things,false);
-                       }
-                   }
+                   boost::asio::post(self->uiExecutor,
+                                 std::bind(&CommentsWindow::loadCommentReply,self,
+                                           std::move(response.data),std::move(response.userData)));
                }
            }
        });
     }
+}
+void CommentsWindow::loadCommentReply(const listing& listingResponse,std::any userData)
+{
+    if(!windowOpen) return;
+    comments_tuple receivedComments;
 
+    if(listingResponse.json.contains("json") && listingResponse.json["json"].is_object())
+    {
+        const auto& respJson = listingResponse.json["json"];
+        if(respJson.contains("data") && respJson["data"].is_object() &&
+                respJson["data"].contains("things") && respJson["data"]["things"].is_array())
+        {
+           auto& things = respJson["data"]["things"];
+           receivedComments = getJsonComments(things);
+        }
+    }
+
+    if(userData.has_value() && userData.type() == typeid(CommentUserData))
+    {
+        CommentUserData commentData = std::any_cast<CommentUserData>(userData);
+        auto c = getComment(std::move(commentData.commentName));
+        if(c)
+        {
+            c->postingReply = false;
+            c->postReplyTextBuffer.clear();
+            auto replies = std::move(std::get<0>(receivedComments));
+            for(auto&& reply : replies)
+            {
+                c->replies.emplace(c->replies.begin(),std::move(reply));
+            }
+        }
+    }
+    else if(userData.has_value() && userData.type() == typeid(PostUserData))
+    {
+        postingComment = false;
+        postCommentTextBuffer.clear();
+        auto replies = std::move(std::get<0>(receivedComments));
+        for(auto&& reply : replies)
+        {
+            comments.emplace(comments.begin(),std::move(reply));
+        }
+    }
 }
 void CommentsWindow::loadComments()
 {    
@@ -126,6 +162,88 @@ void CommentsWindow::loadComments()
 void CommentsWindow::setErrorMessage(std::string errorMessage)
 {
     listingErrorMessage = errorMessage;
+}
+void CommentsWindow::loadMoreChildrenListing(const listing& listingResponse,std::any userData)
+{
+    if(!windowOpen) return;
+    comments_tuple receivedComments;
+    if (listingResponse.json.is_object())
+    {
+        if(listingResponse.json.contains("success") &&
+                listingResponse.json["success"].is_boolean() &&
+                listingResponse.json["success"].get<bool>() &&
+                listingResponse.json.contains("jquery") &&
+                listingResponse.json["jquery"].is_array())
+        {
+            for(const auto& jqueryObj : listingResponse.json["jquery"])
+            {
+                if(!jqueryObj.is_array()) continue;
+                for(const auto& elem: jqueryObj)
+                {
+                    if(!elem.is_array()) continue;
+                    for(const auto& childrenArray : elem)
+                    {
+                        if(!childrenArray.is_array()) continue;
+                        receivedComments = getJsonComments(childrenArray);
+                    }
+                }
+            }
+        }
+    }
+
+    if(userData.has_value() && userData.type() == typeid(CommentUserData))
+    {
+        CommentUserData commentData = std::any_cast<CommentUserData>(userData);
+        auto c = getComment(std::move(commentData.commentName));
+        if(c)
+        {
+            c->loadingUnloadedReplies = false;
+            c->commentData.unloadedChildren = std::move(std::get<1>(receivedComments));
+            auto replies = std::move(std::get<0>(receivedComments));
+            for(auto&& reply : replies)
+            {
+                c->replies.emplace_back(std::move(reply));
+            }
+        }
+    }
+    else if(userData.has_value() && userData.type() == typeid(PostUserData))
+    {
+        loadingUnloadedReplies = false;
+        unloadedPostComments = std::move(std::get<1>(receivedComments));
+        auto replies = std::move(std::get<0>(receivedComments));
+        for(auto&& reply : replies)
+        {
+            comments.emplace_back(std::move(reply));
+        }
+    }
+}
+CommentsWindow::comments_tuple CommentsWindow::getJsonComments(const nlohmann::json& children)
+{
+    if(!windowOpen || !children.is_array()) return std::make_tuple<comments_list,std::optional<unloaded_children>>({},{});
+    comments_list comments;
+    std::optional<unloaded_children> unloadedPostComments;
+    for(const auto& child: children)
+    {
+        if(!child.is_object())
+        {
+            continue;
+        }
+        if(!child.contains("kind") || !child.contains("data"))
+        {
+            continue;
+        }
+        auto kind = child["kind"].get<std::string>();
+        if(kind == "t1")
+        {
+            //load comments
+            comments.emplace_back(child["data"]);
+        }
+        else if (kind == "more")
+        {
+            unloadedPostComments = std::make_optional<unloaded_children>(child["data"]);
+        }
+    }
+    return std::make_tuple<comments_list,std::optional<unloaded_children>>(std::move(comments),std::move(unloadedPostComments));
 }
 void CommentsWindow::loadListingsFromConnection(const listing& listingResponse)
 {
@@ -147,35 +265,11 @@ void CommentsWindow::loadListingsFromConnection(const listing& listingResponse)
             {
                 continue;
             }
-            loadListingChildren(child["data"]["children"],true);
-        }
-    }
-    else if (listingResponse.json.is_object())
-    {
-        if(listingResponse.json.contains("success") &&
-                listingResponse.json["success"].is_boolean() &&
-                listingResponse.json["success"].get<bool>() &&
-                listingResponse.json.contains("jquery") &&
-                listingResponse.json["jquery"].is_array())
-        {
-            for(const auto& jqueryObj : listingResponse.json["jquery"])
-            {
-                if(!jqueryObj.is_array()) continue;
-                for(const auto& elem: jqueryObj)
-                {
-                    if(!elem.is_array()) continue;
-                    for(const auto& childrenArray : elem)
-                    {
-                        if(!childrenArray.is_array()) continue;
-                        loadListingChildren(childrenArray,true);
-                    }
-                }
-            }
+            loadListingChildren(child["data"]["children"]);
         }
     }
 }
-void CommentsWindow::loadListingChildren(const nlohmann::json& children,
-                                         bool append)
+void CommentsWindow::loadListingChildren(const nlohmann::json& children)
 {
     if(!windowOpen || !children.is_array()) return;
     comments_list comments;
@@ -209,7 +303,7 @@ void CommentsWindow::loadListingChildren(const nlohmann::json& children,
     }
     if(!comments.empty())
     {
-        boost::asio::post(uiExecutor,std::bind(&CommentsWindow::setComments,this,std::move(comments), append));
+        boost::asio::post(uiExecutor,std::bind(&CommentsWindow::setComments,this,std::move(comments)));
     }
     if(pp)
     {
@@ -227,75 +321,20 @@ void CommentsWindow::setUnloadedComments(std::optional<unloaded_children> childr
     moreRepliesButtonText = fmt::format("load {} more comments##post_more_replies",unloadedPostComments->count);
     loadingSpinnerIdText = fmt::format("##spinner_loading{}",unloadedPostComments->id);
 }
-void CommentsWindow::setComments(comments_list receivedComments, bool append)
+void CommentsWindow::setComments(comments_list receivedComments)
 {
     loadingInitialComments = false;
-    postingComment = false;
-    postCommentTextBuffer.clear();
     listingErrorMessage.clear();
     if(receivedComments.empty()) return;
-    if(comments.empty())
-    {
-        comments.reserve(receivedComments.size());
-        std::move(receivedComments.begin(),receivedComments.end(),std::back_inserter(comments));
-    }
-    else
-    {
-        auto commentsParent = receivedComments.front().parentId;
-        if(parentPost && commentsParent == parentPost->name)
-        {
-            comments.reserve(comments.size() + receivedComments.size());
-            for(auto&& cmt : receivedComments)
-            {
-                if(append)
-                {
-                    comments.emplace_back(std::move(cmt));
-                }
-                else
-                {
-                    comments.insert(comments.begin(),std::move(cmt));
-                }
-            }
-            loadingUnloadedReplies = false;
-        }
-        else
-        {
-            auto it = std::find_if(loadingMoreRepliesComments.begin(),loadingMoreRepliesComments.end(),
-                                   [&commentsParent](const DisplayComment* c){
-                return commentsParent == c->commentData.name;
-            });
-            if(it != loadingMoreRepliesComments.end())
-            {
-                (*it)->replies.reserve((*it)->replies.size() + receivedComments.size());
-                for(auto&& cmt : receivedComments)
-                {
-                    if(append)
-                    {
-                        (*it)->replies.emplace_back(std::move(cmt));
-                    }
-                    else
-                    {
-                        (*it)->replies.insert((*it)->replies.begin(),std::move(cmt));
-                    }
-                }
-                (*it)->loadingUnloadedReplies = false;
-                (*it)->postingReply = false;
-                (*it)->postReplyTextBuffer.clear();
-                loadingMoreRepliesComments.erase(it);
-            }
-            else
-            {
-                //this is some programming error probably, something wonky happened
-                std::cerr << "Cannot find comment "<<commentsParent<<" while loading its replies"<<std::endl;
-            }
-        }
-    }
+    comments.reserve(receivedComments.size());
+    std::move(receivedComments.begin(),receivedComments.end(),std::back_inserter(comments));
 }
-void CommentsWindow::loadUnloadedChildren(const std::optional<unloaded_children>& children)
+template<typename T>
+void CommentsWindow::loadUnloadedChildren(const std::optional<unloaded_children>& children, T userData)
 {
    setupListingConnections();
    if(!children) return;
-   moreChildrenConnection->list(children.value(),parentPost->name,token);
+   moreChildrenConnection->list(children.value(),parentPost->name,token,std::move(userData));
 }
 void CommentsWindow::setParentPost(post_ptr receivedParentPost)
 {
@@ -384,9 +423,8 @@ void CommentsWindow::showComment(DisplayComment& c)
                 if(ImGui::Button(c.saveReplyButtonText.c_str()) && !c.postingReply)
                 {
                     c.showingReplyArea = false;
-                    c.postingReply = true;
-                    loadingMoreRepliesComments.push_back(&c);
-                    createCommentConnection->createComment(c.commentData.name,c.postReplyTextBuffer,token);
+                    c.postingReply = true;                    
+                    createCommentConnection->createComment(c.commentData.name,c.postReplyTextBuffer,token,CommentUserData{c.commentData.name});
                 }
                 ImGui::SameLine();
                 if(ImGui::Checkbox(c.postReplyPreviewCheckboxId.c_str(),&c.showingPreview))
@@ -416,8 +454,7 @@ void CommentsWindow::showComment(DisplayComment& c)
             ImGui::Dummy(ImVec2(0.0f, ImGui::GetFontSize()/2.f));
             if(ImGui::Button(c.moreRepliesButtonText.c_str()))
             {
-                loadUnloadedChildren(c.commentData.unloadedChildren);
-                loadingMoreRepliesComments.push_back(&c);
+                loadUnloadedChildren<CommentUserData>(c.commentData.unloadedChildren,{c.commentData.name});
                 c.commentData.unloadedChildren.reset();
                 c.loadingUnloadedReplies = true;
             }
@@ -585,7 +622,6 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
     }
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F5)) && ImGui::IsWindowFocused())
     {
-        loadingMoreRepliesComments.clear();
         comments.clear();
         loadComments();
     }
@@ -689,7 +725,7 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
             if(ImGui::Button(commentButtonText.c_str()) && !postingComment && !postCommentTextBuffer.empty())
             {
                 postingComment = true;
-                createCommentConnection->createComment(parentPost->name,postCommentTextBuffer,token);
+                createCommentConnection->createComment(parentPost->name,postCommentTextBuffer,token, PostUserData());
             }
             if(saveDisabled)
             {
@@ -730,9 +766,9 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
 
     if(unloadedPostComments && ImGui::Button(moreRepliesButtonText.c_str()))
     {
-        loadUnloadedChildren(unloadedPostComments);
         unloadedPostComments.reset();
         loadingUnloadedReplies = true;
+        loadUnloadedChildren<PostUserData>(unloadedPostComments,{});
     }
     else if(loadingUnloadedReplies)
     {

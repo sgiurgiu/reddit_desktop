@@ -18,7 +18,7 @@ RedditMoreChildrenConnection::RedditMoreChildrenConnection(const boost::asio::an
 
 void RedditMoreChildrenConnection::list(const unloaded_children& children,
                                         const std::string& linkId,
-                                        const access_token& token)
+                                        const access_token& token, std::any userData)
 {
     std::string commaSeparator;
     std::string childrensList;
@@ -45,10 +45,10 @@ void RedditMoreChildrenConnection::list(const unloaded_children& children,
     request.prepare_payload();
     responseParser->get().body().clear();
     responseParser->get().clear();
-    performRequest(std::move(request));
+    enqueueRequest(std::move(request),std::move(userData));
 }
 
-void RedditMoreChildrenConnection::responseReceivedComplete()
+void RedditMoreChildrenConnection::responseReceivedComplete(std::any userData)
 {
     auto status = responseParser->get().result_int();
     auto body = responseParser->get().body();
@@ -82,5 +82,6 @@ void RedditMoreChildrenConnection::responseReceivedComplete()
     {
         resp.body = body;
     }
+    resp.userData = std::move(userData);
     signal({},std::move(resp));
 }

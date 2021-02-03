@@ -16,9 +16,9 @@ public:
                                  const std::string& host, const std::string& service,
                                  const std::string& userAgent);
     void list(const unloaded_children& children, const std::string& linkId,
-              const access_token& token);
+              const access_token& token,std::any userData = std::any());
 protected:
-    virtual void responseReceivedComplete() override;
+    virtual void responseReceivedComplete(std::any userData) override;
 private:
     std::string userAgent;
 
