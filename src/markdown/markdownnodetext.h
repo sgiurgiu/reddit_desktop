@@ -14,6 +14,7 @@ public:
     {
         return NodeType::Text;
     }
+    void AddText(const std::string& str);
 private:
     std::string text;
     std::string curatedText;

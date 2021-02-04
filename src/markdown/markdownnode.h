@@ -3,13 +3,14 @@
 
 #include <memory>
 #include <vector>
+#include <boost/signals2.hpp>
 
 class MarkdownNode
 {
 public:
     MarkdownNode();
     virtual void Render() = 0;
-    void AddChild(std::unique_ptr<MarkdownNode> child);
+    virtual void AddChild(std::unique_ptr<MarkdownNode> child);
     MarkdownNode* GetParent() const;
     size_t GetChildrenCount() const
     {
@@ -47,9 +48,16 @@ public:
         Text
     };
     virtual NodeType GetNodeType() const = 0;
+    using IndividualComponentSignal = boost::signals2::signal<void(void)>;
+    template<typename S>
+    void addIndividualComponentSignal(S slot)
+    {
+        individualComponentSignal.connect(slot);
+    }
 protected:
     MarkdownNode* parent = nullptr;
     std::vector<std::unique_ptr<MarkdownNode>> children;
+    IndividualComponentSignal individualComponentSignal;
 };
 
 #endif // MARKDOWNNODE_H

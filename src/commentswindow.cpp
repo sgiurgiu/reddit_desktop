@@ -135,6 +135,8 @@ void CommentsWindow::loadCommentReply(const listing& listingResponse,std::any us
         {
             c->postingReply = false;
             c->postReplyTextBuffer.clear();
+            c->showingPreview = false;
+            c->renderer.SetText("");
             auto replies = std::move(std::get<0>(receivedComments));
             for(auto&& reply : replies)
             {
@@ -144,8 +146,10 @@ void CommentsWindow::loadCommentReply(const listing& listingResponse,std::any us
     }
     else if(userData.has_value() && userData.type() == typeid(PostUserData))
     {
+        showingPostPreview = false;
         postingComment = false;
         postCommentTextBuffer.clear();
+        postPreviewRenderer.SetText(postCommentTextBuffer);
         auto replies = std::move(std::get<0>(receivedComments));
         for(auto&& reply : replies)
         {

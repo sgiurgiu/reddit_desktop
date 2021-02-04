@@ -8,9 +8,14 @@ MarkdownNodeText::MarkdownNodeText(const char* text,size_t size):text(text,size)
     curatedText = this->text;
     curatedText.erase(std::remove(curatedText.begin(),curatedText.end(),'\n'),curatedText.end());
 }
+void MarkdownNodeText::AddText(const std::string& str)
+{
+    this->text.append(str);
+    curatedText = this->text;
+    curatedText.erase(std::remove(curatedText.begin(),curatedText.end(),'\n'),curatedText.end());
+}
 void MarkdownNodeText::Render()
 {
-
     if(curatedText.empty())
     {
         ImGui::Dummy(ImVec2(0.f,0.f));
@@ -52,11 +57,13 @@ void MarkdownNodeText::Render()
         endPrevLine = nextWordFinish;
         ImGui::Dummy(ImVec2(0.f,0.f));
         ImGui::TextUnformatted( text_start, endPrevLine );
+        individualComponentSignal();
         ImGui::SameLine(0.f,0.f);
     }
     else
     {
         ImGui::TextUnformatted( text_start, endPrevLine );
+        individualComponentSignal();
     }
 
     //widthLeft = ImGui::GetContentRegionAvail().x;
@@ -72,6 +79,7 @@ void MarkdownNodeText::Render()
            endPrevLine++;
        }
        ImGui::TextUnformatted( text, endPrevLine );
+       individualComponentSignal();
     }
 
     if(parent && parent->GetNodeType() != NodeType::TableCell && parent->GetNodeType() != NodeType::TableCellHead)

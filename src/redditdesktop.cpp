@@ -88,8 +88,8 @@ void RedditDesktop::loginSuccessful(client_response<access_token> token)
             self->addSubredditWindow(str);
         });
         subredditsListWindow->setUserName(current_user->username);
+        subredditsListWindow->loadSubredditsList();
     }
-    subredditsListWindow->loadSubredditsList();
 
     loadUserInformation();
 
