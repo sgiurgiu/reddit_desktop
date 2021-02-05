@@ -253,13 +253,6 @@ protected:
                 readBuffer.clear();
                 responseParser.reset();
                 responseParser.emplace();
-                {
-                    std::lock_guard<std::mutex> _(queuedRequestsMutex);
-                    if(!queuedRequests.empty())
-                    {
-                        queuedRequests.pop_front();
-                    }
-                }
                 handleLocationChange(location);
             }
         }

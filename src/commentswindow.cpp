@@ -136,7 +136,7 @@ void CommentsWindow::loadCommentReply(const listing& listingResponse,std::any us
             c->postingReply = false;
             c->postReplyTextBuffer.clear();
             c->showingPreview = false;
-            c->renderer.SetText("");
+            c->previewRenderer.SetText(c->postReplyTextBuffer);
             auto replies = std::move(std::get<0>(receivedComments));
             for(auto&& reply : replies)
             {

@@ -63,6 +63,13 @@ void RedditResourceConnection::performRequest(request_t request)
 }
 void RedditResourceConnection::handleLocationChange(const std::string& location)
 {
+    {
+        std::lock_guard<std::mutex> _(queuedRequestsMutex);
+        if(!queuedRequests.empty())
+        {
+            queuedRequests.pop_front();
+        }
+    }
     getResource(location);
 }
 void RedditResourceConnection::sendRequest(request_t request)
