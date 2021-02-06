@@ -796,8 +796,12 @@ void PostContentViewer::showPostContent()
             }
         }
 
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
         ImGui::ImageButton((void*)(intptr_t)display_image->textureId,
                            ImVec2(display_image->resizedWidth,display_image->resizedHeight),ImVec2(0, 0),ImVec2(1,1),0);
+        ImGui::PopStyleColor(3);
 
         if(ImGui::IsWindowFocused(ImGuiFocusedFlags_RootWindow) &&
                 ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(),ImGui::GetItemRectMax()) &&

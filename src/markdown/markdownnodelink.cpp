@@ -7,6 +7,7 @@
 namespace
 {
     static const ImVec4 linkColor(0.5f,0.5f,1.f,1.f);
+    static const ImVec4 tooltipColor(0.9f, 0.9f, 0.9f, 1.f);
 }
 MarkdownNodeLink::MarkdownNodeLink(const MD_SPAN_A_DETAIL* detail):
     href(detail->href.text,detail->href.size),
@@ -35,7 +36,9 @@ void MarkdownNodeLink::componentLinkHandling()
     {
         ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
         ImGui::BeginTooltip();
+        ImGui::PushStyleColor(ImGuiCol_Text, tooltipColor);
         ImGui::TextUnformatted(href.c_str());
+        ImGui::PopStyleColor();
         ImGui::EndTooltip();
     }
     if(ImGui::IsItemClicked(ImGuiMouseButton_Left))
