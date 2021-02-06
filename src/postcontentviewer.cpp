@@ -73,6 +73,7 @@ void PostContentViewer::loadContent(post_ptr currentPost)
     galleryButtonPreviousText = fmt::format("{}##_previmage_{}",reinterpret_cast<const char*>(ICON_FA_ARROW_LEFT),currentPost->name);
     galleryButtonNextText = fmt::format("{}##_nextimage_{}",reinterpret_cast<const char*>(ICON_FA_ARROW_RIGHT),currentPost->name);
     loopCheckboxText = fmt::format("Loop##_loop_{}",currentPost->name);
+    mediaProgressSliderText = fmt::format("##_progressSlider_{}", currentPost->name);
 
     if(!currentPost->selfText.empty())
     {
@@ -823,12 +824,13 @@ void PostContentViewer::showPostContent()
         if(mediaState.duration > 0.0f && mpvRenderContext)
         {
             float progress = mediaState.timePosition / mediaState.duration;
+            float changedProgress = progress;
             auto progressHeight = 5.f;
             ImGui::ProgressBar(progress, ImVec2(display_image->resizedWidth, progressHeight),"");
             if(ImGui::IsItemHovered())
             {
                 ImGui::BeginTooltip();
-                ImGui::TextUnformatted(fmt::format("{}%%",(int)progress).c_str());
+                ImGui::TextUnformatted(Utils::formatDuration(std::chrono::seconds((int)mediaState.timePosition)).c_str());
                 ImGui::EndTooltip();
             }
             if(mediaState.finished)

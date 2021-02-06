@@ -109,6 +109,7 @@ private:
     std::string galleryButtonPreviousText;
     std::string galleryButtonNextText;
     std::string mediaSliderVolumeText;
+    std::string mediaProgressSliderText;
     std::string durationText;
     std::string loopCheckboxText;
     bool mediaLoop = false;
