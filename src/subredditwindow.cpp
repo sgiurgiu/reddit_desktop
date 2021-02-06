@@ -530,9 +530,18 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             height = std::max(height,ImGui::GetCursorPosY());
             auto rectMin = ImGui::GetItemRectMin();
             auto rectMax = ImGui::GetItemRectMax();
-            if(ImGui::IsMouseHoveringRect(rectMin,rectMax) && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+            if(ImGui::IsMouseHoveringRect(rectMin,rectMax))
             {
-                p.shouldShowUnblurredImage = true;
+                if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                {
+                    p.shouldShowUnblurredImage = true;
+                }
+                if (!p.shouldShowUnblurredImage)
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted("Double-click to unblur");
+                    ImGui::EndTooltip();
+                }
             }
             ImGui::SameLine();
         }
