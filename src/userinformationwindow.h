@@ -27,6 +27,11 @@ public:
         return showWindow;
     }
     void loadMessages();
+    template<typename S>
+    void showContextHandler(S slot)
+    {
+        contextSignal.connect(slot);
+    }
 private:
     struct DisplayMessage;
     using DisplayMessageList = std::vector<DisplayMessage>;
@@ -52,6 +57,7 @@ private:
         std::string postReplyPreviewCheckboxId;
         std::string liveReplyPreviewText;
         std::string markReadUnreadButtonText;
+        std::string contextButtonText;
         bool loadingUnloadedReplies = false;
         std::string postReplyTextBuffer;
         bool postingReply = false;
@@ -96,6 +102,7 @@ private:
     RedditClientProducer::RedditListingClientConnection listingConnection;
     RedditClientProducer::RedditMarkReplyReadClientConnection markReplyReadConnection;
     RedditClientProducer::RedditVoteClientConnection commentVotingConnection;
+    boost::signals2::signal<void(const std::string&)> contextSignal;
 
 };
 

@@ -242,6 +242,7 @@ void UserInformationWindow::DisplayMessage::updateButtonsText()
     saveReplyButtonText = fmt::format("Save##{}save_comment_reply",msg.name);
     postReplyPreviewCheckboxId = fmt::format("Show Preview##{}_postReplyPreview",msg.name);
     liveReplyPreviewText = fmt::format("Live Preview##{}_commentLivePreview",msg.name);
+    contextButtonText = fmt::format("context##{}_commentContext",msg.name);
     markReadUnreadButtonText = fmt::format("{}##{}_commentMarkReadUnread",(msg.isNew?"Mark Read":"Mark Unread"),msg.name);
 #ifdef REDDIT_DESKTOP_DEBUG
     titleText = fmt::format("{} - {}{} ({})",msg.author, msg.subject,(msg.isNew?" (unread)":""),msg.name);
@@ -398,6 +399,16 @@ void UserInformationWindow::showMessage(DisplayMessage& msg, const std::string& 
         {
             msg.showingReplyArea = !msg.showingReplyArea;
         }
+
+        if(!msg.msg.context.empty())
+        {
+            ImGui::SameLine();
+            if(ImGui::Button(msg.contextButtonText.c_str()))
+            {
+                contextSignal(msg.msg.context);
+            }
+        }
+
         ImGui::SameLine();
         if(ImGui::Button(msg.markReadUnreadButtonText.c_str()))
         {
@@ -406,6 +417,7 @@ void UserInformationWindow::showMessage(DisplayMessage& msg, const std::string& 
             MarkMessagesType markedMessages{std::move(messagesList),msg.msg.isNew};
             markReplyReadConnection->markReplyRead({msg.msg.name},token,msg.msg.isNew,markedMessages);
         }
+
         if(msg.showingReplyArea)
         {
             if(ResizableInputTextMultiline::InputText(msg.replyIdText.c_str(),&msg.postReplyTextBuffer,

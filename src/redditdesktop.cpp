@@ -200,6 +200,19 @@ void RedditDesktop::addCommentsWindow(std::string postId,std::string title)
         (*it)->setFocused();
     }
 }
+void RedditDesktop::addMessageContextWindow(std::string context)
+{
+    auto commentsWindow = std::make_shared<CommentsWindow>(context,
+                                                           current_access_token.data,
+                                                           &client,uiExecutor);
+    using namespace std::placeholders;
+    commentsWindow->addOpenSubredditHandler([this](std::string title){
+        boost::asio::post(this->uiExecutor, std::bind(&RedditDesktop::addSubredditWindow, this, std::move(title)));
+    });
+    commentsWindow->loadComments();
+    commentsWindow->setFocused();
+    commentsWindows.push_back(std::move(commentsWindow));
+}
 void RedditDesktop::setConnectionErrorMessage(std::string msg)
 {
     showConnectionErrorDialog = true;
@@ -447,6 +460,13 @@ void RedditDesktop::showMainMenuBar()
                 if(!userInfoWindow)
                 {
                     userInfoWindow = std::make_shared<UserInformationWindow>(current_access_token.data,&client,uiExecutor);
+                    userInfoWindow->showContextHandler([weak=weak_from_this()](const std::string& context){
+                        auto self = weak.lock();
+                        if(!self) return;
+                        boost::asio::post(self->uiExecutor,
+                                          std::bind(&RedditDesktop::addMessageContextWindow,
+                                          self, context));
+                    });
                     userInfoWindow->loadMessages();
                 }
                 userInfoWindow->shouldShowWindow(true);

@@ -49,7 +49,7 @@ private:
     void cleanupClosedWindows();
     void searchSubreddits();
     void setSearchResultsNames(names_list names);
-
+    void addMessageContextWindow(std::string context);
 private:
     boost::asio::any_io_executor uiExecutor;
     RedditClientProducer client;

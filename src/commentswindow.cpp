@@ -21,6 +21,16 @@ CommentsWindow::CommentsWindow(const std::string& postId,
     windowName = fmt::format("{}##{}",title,postId);
 }
 
+CommentsWindow::CommentsWindow(const std::string& commentContext,
+                               const access_token& token,
+                               RedditClientProducer* client,
+                               const boost::asio::any_io_executor& executor):
+    commentContext(commentContext),token(token),client(client),
+    uiExecutor(executor)
+{
+    windowName = fmt::format("{}##{}",commentContext,commentContext);
+}
+
 void CommentsWindow::setupListingConnections()
 {
     if(!moreChildrenConnection)
@@ -161,7 +171,14 @@ void CommentsWindow::loadComments()
 {    
     setupListingConnections();
     //depth=15&limit=100&threaded=true&
-    listingConnection->list("/comments/"+postId+"?sort=confidence",token);
+    if(commentContext.empty())
+    {
+        listingConnection->list("/comments/"+postId+"?sort=confidence",token);
+    }
+    else
+    {
+        listingConnection->list(commentContext,token);
+    }
 }
 void CommentsWindow::setErrorMessage(std::string errorMessage)
 {

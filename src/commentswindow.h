@@ -22,6 +22,10 @@ public:
                    const access_token& token,
                    RedditClientProducer* client,
                    const boost::asio::any_io_executor& executor);
+    CommentsWindow(const std::string& commentContext,
+                   const access_token& token,
+                   RedditClientProducer* client,
+                   const boost::asio::any_io_executor& executor);
 
     void loadComments();
     bool isWindowOpen() const {return windowOpen;}
@@ -110,6 +114,7 @@ private:
 private:
     std::string postId;
     std::string title;
+    std::string commentContext;
     bool windowOpen = true;
     access_token token;
     RedditClientProducer* client;
