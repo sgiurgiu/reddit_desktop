@@ -46,7 +46,9 @@ private:
     void loadPostGalleryImages();
     void setPostGalleryImage(unsigned char* data, int width, int height, int channels, int index);
     void setErrorMessage(std::string errorMessage);
-    void resetOpenGlState();
+
+    void showMediaControls(int width);
+    void showGalleryControls(int width);
 private:
     RedditClientProducer* client;
     const boost::asio::any_io_executor& uiExecutor;

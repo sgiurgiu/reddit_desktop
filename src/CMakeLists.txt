@@ -85,6 +85,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         userinformationwindow.cpp
         resizableinputtextmultiline.cpp
         subredditslistwindow.cpp
+        mediawidget.cpp
         )
 
 add_executable(${EXECUTABLE_NAME}

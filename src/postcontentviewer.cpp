@@ -12,6 +12,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include "mediawidget.h"
 
 namespace
 {
@@ -520,27 +521,27 @@ void PostContentViewer::mpvRenderUpdate(void *context)
     if(self->destroying) return;
     boost::asio::post(win->uiExecutor,std::bind(&PostContentViewer::setPostMediaFrame,self));
 }
-void PostContentViewer::resetOpenGlState()
-{
-    glBindBuffer(GL_ARRAY_BUFFER,0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_STENCIL_TEST);
-    glDisable(GL_SCISSOR_TEST);
-    glColorMask(true, true, true, true);
-    glClearColor(0, 0, 0, 0);
-    glDepthMask(true);
-    glDepthFunc(GL_LESS);
-    glClearDepthf(1);
-    glStencilMask(0xff);
-    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-    glStencilFunc(GL_ALWAYS, 0, 0xff);
-    glDisable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ZERO);
-    glUseProgram(0);
-}
+//void resetOpenGlState()
+//{
+//    glBindBuffer(GL_ARRAY_BUFFER,0);
+//    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
+//    glActiveTexture(GL_TEXTURE0);
+//    glBindTexture(GL_TEXTURE_2D, 0);
+//    glDisable(GL_DEPTH_TEST);
+//    glDisable(GL_STENCIL_TEST);
+//    glDisable(GL_SCISSOR_TEST);
+//    glColorMask(true, true, true, true);
+//    glClearColor(0, 0, 0, 0);
+//    glDepthMask(true);
+//    glDepthFunc(GL_LESS);
+//    glClearDepthf(1);
+//    glStencilMask(0xff);
+//    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+//    glStencilFunc(GL_ALWAYS, 0, 0xff);
+//    glDisable(GL_BLEND);
+//    glBlendFunc(GL_ONE, GL_ZERO);
+//    glUseProgram(0);
+//}
 void PostContentViewer::setPostMediaFrame()
 {
     if(!currentPost || !mpvRenderContext || destroying) return;
@@ -826,131 +827,12 @@ void PostContentViewer::showPostContent()
         }
 
         if(mediaState.duration > 0.0f && mpvRenderContext)
-        {
-            float progress = mediaState.timePosition / mediaState.duration;
-            float changedProgress = progress;
-            auto progressHeight = 5.f;
-            ImGui::ProgressBar(progress, ImVec2(display_image->resizedWidth, progressHeight),"");
-            if(ImGui::IsItemHovered())
-            {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted(Utils::formatDuration(std::chrono::seconds((int)mediaState.timePosition)).c_str());
-                ImGui::EndTooltip();
-            }
-            if(mediaState.finished)
-            {
-                if(ImGui::Button(mediaButtonRestartText.c_str()))
-                {
-                    const char *cmd[] = {"playlist-play-index","0", nullptr};
-                    mpv_command_async(mpv,0,cmd);
-                }
-            }
-            else
-            {
-                if(ImGui::Button(mediaButtonFastBackwardText.c_str()))
-                {
-                    const char *cmd[] = {"seek","-60", nullptr};
-                    mpv_command_async(mpv,0,cmd);
-                }
-                if(ImGui::IsItemHovered())
-                {
-                    ImGui::BeginTooltip();
-                    ImGui::TextUnformatted("Seek backwards 60 seconds");
-                    ImGui::EndTooltip();
-                }
-                ImGui::SameLine();
-                if(ImGui::Button(mediaButtonBackwardText.c_str()))
-                {
-                    const char *cmd[] = {"seek","-10", nullptr};
-                    mpv_command_async(mpv,0,cmd);
-                }
-                if(ImGui::IsItemHovered())
-                {
-                    ImGui::BeginTooltip();
-                    ImGui::TextUnformatted("Seek backwards 10 seconds");
-                    ImGui::EndTooltip();
-                }
-                ImGui::SameLine();
-                if(ImGui::Button(mediaState.paused ? mediaButtonPlayText.c_str() : mediaButtonPauseText.c_str()))
-                {
-                    int shouldPause = !mediaState.paused;
-                    mpv_set_property_async(mpv,0,"pause",MPV_FORMAT_FLAG,&shouldPause);
-                }
-                if(ImGui::IsItemHovered())
-                {
-                    ImGui::BeginTooltip();
-                    ImGui::TextUnformatted("Play/Pause media");
-                    ImGui::EndTooltip();
-                }
-
-                ImGui::SameLine();
-                if(ImGui::Button(mediaButtonForwardText.c_str()))
-                {
-                    const char *cmd[] = {"seek","10", nullptr};
-                    mpv_command_async(mpv,0,cmd);
-                }
-                if(ImGui::IsItemHovered())
-                {
-                    ImGui::BeginTooltip();
-                    ImGui::TextUnformatted("Seek forward 10 seconds");
-                    ImGui::EndTooltip();
-                }
-
-                ImGui::SameLine();
-                if(ImGui::Button(mediaButtonFastForwardText.c_str()))
-                {
-                    const char *cmd[] = {"seek","60", nullptr};
-                    mpv_command_async(mpv,0,cmd);
-                }
-                if(ImGui::IsItemHovered())
-                {
-                    ImGui::BeginTooltip();
-                    ImGui::TextUnformatted("Seek forward 60 seconds");
-                    ImGui::EndTooltip();
-                }
-
-            }
-            ImGui::SameLine();
-            ImGui::TextUnformatted(reinterpret_cast<const char*>(ICON_FA_VOLUME_UP));
-            ImGui::SameLine();
-            ImGui::SetNextItemWidth(100.f);
-            int volume = mediaState.mediaAudioVolume;
-            if(ImGui::SliderInt(mediaSliderVolumeText.c_str(),&volume,0,100,std::to_string(volume).c_str()))
-            {
-                mediaState.mediaAudioVolume = volume;
-                double vold = volume;
-                mpv_set_property_async(mpv,0,"volume",MPV_FORMAT_DOUBLE,&vold);
-            }
-            ImGui::SameLine();
-            ImGui::Text("%s/%s",Utils::formatDuration(std::chrono::seconds((int)mediaState.timePosition)).c_str(),durationText.c_str());
-            /*ImGui::SameLine();
-            if(ImGui::Checkbox(loopCheckboxText.c_str(),&mediaLoop))
-            {
-                const char *cmd[] = {"loop-file",mediaLoop ? "inf" : "no", nullptr};
-                mpv_command_async(mpv,0,cmd);
-            }*/
+        {            
+            showMediaControls(display_image->resizedWidth);
         }
         if(currentPost->isGallery && !gallery.images.empty())
         {
-            if(ImGui::Button(galleryButtonPreviousText.c_str()))
-            {
-                gallery.currentImage--;
-                if(gallery.currentImage < 0) gallery.currentImage = (int)gallery.images.size() - 1;
-            }
-            auto btnSize = ImGui::GetItemRectSize();
-            auto text = fmt::format("{}/{}",gallery.currentImage+1,gallery.images.size());
-            auto textSize = ImGui::CalcTextSize(text.c_str());
-            auto space = (display_image->resizedWidth - btnSize.x * 2.f);
-            ImGui::SameLine((space - textSize.x / 2.f)/2.f);
-            ImGui::Text("%s",text.c_str());
-            auto windowWidth = ImGui::GetWindowContentRegionMax().x;
-            auto remainingWidth = windowWidth - display_image->resizedWidth;
-            ImGui::SameLine(windowWidth-remainingWidth-btnSize.x*2.f/3.f);
-            if(ImGui::Button(galleryButtonNextText.c_str()))
-            {
-                gallery.currentImage++;
-                if(gallery.currentImage >= (int)gallery.images.size()) gallery.currentImage = 0;
-            }
+            showGalleryControls(display_image->resizedWidth);
         }
     }
 
@@ -962,5 +844,136 @@ void PostContentViewer::showPostContent()
     {
         ImGui::Spinner("###spinner_loading_data",50.f,1,ImGui::GetColorU32(ImGuiCol_ButtonActive));
     }
+}
+void PostContentViewer::showGalleryControls(int width)
+{
+    if(ImGui::Button(galleryButtonPreviousText.c_str()))
+    {
+        gallery.currentImage--;
+        if(gallery.currentImage < 0) gallery.currentImage = (int)gallery.images.size() - 1;
+    }
+    auto btnSize = ImGui::GetItemRectSize();
+    auto text = fmt::format("{}/{}",gallery.currentImage+1,gallery.images.size());
+    auto textSize = ImGui::CalcTextSize(text.c_str());
+    auto space = (width - btnSize.x * 2.f);
+    ImGui::SameLine((space - textSize.x / 2.f)/2.f);
+    ImGui::Text("%s",text.c_str());
+    auto windowWidth = ImGui::GetWindowContentRegionMax().x;
+    auto remainingWidth = windowWidth - width;
+    ImGui::SameLine(windowWidth-remainingWidth-btnSize.x*2.f/3.f);
+    if(ImGui::Button(galleryButtonNextText.c_str()))
+    {
+        gallery.currentImage++;
+        if(gallery.currentImage >= (int)gallery.images.size()) gallery.currentImage = 0;
+    }
+}
+void PostContentViewer::showMediaControls(int width)
+{
+    auto progressHeight = ImGui::GetFontSize() * 0.5f;
+    auto newTimeSeek = MediaWidget::mediaProgressBar(mediaState.timePosition, mediaState.duration,
+                                                      ImVec2(width, progressHeight));
+    if( newTimeSeek != 0)
+    {
+        auto seekStr = std::to_string(newTimeSeek);
+        const char *cmd[] = {"seek",seekStr.c_str(), nullptr};
+        mpv_command_async(mpv,0,cmd);
+    }
+    /*if(ImGui::IsItemHovered())
+    {
+        ImGui::BeginTooltip();
+        ImGui::TextUnformatted(Utils::formatDuration(std::chrono::seconds((int)mediaState.timePosition)).c_str());
+        ImGui::EndTooltip();
+    }*/
+    if(mediaState.finished)
+    {
+        if(ImGui::Button(mediaButtonRestartText.c_str()))
+        {
+            const char *cmd[] = {"playlist-play-index","0", nullptr};
+            mpv_command_async(mpv,0,cmd);
+        }
+    }
+    else
+    {
+        if(ImGui::Button(mediaButtonFastBackwardText.c_str()))
+        {
+            const char *cmd[] = {"seek","-60", nullptr};
+            mpv_command_async(mpv,0,cmd);
+        }
+        if(ImGui::IsItemHovered())
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted("Seek backwards 60 seconds");
+            ImGui::EndTooltip();
+        }
+        ImGui::SameLine();
+        if(ImGui::Button(mediaButtonBackwardText.c_str()))
+        {
+            const char *cmd[] = {"seek","-10", nullptr};
+            mpv_command_async(mpv,0,cmd);
+        }
+        if(ImGui::IsItemHovered())
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted("Seek backwards 10 seconds");
+            ImGui::EndTooltip();
+        }
+        ImGui::SameLine();
+        if(ImGui::Button(mediaState.paused ? mediaButtonPlayText.c_str() : mediaButtonPauseText.c_str()))
+        {
+            int shouldPause = !mediaState.paused;
+            mpv_set_property_async(mpv,0,"pause",MPV_FORMAT_FLAG,&shouldPause);
+        }
+        if(ImGui::IsItemHovered())
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted("Play/Pause media");
+            ImGui::EndTooltip();
+        }
 
+        ImGui::SameLine();
+        if(ImGui::Button(mediaButtonForwardText.c_str()))
+        {
+            const char *cmd[] = {"seek","10", nullptr};
+            mpv_command_async(mpv,0,cmd);
+        }
+        if(ImGui::IsItemHovered())
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted("Seek forward 10 seconds");
+            ImGui::EndTooltip();
+        }
+
+        ImGui::SameLine();
+        if(ImGui::Button(mediaButtonFastForwardText.c_str()))
+        {
+            const char *cmd[] = {"seek","60", nullptr};
+            mpv_command_async(mpv,0,cmd);
+        }
+        if(ImGui::IsItemHovered())
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted("Seek forward 60 seconds");
+            ImGui::EndTooltip();
+        }
+
+    }
+    ImGui::SameLine();
+    ImGui::TextUnformatted(reinterpret_cast<const char*>(ICON_FA_VOLUME_UP));
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(100.f);
+    int volume = mediaState.mediaAudioVolume;
+    if(ImGui::SliderInt(mediaSliderVolumeText.c_str(),&volume,0,100,std::to_string(volume).c_str()))
+    {
+        mediaState.mediaAudioVolume = volume;
+        double vold = volume;
+        mpv_set_property_async(mpv,0,"volume",MPV_FORMAT_DOUBLE,&vold);
+    }
+    ImGui::SameLine();
+    ImGui::Text("%s/%s",Utils::formatDuration(std::chrono::seconds((int)mediaState.timePosition)).c_str(),durationText.c_str());
+    /*ImGui::SameLine();
+    if(ImGui::Checkbox(loopCheckboxText.c_str(),&mediaLoop))
+    {
+        const char *cmd[] = {"loop-file",mediaLoop ? "inf" : "no", nullptr};
+        mpv_command_async(mpv,0,cmd);
+    }*/
 }
