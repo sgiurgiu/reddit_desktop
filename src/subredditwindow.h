@@ -12,6 +12,7 @@
 #include "redditclientproducer.h"
 #include "resizableglimage.h"
 #include "postcontentviewer.h"
+#include "utils.h"
 
 class SubredditWindow : public std::enable_shared_from_this<SubredditWindow>
 {
@@ -81,12 +82,24 @@ private:
     };
     using posts_list = std::vector<PostDisplay>;
 
+    struct SubredditStylesheetDisplay
+    {
+        SubredditStylesheetDisplay(subreddit_stylesheet s):
+            stylesheet(std::move(s))
+        {
+            parseStylesheet();
+        }
+        subreddit_stylesheet stylesheet;
+        ResizableGLImagePtr headerPicture;
+        void parseStylesheet();
+    };
+
     void showWindowMenu();
     void loadSubredditListings(const std::string& target,const access_token& token);
-    void loadListingsFromConnection(const listing& listingResponse);
+    void loadListingsFromConnection(listing listingResponse);
     void setListings(posts_list receivedPosts, nlohmann::json beforeJson,nlohmann::json afterJson);
     void setErrorMessage(std::string errorMessage);
-    void setPostThumbnail(std::string postName,unsigned char* data, int width, int height, int channels);
+    void setPostThumbnail(std::string postName,Utils::STBImagePtr data, int width, int height, int channels);
     void showNewTextPostDialog();
     void showNewLinkPostDialog();
     void submitNewPost(const post_ptr& p);
@@ -99,6 +112,9 @@ private:
     void refreshPosts();
     void rearmRefreshTimer();
     void changeSubreddit(std::string newSubreddit);
+    void loadSubredditStylesheet();
+    void setSubredditStylesheet(listing listingResponse);
+    void setBannerPicture(Utils::STBImagePtr data, int width, int height, int channels);
 private:    
     using CommentsSignal = boost::signals2::signal<void(std::string id,std::string title)>;
     using SubredditSignal = boost::signals2::signal<void(std::string)>;
@@ -140,6 +156,7 @@ private:
     boost::asio::steady_timer postsContentDestroyerTimer;
     boost::asio::steady_timer refreshTimer;
     bool refreshEnabled = false;
+    std::optional<SubredditStylesheetDisplay> subredditStylesheet;
 };
 
 using SubredditWindowPtr = std::shared_ptr<SubredditWindow>;

@@ -54,6 +54,17 @@ namespace {
         {"self",    {0,310+(585),140,105}},
         {"reddit",  {0,310+(445),140,105}}, //same as "spoiler"
     };
+
+    struct STBImageDeleter
+    {
+        void operator()(stbi_uc *data)
+        {
+            if(data)
+            {
+                stbi_image_free(data);
+            }
+        }
+    };
 }
 
 ResizableGLImagePtr Utils::redditThumbnails;
@@ -171,8 +182,7 @@ void Utils::LoadRedditThumbnails()
 {
     int width, height, channels;
     auto data = decodeImageData(sprite_reddit_png,sprite_reddit_png_len,&width,&height,&channels);
-    redditThumbnails = Utils::loadImage(data,width,height,STBI_rgb_alpha);
-    stbi_image_free(data);
+    redditThumbnails = Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
 }
 void Utils::ReleaseRedditThumbnails()
 {
@@ -218,14 +228,14 @@ ResizableGLImagePtr Utils::GetRedditThumbnail(const std::string& kind)
 
     return image;
 }
-stbi_uc * Utils::decodeImageData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file)
+Utils::STBImagePtr Utils::decodeImageData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file)
 {
-    return stbi_load_from_memory(buffer,len,x,y,channels_in_file,STBI_rgb_alpha);
+    return STBImagePtr(stbi_load_from_memory(buffer,len,x,y,channels_in_file,STBI_rgb_alpha),STBImageDeleter());
 }
-stbi_uc * Utils::decodeGifData(stbi_uc const *buffer, int len, int *x, int *y,
+Utils::STBImagePtr Utils::decodeGifData(stbi_uc const *buffer, int len, int *x, int *y,
                                int *channels_in_file, int *count, int** delays)
 {
-    return stbi_load_gif_from_memory(buffer, len, delays, x, y, count, channels_in_file, STBI_rgb_alpha);
+    return STBImagePtr(stbi_load_gif_from_memory(buffer, len, delays, x, y, count, channels_in_file, STBI_rgb_alpha),STBImageDeleter());
 }
 ResizableGLImagePtr Utils::loadBlurredImage(unsigned char* data, int width, int height, int channels)
 {

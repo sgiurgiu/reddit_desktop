@@ -47,6 +47,8 @@ public:
         RobotoMono_Medium,
         RobotoMono_Bold*/
     };
+
+    using STBImagePtr = std::shared_ptr<stbi_uc>;
     static int GetFontIndex(Fonts font);
     static void LoadFonts();
     static std::string convertSizeToHuman(uint64_t size);
@@ -56,8 +58,8 @@ public:
     static ResizableGLImagePtr loadBlurredImage(unsigned char* data, int width, int height, int channels);
     static std::string getHumanReadableTimeAgo(uint64_t time);
     static std::string getHumanReadableNumber(int number);
-    static stbi_uc * decodeImageData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file);
-    static stbi_uc * decodeGifData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file,int *count, int** delays);
+    static STBImagePtr decodeImageData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file);
+    static STBImagePtr decodeGifData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file,int *count, int** delays);
     static void openInBrowser(const std::string& url);
     static ImVec4 GetDownVoteColor();
     static ImVec4 GetUpVoteColor();

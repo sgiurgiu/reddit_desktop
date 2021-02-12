@@ -8,6 +8,8 @@
 #include "database.h"
 #include <boost/asio/post.hpp>
 #include "utils.h"
+#include "macros.h"
+#include "cssparser.h"
 
 namespace
 {
@@ -82,8 +84,69 @@ void SubredditWindow::loadSubreddit()
     if(!target.starts_with("/")) target = "/" + target;
     loadSubredditListings(target,token);
     lookAndDestroyPostsContents();
+    loadSubredditStylesheet();
 }
+void SubredditWindow::loadSubredditStylesheet()
+{
+    if(target.empty() || !target.starts_with("/r")) return;
 
+    auto connection = client->makeListingClientConnection();
+    connection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
+                                client_response<listing> response)
+    {
+        auto self = weak.lock();
+        if(!self) return;
+        if(ec)
+        {
+            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,ec.message()));
+        }
+        else if(response.status >= 400)
+        {
+            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,std::move(response.body)));
+        }
+        else
+        {
+            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setSubredditStylesheet,
+                                                        self,std::move(response.data)));
+        }
+    });
+    connection->list(target+"/about/stylesheet",token);
+}
+void SubredditWindow::setSubredditStylesheet(listing listingResponse)
+{
+    auto stylesheetJson = listingResponse.json;
+    std::string kind;
+    if(stylesheetJson.contains("kind") && stylesheetJson["kind"].is_string())
+    {
+        kind = stylesheetJson["kind"].get<std::string>();
+    }
+
+    if(kind == "stylesheet" && stylesheetJson.contains("data") && stylesheetJson["data"].is_object())
+    {
+        subredditStylesheet = std::make_optional<SubredditStylesheetDisplay>(stylesheetJson["data"]);
+        auto imageConnection = client->makeResourceClientConnection();
+        imageConnection->connectionCompleteHandler(
+                    [weak=weak_from_this()](const boost::system::error_code& ec,
+                         resource_response response)
+        {
+            auto self = weak.lock();
+            if(!self) return;
+            if(!ec && response.status == 200)
+            {
+                int width, height, channels;
+                auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setBannerPicture,self,
+                                                             std::move(data),width,height,channels));
+            }
+        });
+        //imageConnection->getResource(subredditAbout->about.bannerBackgroundImage);
+    }
+}
+void SubredditWindow::setBannerPicture(Utils::STBImagePtr data, int width, int height, int channels)
+{
+    UNUSED(channels);
+    subredditStylesheet->headerPicture = Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
+}
 void SubredditWindow::lookAndDestroyPostsContents()
 {
     postsContentDestroyerTimer.expires_after(std::chrono::seconds(5));
@@ -168,7 +231,7 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
                 int width, height, channels;
                 auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
                 boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,self,
-                                                             std::move(postName),data,width,height,channels));
+                                                             std::move(postName),std::move(data),width,height,channels));
             }
         });
     }
@@ -219,7 +282,7 @@ void SubredditWindow::setErrorMessage(std::string errorMessage)
 {
     listingErrorMessage = std::move(errorMessage);
 }
-void SubredditWindow::loadListingsFromConnection(const listing& listingResponse)
+void SubredditWindow::loadListingsFromConnection(listing listingResponse)
 {
     posts_list tmpPosts;
 
@@ -290,19 +353,18 @@ void SubredditWindow::PostDisplay::updateShowContentText()
                                               showingContent ? ICON_FA_MINUS_SQUARE_O:ICON_FA_PLUS_SQUARE_O),
                                           post->name);
 }
-void SubredditWindow::setPostThumbnail(std::string postName,unsigned char* data, int width, int height, int channels)
+void SubredditWindow::setPostThumbnail(std::string postName,Utils::STBImagePtr data, int width, int height, int channels)
 {
     ((void)channels);
     auto it = std::find_if(posts.begin(),posts.end(),[name = std::move(postName)](const auto& p){return p.post->name == name;});
     if(it != posts.end())
     {
-        it->thumbnailPicture = Utils::loadImage(data,width,height,STBI_rgb_alpha);
+        it->thumbnailPicture = Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
         if(it->post->over18 && shouldBlurPictures)
         {
-            it->blurredThumbnailPicture = Utils::loadBlurredImage(data,width,height,STBI_rgb_alpha);
+            it->blurredThumbnailPicture = Utils::loadBlurredImage(data.get(),width,height,STBI_rgb_alpha);
         }
     }
-    stbi_image_free(data);    
 }
 void SubredditWindow::votePost(post_ptr p,Voted voted)
 {
@@ -398,6 +460,35 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
     {
         ImGui::SetScrollHereY(0.0f);
         scrollToTop = false;
+    }
+
+    if(subredditStylesheet)
+    {
+        if(subredditStylesheet->headerPicture)
+        {
+            float width = (float)subredditStylesheet->headerPicture->width;
+            float height = (float)subredditStylesheet->headerPicture->height;
+            auto availableWidth = ImGui::GetContentRegionAvail().x;
+            if(availableWidth > 100 && width > availableWidth)
+            {
+                //scale the picture
+                float scale = availableWidth / width;
+                width = availableWidth;
+                height = scale * height;
+            }
+            float maxPictureHeight = ImGui::GetContentRegionAvail().y * 0.3f;
+            if(maxPictureHeight > 100 && height > maxPictureHeight)
+            {
+                float scale = maxPictureHeight / height;
+                height = maxPictureHeight;
+                width = scale * width;
+            }
+            width = std::max(100.f,width);
+            height = std::max(100.f,height);
+            ImGui::Image((void*)(intptr_t)subredditStylesheet->headerPicture->textureId,
+                         ImVec2(width,height));
+        }
+
     }
 
     //showWindowMenu();
@@ -911,4 +1002,12 @@ void SubredditWindow::submitNewPost(const post_ptr& p)
        }
     });
     createPostConnection->createPost(p,true,token);
+}
+
+void SubredditWindow::SubredditStylesheetDisplay::parseStylesheet()
+{
+    if(!stylesheet.stylesheet.empty())
+    {
+        CSSParser parser(stylesheet.stylesheet);
+    }
 }

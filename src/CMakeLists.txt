@@ -23,6 +23,8 @@ set(SQLITE_SRC sqlite/sqlite3.c)
 
 file(GLOB_RECURSE GUMBO_PARSER_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/../external/gumbo-parser/src/*.c")
 
+file(GLOB_RECURSE KATANA_PARSER_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/../external/katana-parser/src/*.c")
+
 set(MD4C_SRC ../external/md4c/src/md4c.c)
 
 set (MARKDOWN_RENDERER_SRCS
@@ -86,6 +88,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         resizableinputtextmultiline.cpp
         subredditslistwindow.cpp
         mediawidget.cpp
+        cssparser.cpp
         )
 
 add_executable(${EXECUTABLE_NAME}
@@ -97,13 +100,16 @@ add_executable(${EXECUTABLE_NAME}
     ${SQLITE_SRC}
     ${BOOST_URL_SRC}
     ${GUMBO_PARSER_SRCS}
+    ${KATANA_PARSER_SRCS}
     ${MD4C_SRC}
     ${MARKDOWN_RENDERER_SRCS}
     ${REDDIT_CONNECTIONS_SRCS}
     )
 
 #Disable warnings for glad and gumbo, they're thousands and I really don't care about them
-set_source_files_properties(${GLAD_SRCS} ${GUMBO_PARSER_SRCS} PROPERTIES COMPILE_FLAGS "-w")
+set_source_files_properties(${GLAD_SRCS}
+    ${GUMBO_PARSER_SRCS} ${KATANA_PARSER_SRCS}
+    PROPERTIES COMPILE_FLAGS "-w")
 
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE  OpenGL::GL SDL2::SDL2)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${CMAKE_DL_LIBS} Threads::Threads )
@@ -128,6 +134,7 @@ target_include_directories(${EXECUTABLE_NAME} PRIVATE
  #   ${Boost_INCLUDE_DIRS}
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/md4c/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/gumbo-parser/src/"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../external/katana-parser/src/"
     )
 
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLAD BOOST_ASIO_NO_DEPRECATED)

@@ -293,4 +293,44 @@ struct message
     std::string humanScore;
 };
 
+struct subreddit_about
+{
+    subreddit_about(){}
+    subreddit_about(const nlohmann::json& json);
+
+    std::string bannerBackgroundColor;
+    std::string bannerBackgroundImage;
+    std::string bannerImage;
+    std::pair<int,int> bannerSize;
+    std::string communityIcon;
+    std::string headerImage;
+    std::pair<int,int> headerSize;
+    std::string headerTitle;
+    std::string iconImage;
+    std::pair<int,int> iconSize;
+    std::string keyColor;
+    std::string mobileBannerImage;
+    std::string primaryColor;
+    std::string publicDescription;
+    std::string description;
+};
+
+struct stylesheet_image
+{
+    stylesheet_image(){}
+    stylesheet_image(const nlohmann::json& json);
+    std::string url;
+    std::string link;
+    std::string name;
+};
+
+struct subreddit_stylesheet
+{
+    subreddit_stylesheet(){}
+    subreddit_stylesheet(const nlohmann::json& json);
+    std::string subredditId;
+    std::string stylesheet;
+    std::vector<stylesheet_image> images;
+};
+
 #endif // ENTITIES_H

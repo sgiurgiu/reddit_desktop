@@ -736,3 +736,104 @@ message::message(const nlohmann::json& json, const std::string& kind):kind(kind)
     }
 }
 
+subreddit_about::subreddit_about(const nlohmann::json& json)
+{
+
+    if(json.contains("banner_background_color") && json["banner_background_color"].is_string())
+    {
+        bannerBackgroundColor = json["banner_background_color"].get<std::string>();
+    }
+    if(json.contains("banner_background_image") && json["banner_background_image"].is_string())
+    {
+        bannerBackgroundImage = json["banner_background_image"].get<std::string>();
+    }
+    if(json.contains("banner_img") && json["banner_img"].is_string())
+    {
+        bannerImage = json["banner_img"].get<std::string>();
+    }
+    if(json.contains("banner_size") && json["banner_size"].is_array())
+    {
+        bannerSize.first = json["banner_size"][0].get<int>();
+        bannerSize.second = json["banner_size"][1].get<int>();
+    }
+    if(json.contains("community_icon") && json["community_icon"].is_string())
+    {
+        communityIcon = json["community_icon"].get<std::string>();
+    }
+    if(json.contains("header_img") && json["header_img"].is_string())
+    {
+        headerImage = json["header_img"].get<std::string>();
+    }
+    if(json.contains("header_size") && json["header_size"].is_array())
+    {
+        headerSize.first = json["header_size"][0].get<int>();
+        headerSize.second = json["header_size"][1].get<int>();
+    }
+    if(json.contains("header_title") && json["header_title"].is_string())
+    {
+        headerTitle = json["header_title"].get<std::string>();
+    }
+    if(json.contains("icon_img") && json["icon_img"].is_string())
+    {
+        iconImage = json["icon_img"].get<std::string>();
+    }
+    if(json.contains("icon_size") && json["icon_size"].is_array())
+    {
+        iconSize.first = json["icon_size"][0].get<int>();
+        iconSize.second = json["icon_size"][1].get<int>();
+    }
+    if(json.contains("key_color") && json["key_color"].is_string())
+    {
+        keyColor = json["key_color"].get<std::string>();
+    }
+    if(json.contains("mobile_banner_image") && json["mobile_banner_image"].is_string())
+    {
+        mobileBannerImage = json["mobile_banner_image"].get<std::string>();
+    }
+    if(json.contains("primary_color") && json["primary_color"].is_string())
+    {
+        primaryColor = json["primary_color"].get<std::string>();
+    }
+    if(json.contains("public_description") && json["public_description"].is_string())
+    {
+        publicDescription = json["public_description"].get<std::string>();
+    }
+    if(json.contains("description") && json["description"].is_string())
+    {
+        description = json["description"].get<std::string>();
+    }
+}
+subreddit_stylesheet::subreddit_stylesheet(const nlohmann::json& json)
+{
+    if(json.contains("subreddit_id") && json["subreddit_id"].is_string())
+    {
+        subredditId = json["subreddit_id"].get<std::string>();
+    }
+    if(json.contains("stylesheet") && json["stylesheet"].is_string())
+    {
+        stylesheet = json["stylesheet"].get<std::string>();
+    }
+    if(json.contains("images") && json["images"].is_array())
+    {
+        images.reserve(json["images"].size());
+        std::ranges::transform(json["images"],std::back_inserter(images),
+                [](const auto& jsonImg){
+            return stylesheet_image(jsonImg);
+        });
+    }
+}
+stylesheet_image::stylesheet_image(const nlohmann::json& json)
+{
+    if(json.contains("url") && json["url"].is_string())
+    {
+        url = json["url"].get<std::string>();
+    }
+    if(json.contains("link") && json["link"].is_string())
+    {
+        link = json["link"].get<std::string>();
+    }
+    if(json.contains("name") && json["name"].is_string())
+    {
+        name = json["name"].get<std::string>();
+    }
+}

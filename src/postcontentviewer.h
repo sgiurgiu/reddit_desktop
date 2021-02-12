@@ -9,6 +9,7 @@
 #include <atomic>
 #include "resizableglimage.h"
 #include "markdownrenderer.h"
+#include "utils.h"
 
 struct mpv_handle;
 struct mpv_render_context;
@@ -30,8 +31,8 @@ public:
     std::vector<GLuint> getAndResetTextures();
     //GLuint getAndResetMediaFBO();
 private:
-    void setPostImage(unsigned char* data, int width, int height, int channels);
-    void setPostGif(unsigned char* data, int width, int height, int channels,
+    void setPostImage(Utils::STBImagePtr data, int width, int height, int channels);
+    void setPostGif(Utils::STBImagePtr data, int width, int height, int channels,
                     int count, int* delays);
     void setPostMediaFrame();
     void loadPostImage();
@@ -44,7 +45,7 @@ private:
     void mpvFlagPropertyChanged(std::string name, int value);
     void mpvInt64PropertyChanged(std::string name, int64_t value);
     void loadPostGalleryImages();
-    void setPostGalleryImage(unsigned char* data, int width, int height, int channels, int index);
+    void setPostGalleryImage(Utils::STBImagePtr data, int width, int height, int channels, int index);
     void setErrorMessage(std::string errorMessage);
 
     void showMediaControls(int width);

@@ -360,11 +360,10 @@ void PostContentViewer::loadPostGalleryImages()
         resourceConnection->getResource(galImage.url);
     }
 }
-void PostContentViewer::setPostGalleryImage(unsigned char* data, int width, int height, int channels, int index)
+void PostContentViewer::setPostGalleryImage(Utils::STBImagePtr data, int width, int height, int channels, int index)
 {
     UNUSED(channels);
-    auto image = Utils::loadImage(data,width,height,STBI_rgb_alpha);
-    stbi_image_free(data);
+    auto image = Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
     gallery.images[index] = std::move(image);
     loadingPostContent = false;
 }
@@ -639,7 +638,7 @@ void PostContentViewer::setPostMediaFrame()
         std::cerr << "error rendering:"<<mpv_error_string(ret)<<std::endl;
     }
 }
-void PostContentViewer::setPostGif(unsigned char* data, int width, int height, int channels,
+void PostContentViewer::setPostGif(Utils::STBImagePtr data, int width, int height, int channels,
                 int count, int* delays)
 {
     loadingPostContent = false;
@@ -651,20 +650,18 @@ void PostContentViewer::setPostGif(unsigned char* data, int width, int height, i
     for (int i=0; i<count; ++i)
     {
         gif->images.emplace_back(std::make_unique<gif_image>(
-                                     Utils::loadImage(data+stride_bytes * height * i, width, height, STBI_rgb_alpha),
+                                     Utils::loadImage(data.get()+stride_bytes * height * i, width, height, STBI_rgb_alpha),
                                      delays[i]));
     }
 
     free(delays);
-    stbi_image_free(data);
     this->gif = std::move(gif);
 }
 
-void PostContentViewer::setPostImage(unsigned char* data, int width, int height, int channels)
+void PostContentViewer::setPostImage(Utils::STBImagePtr data, int width, int height, int channels)
 {
     UNUSED(channels);
-    auto image = Utils::loadImage(data,width,height,STBI_rgb_alpha);
-    stbi_image_free(data);
+    auto image = Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
     postPicture = std::move(image);
     loadingPostContent = false;
 }
