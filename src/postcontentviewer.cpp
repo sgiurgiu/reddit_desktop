@@ -32,7 +32,8 @@ const std::vector<std::string> mediaDomains ={
     "imgur.com",
     "i.imgur.com",
     "redgifs.com",
-    "www.redgifs.com"
+    "www.redgifs.com",
+    "giphy.com"
 };
 const std::vector<std::string> mediaExtensions = {
     ".gif",

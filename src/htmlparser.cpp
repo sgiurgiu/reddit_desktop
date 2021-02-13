@@ -308,7 +308,8 @@ HtmlParser::MediaLink HtmlParser::getMediaLink(const std::string& domain) const
         link.url = this->template lookupDivPlayerContainerVideoUrl<GumboNode>(output->root);
     }
     else if(domain.find("gfycat") != domain.npos ||
-            domain.find("redgifs") != domain.npos)
+            domain.find("redgifs") != domain.npos ||
+            domain.find("giphy") != domain.npos)
     {
         link.url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:video");
         if(link.url.empty())
