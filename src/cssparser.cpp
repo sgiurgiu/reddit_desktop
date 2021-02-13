@@ -204,13 +204,13 @@ void CSSParser::merge(SelectorsType& source,SelectorsType& destination)
                               [&destinationSelectors](auto&& selectorProp)
         {
             destinationSelectors[selectorProp.first].merge(selectorProp.second);
-            auto&& destinationProperties = destinationSelectors[selectorProp.first];
-            std::ranges::for_each(selectorProp.second,
-                                  [&destinationProperties](auto&& prop)
-            {
-                std::ranges::copy(prop.second,
-                                  std::back_inserter(destinationProperties[prop.first]));
-            });
+//            auto&& destinationProperties = destinationSelectors[selectorProp.first];
+//            std::ranges::for_each(selectorProp.second,
+//                                  [&destinationProperties](auto&& prop)
+//            {
+//                std::ranges::copy(prop.second,
+//                                  std::back_inserter(destinationProperties[prop.first]));
+//            });
         });
     });
 }

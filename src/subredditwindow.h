@@ -13,6 +13,7 @@
 #include "resizableglimage.h"
 #include "postcontentviewer.h"
 #include "utils.h"
+#include "subredditstylesheet.h"
 
 class SubredditWindow : public std::enable_shared_from_this<SubredditWindow>
 {
@@ -51,6 +52,7 @@ public:
     void setAccessToken(const access_token& token)
     {
         this->token = token;
+        this->subredditStylesheet->setAccessToken(token);
     }
     void setWindowPositionAndSize(ImVec2 pos,ImVec2 size)
     {
@@ -82,18 +84,6 @@ private:
     };
     using posts_list = std::vector<PostDisplay>;
 
-    struct SubredditStylesheetDisplay
-    {
-        SubredditStylesheetDisplay(subreddit_stylesheet s):
-            stylesheet(std::move(s))
-        {
-            parseStylesheet();
-        }
-        subreddit_stylesheet stylesheet;
-        ResizableGLImagePtr headerPicture;
-        void parseStylesheet();
-    };
-
     void showWindowMenu();
     void loadSubredditListings(const std::string& target,const access_token& token);
     void loadListingsFromConnection(listing listingResponse);
@@ -112,9 +102,6 @@ private:
     void refreshPosts();
     void rearmRefreshTimer();
     void changeSubreddit(std::string newSubreddit);
-    void loadSubredditStylesheet();
-    void setSubredditStylesheet(listing listingResponse);
-    void setBannerPicture(Utils::STBImagePtr data, int width, int height, int channels);
 private:    
     using CommentsSignal = boost::signals2::signal<void(std::string id,std::string title)>;
     using SubredditSignal = boost::signals2::signal<void(std::string)>;
@@ -145,9 +132,9 @@ private:
     bool shouldBlurPictures = true;
     bool newTextPostDialog = false;
     bool showingTextPostDialog = false;
-    char newTextPostTitle[300] = {0};
-    char newTextPostContent[3000] = {0};
-    char newLinkPost[1000] = {0};
+    std::string newTextPostTitle;
+    std::string newTextPostContent;
+    std::string newLinkPost;
     bool newLinkPostDialog = false;
     bool showingLinkPostDialog = false;
     bool windowPositionAndSizeSet = false;
@@ -156,7 +143,7 @@ private:
     boost::asio::steady_timer postsContentDestroyerTimer;
     boost::asio::steady_timer refreshTimer;
     bool refreshEnabled = false;
-    std::optional<SubredditStylesheetDisplay> subredditStylesheet;
+    std::shared_ptr<SubredditStylesheet> subredditStylesheet;
 };
 
 using SubredditWindowPtr = std::shared_ptr<SubredditWindow>;

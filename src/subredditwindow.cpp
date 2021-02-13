@@ -1,6 +1,7 @@
 #include "subredditwindow.h"
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <imgui_stdlib.h>
 #include <fmt/format.h>
 #include "fonts/IconsFontAwesome4.h"
 #include "utils.h"
@@ -21,7 +22,8 @@ SubredditWindow::SubredditWindow(int id, const std::string& subreddit,
                                  RedditClientProducer* client,
                                  const boost::asio::any_io_executor& executor):
     id(id),subreddit(subreddit),token(token),client(client),
-    uiExecutor(executor),postsContentDestroyerTimer(uiExecutor),refreshTimer(uiExecutor)
+    uiExecutor(executor),postsContentDestroyerTimer(uiExecutor),refreshTimer(uiExecutor),
+    subredditStylesheet(std::make_shared<SubredditStylesheet>(token,client,uiExecutor))
 {
     shouldBlurPictures= Database::getInstance()->getBlurNSFWPictures();
 }
@@ -84,68 +86,7 @@ void SubredditWindow::loadSubreddit()
     if(!target.starts_with("/")) target = "/" + target;
     loadSubredditListings(target,token);
     lookAndDestroyPostsContents();
-    loadSubredditStylesheet();
-}
-void SubredditWindow::loadSubredditStylesheet()
-{
-    if(target.empty() || !target.starts_with("/r")) return;
-
-    auto connection = client->makeListingClientConnection();
-    connection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
-                                client_response<listing> response)
-    {
-        auto self = weak.lock();
-        if(!self) return;
-        if(ec)
-        {
-            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,ec.message()));
-        }
-        else if(response.status >= 400)
-        {
-            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,std::move(response.body)));
-        }
-        else
-        {
-            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setSubredditStylesheet,
-                                                        self,std::move(response.data)));
-        }
-    });
-    connection->list(target+"/about/stylesheet",token);
-}
-void SubredditWindow::setSubredditStylesheet(listing listingResponse)
-{
-    auto stylesheetJson = listingResponse.json;
-    std::string kind;
-    if(stylesheetJson.contains("kind") && stylesheetJson["kind"].is_string())
-    {
-        kind = stylesheetJson["kind"].get<std::string>();
-    }
-
-    if(kind == "stylesheet" && stylesheetJson.contains("data") && stylesheetJson["data"].is_object())
-    {
-        subredditStylesheet = std::make_optional<SubredditStylesheetDisplay>(stylesheetJson["data"]);
-        auto imageConnection = client->makeResourceClientConnection();
-        imageConnection->connectionCompleteHandler(
-                    [weak=weak_from_this()](const boost::system::error_code& ec,
-                         resource_response response)
-        {
-            auto self = weak.lock();
-            if(!self) return;
-            if(!ec && response.status == 200)
-            {
-                int width, height, channels;
-                auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
-                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setBannerPicture,self,
-                                                             std::move(data),width,height,channels));
-            }
-        });
-        //imageConnection->getResource(subredditAbout->about.bannerBackgroundImage);
-    }
-}
-void SubredditWindow::setBannerPicture(Utils::STBImagePtr data, int width, int height, int channels)
-{
-    UNUSED(channels);
-    subredditStylesheet->headerPicture = Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
+    subredditStylesheet->LoadSubredditStylesheet(target);
 }
 void SubredditWindow::lookAndDestroyPostsContents()
 {
@@ -462,34 +403,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         scrollToTop = false;
     }
 
-    if(subredditStylesheet)
-    {
-        if(subredditStylesheet->headerPicture)
-        {
-            float width = (float)subredditStylesheet->headerPicture->width;
-            float height = (float)subredditStylesheet->headerPicture->height;
-            auto availableWidth = ImGui::GetContentRegionAvail().x;
-            if(availableWidth > 100 && width > availableWidth)
-            {
-                //scale the picture
-                float scale = availableWidth / width;
-                width = availableWidth;
-                height = scale * height;
-            }
-            float maxPictureHeight = ImGui::GetContentRegionAvail().y * 0.3f;
-            if(maxPictureHeight > 100 && height > maxPictureHeight)
-            {
-                float scale = maxPictureHeight / height;
-                height = maxPictureHeight;
-                width = scale * width;
-            }
-            width = std::max(100.f,width);
-            height = std::max(100.f,height);
-            ImGui::Image((void*)(intptr_t)subredditStylesheet->headerPicture->textureId,
-                         ImVec2(width,height));
-        }
-
-    }
+    subredditStylesheet->ShowHeader();
 
     //showWindowMenu();
 
@@ -842,13 +756,12 @@ void SubredditWindow::showNewLinkPostDialog()
            ImGui::SetKeyboardFocusHere(0);
         }
         ImGui::SetNextItemWidth(windowWidth * 0.5f);
-        ImGui::InputText("##newLinkPostTitle",newTextPostTitle,sizeof(newTextPostTitle));
+        ImGui::InputText("##newLinkPostTitle",&newTextPostTitle);
         ImGui::Text("*Link:");
         ImGui::SetNextItemWidth(windowWidth * 0.5f);
-        ImGui::InputText("##newLinkPostText",newLinkPost,sizeof(newLinkPost));
+        ImGui::InputText("##newLinkPostText",&newLinkPost);
 
-        bool okDisabled = std::string_view(newTextPostTitle).empty() ||
-                std::string_view(newLinkPost).empty();
+        bool okDisabled = newTextPostTitle.empty() || newLinkPost.empty();
         if (okDisabled)
         {
             ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
@@ -902,12 +815,12 @@ void SubredditWindow::showNewTextPostDialog()
            ImGui::SetKeyboardFocusHere(0);
         }
         ImGui::SetNextItemWidth(windowWidth * 0.75f);
-        ImGui::InputText("##newTextPostTitle",newTextPostTitle,sizeof(newTextPostTitle));
+        ImGui::InputText("##newTextPostTitle",&newTextPostTitle);
         ImGui::Text("Text:");
         ImGui::SetNextItemWidth(windowWidth * 0.75f);
-        ImGui::InputTextMultiline("##newTextPostText",newTextPostContent,sizeof(newTextPostContent));
+        ImGui::InputTextMultiline("##newTextPostText",&newTextPostContent);
 
-        bool okDisabled = std::string_view(newTextPostTitle).empty();
+        bool okDisabled = newTextPostTitle.empty();
         if (okDisabled)
         {
             ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
@@ -922,8 +835,8 @@ void SubredditWindow::showNewTextPostDialog()
             p->postHint="self";
             submitNewPost(p);
             showingTextPostDialog = false;
-            newTextPostTitle[0] = 0;
-            newTextPostContent[0] = 0;
+            newTextPostTitle.clear();
+            newTextPostContent.clear();
             ImGui::CloseCurrentPopup();
         }
         if (okDisabled)
@@ -1002,12 +915,4 @@ void SubredditWindow::submitNewPost(const post_ptr& p)
        }
     });
     createPostConnection->createPost(p,true,token);
-}
-
-void SubredditWindow::SubredditStylesheetDisplay::parseStylesheet()
-{
-    if(!stylesheet.stylesheet.empty())
-    {
-        CSSParser parser(stylesheet.stylesheet);
-    }
 }

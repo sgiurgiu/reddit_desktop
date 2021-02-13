@@ -89,6 +89,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         subredditslistwindow.cpp
         mediawidget.cpp
         cssparser.cpp
+        subredditstylesheet.cpp
         )
 
 add_executable(${EXECUTABLE_NAME}

@@ -68,10 +68,12 @@ public:
     static void ReleaseRedditThumbnails();
     static ResizableGLImagePtr GetRedditThumbnail(const std::string& kind);
     static std::string formatDuration(std::chrono::seconds diff);
+    static ResizableGLImagePtr GetRedditHeader();
 private:
     static ImFont* AddFont(const unsigned int* fontData, const unsigned int fontDataSize, float fontSize);
+    static ResizableGLImagePtr GetRedditSpriteSubimage(int x, int y, int width, int height);
 private:
-    static ResizableGLImagePtr redditThumbnails;    
+    static ResizableGLImagePtr redditDefaultSprites;
 };
 
 #endif // UTILS_H

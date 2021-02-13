@@ -67,7 +67,7 @@ namespace {
     };
 }
 
-ResizableGLImagePtr Utils::redditThumbnails;
+ResizableGLImagePtr Utils::redditDefaultSprites;
 
 ImFont* Utils::AddFont(const unsigned int* fontData, const unsigned int fontDataSize, float fontSize)
 {
@@ -182,25 +182,15 @@ void Utils::LoadRedditThumbnails()
 {
     int width, height, channels;
     auto data = decodeImageData(sprite_reddit_png,sprite_reddit_png_len,&width,&height,&channels);
-    redditThumbnails = Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
+    redditDefaultSprites = Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
 }
 void Utils::ReleaseRedditThumbnails()
 {
-    redditThumbnails.reset();
+    redditDefaultSprites.reset();
 }
-ResizableGLImagePtr Utils::GetRedditThumbnail(const std::string& kind)
+ResizableGLImagePtr Utils::GetRedditSpriteSubimage(int x, int y, int width, int height)
 {
-    auto thumbnailIt = thumbnailsCoordinates.find(kind);
-    if(thumbnailIt == thumbnailsCoordinates.end())
-    {
-        return ResizableGLImagePtr();
-    }
     auto image = std::make_unique<ResizableGLImage>();
-    int x = std::get<0>(thumbnailIt->second);
-    int y = std::get<1>(thumbnailIt->second);
-    int width = std::get<2>(thumbnailIt->second);
-    int height = std::get<3>(thumbnailIt->second);
-
     GLuint image_texture;
     glGenTextures(1, &image_texture);
     glBindTexture(GL_TEXTURE_2D, image_texture);
@@ -217,7 +207,7 @@ ResizableGLImagePtr Utils::GetRedditThumbnail(const std::string& kind)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height,
                  0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
-    glCopyImageSubData(redditThumbnails->textureId, GL_TEXTURE_2D, 0, x, y, 0,
+    glCopyImageSubData(redditDefaultSprites->textureId, GL_TEXTURE_2D, 0, x, y, 0,
                        image_texture, GL_TEXTURE_2D, 0, 0, 0, 0,
                        width, height, 1);
 
@@ -227,6 +217,29 @@ ResizableGLImagePtr Utils::GetRedditThumbnail(const std::string& kind)
     image->textureId = image_texture;
 
     return image;
+}
+ResizableGLImagePtr Utils::GetRedditHeader()
+{
+    int x = 0;
+    int y = 1323;
+    int width = 120;
+    int height = 40;
+    return GetRedditSpriteSubimage(x,y,width,height);
+}
+ResizableGLImagePtr Utils::GetRedditThumbnail(const std::string& kind)
+{
+    auto thumbnailIt = thumbnailsCoordinates.find(kind);
+    if(thumbnailIt == thumbnailsCoordinates.end())
+    {
+        return ResizableGLImagePtr();
+    }
+
+    int x = std::get<0>(thumbnailIt->second);
+    int y = std::get<1>(thumbnailIt->second);
+    int width = std::get<2>(thumbnailIt->second);
+    int height = std::get<3>(thumbnailIt->second);
+
+    return GetRedditSpriteSubimage(x,y,width,height);
 }
 Utils::STBImagePtr Utils::decodeImageData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file)
 {

@@ -12,6 +12,10 @@ public:
     {
         return NodeType::Strike;
     }
+    virtual void AddChild(std::unique_ptr<MarkdownNode> child) override;
+private:
+    void componentLinkHandling();
+
 };
 
 #endif // MARKDOWNNODESTRIKE_H
