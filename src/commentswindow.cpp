@@ -1,5 +1,6 @@
 #include "commentswindow.h"
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <fmt/format.h>
 #include "fonts/IconsFontAwesome4.h"
 #include <SDL.h>
@@ -9,6 +10,24 @@
 #include "database.h"
 #include "spinner/spinner.h"
 #include "resizableinputtextmultiline.h"
+
+namespace
+{
+    const ImU32 commentsBarColors[] = {
+        IM_COL32(255,1,0,255), // red,
+        IM_COL32(3,206,3,255), // green,
+        IM_COL32(255,116,0,255), // orange,
+        IM_COL32(0,153,154,255), // some teal ... something,
+        IM_COL32(255,171,1,255), // red orange,
+        IM_COL32(18,65,170,255), // some blue-purple,
+        IM_COL32(254,213,2,255), // yellow-orage,
+        IM_COL32(57,20,178,255), // blue-purple,
+        IM_COL32(254,255,2,255), // yellow,
+        IM_COL32(115,9,174,255), // purple,
+        IM_COL32(159,238,2,255), // yellow-green,
+        IM_COL32(209,2,117,255), // red-purple,
+    };
+}
 
 CommentsWindow::CommentsWindow(const std::string& postId,
                                const std::string& title,
@@ -187,28 +206,17 @@ void CommentsWindow::setErrorMessage(std::string errorMessage)
 void CommentsWindow::loadMoreChildrenListing(const listing& listingResponse,std::any userData)
 {
     if(!windowOpen) return;
+    //morechildren is a broken API. Unbelievably broken. It kinda works, which is the worst kind of "works"
     comments_tuple receivedComments;
     if (listingResponse.json.is_object())
     {
-        if(listingResponse.json.contains("success") &&
-                listingResponse.json["success"].is_boolean() &&
-                listingResponse.json["success"].get<bool>() &&
-                listingResponse.json.contains("jquery") &&
-                listingResponse.json["jquery"].is_array())
+        if(listingResponse.json.contains("json") &&
+                listingResponse.json["json"].is_object() &&
+                listingResponse.json["json"].contains("data") &&
+                listingResponse.json["json"]["data"].contains("things") &&
+                listingResponse.json["json"]["data"]["things"].is_array())
         {
-            for(const auto& jqueryObj : listingResponse.json["jquery"])
-            {
-                if(!jqueryObj.is_array()) continue;
-                for(const auto& elem: jqueryObj)
-                {
-                    if(!elem.is_array()) continue;
-                    for(const auto& childrenArray : elem)
-                    {
-                        if(!childrenArray.is_array()) continue;
-                        receivedComments = getJsonComments(childrenArray);
-                    }
-                }
-            }
+            receivedComments = getJsonComments(listingResponse.json["json"]["data"]["things"]);
         }
     }
 
@@ -240,6 +248,7 @@ void CommentsWindow::loadMoreChildrenListing(const listing& listingResponse,std:
 }
 CommentsWindow::comments_tuple CommentsWindow::getJsonComments(const nlohmann::json& children)
 {
+    //this method is wrong. TODO: fix this. Reddit has a really bad, awful "morechildren" response
     if(!windowOpen || !children.is_array()) return std::make_tuple<comments_list,std::optional<unloaded_children>>({},{});
     comments_list comments;
     std::optional<unloaded_children> unloadedPostComments;
@@ -377,8 +386,101 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
     postCommentTextFieldId = fmt::format("##{}_postComment",parentPost->name);
     postCommentPreviewCheckboxId = fmt::format("Show Preview##{}_postCommentPreview",parentPost->name);
 }
+void CommentsWindow::renderCommentContents(DisplayComment& c, int level)
+{
+    ImGui::Columns(2,nullptr,false);
+    float barWidth = 5.f;
+    ImGui::SetColumnWidth(0,barWidth+(ImGui::GetStyle().ItemSpacing.y * 2.f));
+    ImVec2 barStartPosition = ImGui::GetCursorScreenPos();      // ImDrawList API uses screen coordinates!
+    ImVec2 barSize = ImVec2(barWidth,c.markdownHeight);   // Resize canvas to what's available
+    ImVec2 barEndPosition = ImVec2(barStartPosition.x + barSize.x, barStartPosition.y + barSize.y);
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    draw_list->AddRectFilled(barStartPosition, barEndPosition, commentsBarColors[level % sizeof(commentsBarColors)]);
+    ImGui::NextColumn();
+    auto markdownYPos = ImGui::GetCursorScreenPos().y;
+    c.renderer.RenderMarkdown();
+    c.markdownHeight = ImGui::GetCursorScreenPos().y - markdownYPos;
+    ImGui::Columns(1);
+}
+void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
+{
+    if(c.commentData.voted == Voted::UpVoted)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text,Utils::GetUpVoteColor());
+    }
 
-void CommentsWindow::showComment(DisplayComment& c)
+    if(ImGui::Button(c.upvoteButtonText.c_str()))
+    {
+        voteComment(&c,c.commentData.voted == Voted::UpVoted ? Voted::NotVoted : Voted::UpVoted);
+    }
+
+    if(c.commentData.voted == Voted::UpVoted)
+    {
+        ImGui::PopStyleColor(1);
+    }
+    ImGui::SameLine();
+    if(c.commentData.voted == Voted::DownVoted)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text,Utils::GetDownVoteColor());
+    }
+
+    if(ImGui::Button(c.downvoteButtonText.c_str()))
+    {
+        voteComment(&c,c.commentData.voted == Voted::DownVoted ? Voted::NotVoted : Voted::DownVoted);
+    }
+
+    if(c.commentData.voted == Voted::DownVoted)
+    {
+        ImGui::PopStyleColor(1);
+    }
+
+   /* ImGui::SameLine();
+    if(ImGui::Button(c.saveButtonText.c_str()))
+    {
+
+    }*/
+    if(parentPost && !parentPost->locked)
+    {
+        ImGui::SameLine();
+        if(ImGui::Button(c.replyButtonText.c_str()))
+        {
+            c.showingReplyArea = !c.showingReplyArea;
+        }
+        if(c.showingReplyArea)
+        {
+
+            if(ResizableInputTextMultiline::InputText(c.replyIdText.c_str(),&c.postReplyTextBuffer,
+                                      &c.postReplyTextFieldSize) && c.showingPreview)
+            {
+                c.previewRenderer.SetText(c.postReplyTextBuffer);
+            }
+
+            if(ImGui::Button(c.saveReplyButtonText.c_str()) && !c.postingReply)
+            {
+                c.showingReplyArea = false;
+                c.postingReply = true;
+                createCommentConnection->createComment(c.commentData.name,c.postReplyTextBuffer,token,CommentUserData{c.commentData.name});
+            }
+            ImGui::SameLine();
+            if(ImGui::Checkbox(c.postReplyPreviewCheckboxId.c_str(),&c.showingPreview))
+            {
+                c.previewRenderer.SetText(c.postReplyTextBuffer);
+            }
+            if(c.showingPreview)
+            {
+                if(ImGui::BeginChild(c.liveReplyPreviewText.c_str(),c.postReplyPreviewSize,true))
+                {
+                    c.previewRenderer.RenderMarkdown();
+                    auto endPos = ImGui::GetCursorPos();
+                    c.postReplyPreviewSize.y = endPos.y + ImGui::GetTextLineHeight();
+
+                }
+                ImGui::EndChild();
+            }
+        }
+    }
+}
+void CommentsWindow::showComment(DisplayComment& c, int level)
 {
     int flags = ImGuiTreeNodeFlags_DefaultOpen;
     if(c.commentData.isSubmitter)
@@ -387,88 +489,15 @@ void CommentsWindow::showComment(DisplayComment& c)
     }
     if(ImGui::TreeNodeEx(c.titleText.c_str(),flags))
     {
-        c.renderer.RenderMarkdown();
-        //ImGui::NewLine();
+        renderCommentContents(c,level);
+
         ImGui::Dummy(ImVec2(0.0f, ImGui::GetFontSize()/2.f));
-        if(c.commentData.voted == Voted::UpVoted)
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text,Utils::GetUpVoteColor());
-        }
 
-        if(ImGui::Button(c.upvoteButtonText.c_str()))
-        {
-            voteComment(&c,c.commentData.voted == Voted::UpVoted ? Voted::NotVoted : Voted::UpVoted);
-        }
-
-        if(c.commentData.voted == Voted::UpVoted)
-        {
-            ImGui::PopStyleColor(1);
-        }
-        ImGui::SameLine();
-        if(c.commentData.voted == Voted::DownVoted)
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text,Utils::GetDownVoteColor());
-        }
-
-        if(ImGui::Button(c.downvoteButtonText.c_str()))
-        {
-            voteComment(&c,c.commentData.voted == Voted::DownVoted ? Voted::NotVoted : Voted::DownVoted);
-        }
-
-        if(c.commentData.voted == Voted::DownVoted)
-        {
-            ImGui::PopStyleColor(1);
-        }
-
-       /* ImGui::SameLine();
-        if(ImGui::Button(c.saveButtonText.c_str()))
-        {
-
-        }*/
-        if(parentPost && !parentPost->locked)
-        {
-            ImGui::SameLine();
-            if(ImGui::Button(c.replyButtonText.c_str()))
-            {
-                c.showingReplyArea = !c.showingReplyArea;
-            }
-            if(c.showingReplyArea)
-            {
-
-                if(ResizableInputTextMultiline::InputText(c.replyIdText.c_str(),&c.postReplyTextBuffer,
-                                          &c.postReplyTextFieldSize) && c.showingPreview)
-                {
-                    c.previewRenderer.SetText(c.postReplyTextBuffer);
-                }
-
-                if(ImGui::Button(c.saveReplyButtonText.c_str()) && !c.postingReply)
-                {
-                    c.showingReplyArea = false;
-                    c.postingReply = true;                    
-                    createCommentConnection->createComment(c.commentData.name,c.postReplyTextBuffer,token,CommentUserData{c.commentData.name});
-                }
-                ImGui::SameLine();
-                if(ImGui::Checkbox(c.postReplyPreviewCheckboxId.c_str(),&c.showingPreview))
-                {
-                    c.previewRenderer.SetText(c.postReplyTextBuffer);
-                }
-                if(c.showingPreview)
-                {
-                    if(ImGui::BeginChild(c.liveReplyPreviewText.c_str(),c.postReplyPreviewSize,true))
-                    {
-                        c.previewRenderer.RenderMarkdown();
-                        auto endPos = ImGui::GetCursorPos();
-                        c.postReplyPreviewSize.y = endPos.y + ImGui::GetTextLineHeight();
-
-                    }
-                    ImGui::EndChild();
-                }
-            }
-        }
+        renderCommentActionButtons(c);
 
         for(auto&& reply : c.replies)
         {
-            showComment(reply);
+            showComment(reply, level + 1);
         }
         if(c.commentData.unloadedChildren)
         {
@@ -787,9 +816,9 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
 
     if(unloadedPostComments && ImGui::Button(moreRepliesButtonText.c_str()))
     {
-        unloadedPostComments.reset();
         loadingUnloadedReplies = true;
         loadUnloadedChildren<PostUserData>(unloadedPostComments,{});
+        unloadedPostComments.reset();
     }
     else if(loadingUnloadedReplies)
     {

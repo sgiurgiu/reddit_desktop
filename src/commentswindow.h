@@ -88,7 +88,7 @@ private:
         MarkdownRenderer previewRenderer;
         ImVec2 postReplyTextFieldSize;
         ImVec2 postReplyPreviewSize = {0,1};
-
+        float markdownHeight = 10.f;
         void updateButtonsText();
     };
     void loadMoreChildrenListing(const listing& listingResponse,std::any userData);
@@ -99,7 +99,9 @@ private:
     comments_tuple getJsonComments(const nlohmann::json& children);
     void setComments(comments_list receivedComments);
     void setParentPost(post_ptr receivedParentPost);
-    void showComment(DisplayComment& c);
+    void showComment(DisplayComment& c, int level = 0);
+    void renderCommentContents(DisplayComment& c, int level);
+    void renderCommentActionButtons(DisplayComment& c);
     void voteParentPost(Voted vote);
     void updatePostVote(Voted vote);
     void voteComment(DisplayComment* c,Voted vote);

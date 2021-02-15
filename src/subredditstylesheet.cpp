@@ -88,9 +88,10 @@ void SubredditStylesheet::ShowHeader()
     {
         float width = (float)headerPicture->width;
         float height = (float)headerPicture->height;
+        float childHeight = height + (ImGui::GetStyle().ItemSpacing.y * 2.f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetColorU32(headerColor));
-        ImGui::BeginChild("headerCanvas", ImVec2(0.0f, height+ImGui::GetStyle().ItemSpacing.y*2), true, ImGuiWindowFlags_NoMove);
+        ImGui::BeginChild("headerChild", ImVec2(0.0f, childHeight), true, ImGuiWindowFlags_NoMove);
         ImGui::PopStyleColor();
         ImGui::PopStyleVar();
         ImGui::Dummy(ImVec2(0,0));
@@ -106,6 +107,12 @@ void SubredditStylesheet::parseStylesheet()
 {
     if(!stylesheet.stylesheet.empty())
     {
+        headerPicture.reset();
         CSSParser parser(stylesheet.stylesheet);
+        auto headerImgProperties = parser.getIdProperties("header-img");
+        if(headerImgProperties.has_value())
+        {
+
+        }
     }
 }

@@ -102,6 +102,11 @@ private:
     void refreshPosts();
     void rearmRefreshTimer();
     void changeSubreddit(std::string newSubreddit);
+    void renderPostVotes(PostDisplay& p);
+    float renderPostThumbnail(PostDisplay& p);
+    void renderPostShowContentButton(PostDisplay& p);
+    void renderPostCommentsButton(PostDisplay& p);
+    void renderPostOpenLinkButton(PostDisplay& p);
 private:    
     using CommentsSignal = boost::signals2::signal<void(std::string id,std::string title)>;
     using SubredditSignal = boost::signals2::signal<void(std::string)>;

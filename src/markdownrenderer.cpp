@@ -121,26 +121,6 @@ int leave_block_callback(MD_BLOCKTYPE type, void* , void* userdata)
     }
     r->SetCurrentNode(currentNode->GetParent());
 
-    /*switch(type)
-    {
-        case MD_BLOCK_DOC:      break;
-        case MD_BLOCK_QUOTE:    RENDER_VERBATIM(r, "</blockquote>\n"); break;
-        case MD_BLOCK_UL:       RENDER_VERBATIM(r, "</ul>\n"); break;
-        case MD_BLOCK_OL:       RENDER_VERBATIM(r, "</ol>\n"); break;
-        case MD_BLOCK_LI:       RENDER_VERBATIM(r, "</li>\n"); break;
-        case MD_BLOCK_HR:       break;
-        case MD_BLOCK_H:        RENDER_VERBATIM(r, head[((MD_BLOCK_H_DETAIL*)detail)->level - 1]); break;
-        case MD_BLOCK_CODE:     RENDER_VERBATIM(r, "</code></pre>\n"); break;
-        case MD_BLOCK_HTML:     break;
-        case MD_BLOCK_P:        RENDER_VERBATIM(r, "</p>\n"); break;
-        case MD_BLOCK_TABLE:    RENDER_VERBATIM(r, "</table>\n"); break;
-        case MD_BLOCK_THEAD:    RENDER_VERBATIM(r, "</thead>\n"); break;
-        case MD_BLOCK_TBODY:    RENDER_VERBATIM(r, "</tbody>\n"); break;
-        case MD_BLOCK_TR:       RENDER_VERBATIM(r, "</tr>\n"); break;
-        case MD_BLOCK_TH:       RENDER_VERBATIM(r, "</th>\n"); break;
-        case MD_BLOCK_TD:       RENDER_VERBATIM(r, "</td>\n"); break;
-    }*/
-
     return 0;
 }
 

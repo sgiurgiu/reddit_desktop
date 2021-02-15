@@ -359,6 +359,172 @@ void SubredditWindow::rearmRefreshTimer()
         refreshTimer.cancel();
     }
 }
+void SubredditWindow::renderPostVotes(PostDisplay& p)
+{
+    ImGui::BeginChild(p.votesChildText.c_str(),
+                      ImVec2(maxScoreWidth,ImGui::GetFontSize()*4+ImGui::GetStyle().FramePadding.x*2));
+    ImGui::PushStyleColor(ImGuiCol_Button,ImVec4(1.0f,1.0f,1.0f,0.0f));
+    ImGui::Dummy(ImVec2(upvotesButtonsIdent/2.f,0.f));ImGui::SameLine();
+
+    if(p.post->voted == Voted::UpVoted)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text,Utils::GetUpVoteColor());
+    }
+
+    if(ImGui::Button(p.upvoteButtonText.c_str()))
+    {
+        votePost(p.post,p.post->voted == Voted::UpVoted ? Voted::NotVoted : Voted::UpVoted);
+    }
+
+    if(p.post->voted == Voted::UpVoted)
+    {
+        ImGui::PopStyleColor(1);
+    }
+
+    auto scoreIdent = (maxScoreWidth - ImGui::CalcTextSize(p.post->humanScore.c_str()).x)/2.f;
+    //ImGui::Dummy(ImVec2(scoreIdent,0.f));
+    ImGui::Dummy(ImVec2(0,0));
+    ImGui::SameLine(scoreIdent);
+    ImGui::Text("%s",p.post->humanScore.c_str());
+    if(ImGui::GetItemRectSize().x > maxScoreWidth) maxScoreWidth = ImGui::GetItemRectSize().x;
+    ImGui::Dummy(ImVec2(upvotesButtonsIdent/2.f,0.f));ImGui::SameLine();
+
+    if(p.post->voted == Voted::DownVoted)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text,Utils::GetDownVoteColor());
+    }
+
+    if(ImGui::Button(p.downvoteButtonText.c_str()))
+    {
+        votePost(p.post,p.post->voted == Voted::DownVoted ? Voted::NotVoted : Voted::DownVoted);
+    }
+
+    if(p.post->voted == Voted::DownVoted)
+    {
+        ImGui::PopStyleColor(1);
+    }
+
+    ImGui::PopStyleColor(1);
+    ImGui::EndChild();
+}
+float SubredditWindow::renderPostThumbnail(PostDisplay& p)
+{
+    auto height = ImGui::GetCursorPosY();
+
+    if(p.post->over18 && shouldBlurPictures && p.blurredThumbnailPicture &&
+            !p.shouldShowUnblurredImage)
+    {
+        ImGui::Image((void*)(intptr_t)p.blurredThumbnailPicture->textureId,
+                     ImVec2(p.blurredThumbnailPicture->width,p.blurredThumbnailPicture->height));
+        height = std::max(height,ImGui::GetCursorPosY());
+        auto rectMin = ImGui::GetItemRectMin();
+        auto rectMax = ImGui::GetItemRectMax();
+        if(ImGui::IsMouseHoveringRect(rectMin,rectMax))
+        {
+            if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+            {
+                p.shouldShowUnblurredImage = true;
+            }
+            if (!p.shouldShowUnblurredImage)
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted("Double-click to unblur");
+                ImGui::EndTooltip();
+            }
+        }
+        ImGui::SameLine();
+    }
+    else if(p.thumbnailPicture)
+    {
+        ImGui::Image((void*)(intptr_t)p.thumbnailPicture->textureId,
+                     ImVec2(p.thumbnailPicture->width,p.thumbnailPicture->height));
+        height = std::max(height,ImGui::GetCursorPosY());
+        auto rectMin = ImGui::GetItemRectMin();
+        auto rectMax = ImGui::GetItemRectMax();
+        if(ImGui::IsMouseHoveringRect(rectMin,rectMax) && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) &&
+                p.blurredThumbnailPicture)
+        {
+            p.shouldShowUnblurredImage = false;
+        }
+        ImGui::SameLine();
+    }
+    return height;
+}
+void SubredditWindow::renderPostShowContentButton(PostDisplay& p)
+{
+    if(ImGui::Button(p.showContentButtonText.c_str()))
+    {
+        p.showingContent = !p.showingContent;
+        p.updateShowContentText();
+        if(!p.showingContent && p.postContentViewer)
+        {
+            p.postContentViewer->stopPlayingMedia(true);
+        }
+        else if (p.showingContent && p.postContentViewer)
+        {
+            p.postContentViewer->stopPlayingMedia(false);
+        }
+    }
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::BeginTooltip();
+        ImGui::TextUnformatted(p.showingContent ? "Hide post content" : "Show post content");
+        ImGui::EndTooltip();
+    }
+}
+void SubredditWindow::renderPostCommentsButton(PostDisplay& p)
+{
+    ImGui::PushID(("comments" + p.post->id).c_str());
+    ImVec2 p0 = ImGui::GetCursorScreenPos();
+    ImGui::Text("%s",p.post->commentsText.c_str());
+    auto rectMax = ImGui::GetItemRectMax();
+    auto rectMin = ImGui::GetItemRectMin();
+    rectMin.y = rectMax.y;
+    ImGui::SetCursorScreenPos(p0);
+    auto subredditTextSize = ImGui::GetItemRectSize();
+    if (ImGui::InvisibleButton("comments", subredditTextSize))
+    {
+        commentsSignal(p.post->id,p.post->title);
+    }
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::GetWindowDrawList()->AddLine(rectMin, rectMax, ImGui::GetColorU32(ImGuiCol_Text));
+        ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+        ImGui::BeginTooltip();
+        ImGui::TextUnformatted("Show Comments");
+        ImGui::EndTooltip();
+    }
+    ImGui::PopID();
+}
+void SubredditWindow::renderPostOpenLinkButton(PostDisplay& p)
+{
+    if(!p.post->url.empty())
+    {
+        ImGui::SameLine();
+        ImGui::PushID(("openlink" + p.post->id).c_str());
+        ImGui::AlignTextToFramePadding();
+        ImVec2 p0 = ImGui::GetCursorScreenPos();
+        ImGui::Text("%s",reinterpret_cast<const char*>("Open Link " ICON_FA_EXTERNAL_LINK_SQUARE));
+        auto rectMax = ImGui::GetItemRectMax();
+        auto rectMin = ImGui::GetItemRectMin();
+        rectMin.y = rectMax.y;
+        ImGui::SetCursorScreenPos(p0);
+        auto subredditTextSize = ImGui::GetItemRectSize();
+        if(ImGui::InvisibleButton(p.openLinkButtonText.c_str(),subredditTextSize))
+        {
+            Utils::openInBrowser(p.post->url);
+        }
+        if(ImGui::IsItemHovered())
+        {
+            ImGui::GetWindowDrawList()->AddLine(rectMin, rectMax, ImGui::GetColorU32(ImGuiCol_Text));
+            ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted(p.post->url.c_str());
+            ImGui::EndTooltip();
+        }
+        ImGui::PopID();
+    }
+}
 void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
 {
 
@@ -478,92 +644,11 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "%s",p.errorMessageText.c_str());
         }
 
-        ImGui::BeginChild(p.votesChildText.c_str(),
-                          ImVec2(maxScoreWidth,ImGui::GetFontSize()*4+ImGui::GetStyle().FramePadding.x*2));
-        ImGui::PushStyleColor(ImGuiCol_Button,ImVec4(1.0f,1.0f,1.0f,0.0f));
-        ImGui::Dummy(ImVec2(upvotesButtonsIdent/2.f,0.f));ImGui::SameLine();
+        renderPostVotes(p);
 
-        if(p.post->voted == Voted::UpVoted)
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text,Utils::GetUpVoteColor());
-        }
-
-        if(ImGui::Button(p.upvoteButtonText.c_str()))
-        {
-            votePost(p.post,p.post->voted == Voted::UpVoted ? Voted::NotVoted : Voted::UpVoted);
-        }
-
-        if(p.post->voted == Voted::UpVoted)
-        {
-            ImGui::PopStyleColor(1);
-        }
-
-        auto scoreIdent = (maxScoreWidth - ImGui::CalcTextSize(p.post->humanScore.c_str()).x)/2.f;
-        //ImGui::Dummy(ImVec2(scoreIdent,0.f));
-        ImGui::Dummy(ImVec2(0,0));
-        ImGui::SameLine(scoreIdent);
-        ImGui::Text("%s",p.post->humanScore.c_str());
-        if(ImGui::GetItemRectSize().x > maxScoreWidth) maxScoreWidth = ImGui::GetItemRectSize().x;
-        ImGui::Dummy(ImVec2(upvotesButtonsIdent/2.f,0.f));ImGui::SameLine();
-
-        if(p.post->voted == Voted::DownVoted)
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text,Utils::GetDownVoteColor());
-        }
-
-        if(ImGui::Button(p.downvoteButtonText.c_str()))
-        {
-            votePost(p.post,p.post->voted == Voted::DownVoted ? Voted::NotVoted : Voted::DownVoted);
-        }
-
-        if(p.post->voted == Voted::DownVoted)
-        {
-            ImGui::PopStyleColor(1);
-        }
-
-        ImGui::PopStyleColor(1);
-        ImGui::EndChild();
-
-        auto height = ImGui::GetCursorPosY();
         ImGui::SameLine();
 
-        if(p.post->over18 && shouldBlurPictures && p.blurredThumbnailPicture &&
-                !p.shouldShowUnblurredImage)
-        {
-            ImGui::Image((void*)(intptr_t)p.blurredThumbnailPicture->textureId,
-                         ImVec2(p.blurredThumbnailPicture->width,p.blurredThumbnailPicture->height));
-            height = std::max(height,ImGui::GetCursorPosY());
-            auto rectMin = ImGui::GetItemRectMin();
-            auto rectMax = ImGui::GetItemRectMax();
-            if(ImGui::IsMouseHoveringRect(rectMin,rectMax))
-            {
-                if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-                {
-                    p.shouldShowUnblurredImage = true;
-                }
-                if (!p.shouldShowUnblurredImage)
-                {
-                    ImGui::BeginTooltip();
-                    ImGui::TextUnformatted("Double-click to unblur");
-                    ImGui::EndTooltip();
-                }
-            }
-            ImGui::SameLine();
-        }
-        else if(p.thumbnailPicture)
-        {
-            ImGui::Image((void*)(intptr_t)p.thumbnailPicture->textureId,
-                         ImVec2(p.thumbnailPicture->width,p.thumbnailPicture->height));
-            height = std::max(height,ImGui::GetCursorPosY());
-            auto rectMin = ImGui::GetItemRectMin();
-            auto rectMax = ImGui::GetItemRectMax();
-            if(ImGui::IsMouseHoveringRect(rectMin,rectMax) && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) &&
-                    p.blurredThumbnailPicture)
-            {
-                p.shouldShowUnblurredImage = false;
-            }
-            ImGui::SameLine();
-        }
+        auto height = renderPostThumbnail(p);
 
         ImGui::BeginGroup();
         {
@@ -624,44 +709,17 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         auto desiredPositionY = height - ImGui::GetFrameHeightWithSpacing();
         if(normalPositionY < desiredPositionY) ImGui::SetCursorPosY(desiredPositionY);
 
-        if(ImGui::Button(p.showContentButtonText.c_str()))
-        {
-            p.showingContent = !p.showingContent;
-            p.updateShowContentText();
-            if(!p.showingContent && p.postContentViewer)
-            {
-                p.postContentViewer->stopPlayingMedia(true);
-            }
-            else if (p.showingContent && p.postContentViewer)
-            {
-                p.postContentViewer->stopPlayingMedia(false);
-            }
-        }
+        renderPostShowContentButton(p);
 
         ImGui::SameLine();
 
-        if(ImGui::Button(p.post->commentsText.c_str()))
-        {
-            commentsSignal(p.post->id,p.post->title);
-        }
+        renderPostCommentsButton(p);
 
-        if(!p.post->url.empty())
-        {
-            ImGui::SameLine();
+        renderPostOpenLinkButton(p);
 
-            if(ImGui::Button(p.openLinkButtonText.c_str()))
-            {
-                Utils::openInBrowser(p.post->url);
-            }
-            if(ImGui::IsItemHovered())
-            {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted(p.post->url.c_str());
-                ImGui::EndTooltip();
-            }
-        }
         if(p.showingContent)
         {
+            ImGui::Dummy(ImVec2(0.0f, ImGui::GetFontSize()/2.f));
             if(!p.postContentViewer)
             {
                 p.postContentViewer = std::make_shared<PostContentViewer>(client,uiExecutor);

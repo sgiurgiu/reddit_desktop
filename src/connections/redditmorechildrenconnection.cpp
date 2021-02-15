@@ -28,7 +28,7 @@ void RedditMoreChildrenConnection::list(const unloaded_children& children,
     }
 
     std::string body = "link_id="+linkId+
-                        "&sort=confidence&limit_children=false&raw_json=1"+
+                        "&sort=confidence&limit_children=false&raw_json=1&api_type=json"+
                         "&children="+childrensList;
     request_t request;
 
