@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <sstream>
 
+#include <katana.h>
 
 namespace
 {
@@ -37,7 +38,7 @@ CSSParser::CSSParser(const std::string& str)
                 KatanaDeclaration* decl = (KatanaDeclaration*)styleRule->declarations->data[j];
                 if(decl->values)
                 {
-                    auto valuesVector = getValues(decl->values);
+                    auto valuesVector = getValues<KatanaArray>(decl->values);
                     std::ranges::copy(valuesVector,
                                       std::back_inserter(properties[decl->property]));
                 }
@@ -140,7 +141,7 @@ std::string CSSParser::getValue(KatanaValue* value)
             break;
         case KATANA_VALUE_PARSER_LIST:
             {
-                auto valuesVector = getValues(value->list);
+                auto valuesVector = getValues<KatanaArray>(value->list);
                 std::ostringstream resultStream;
                 std::ostream_iterator< std::string > oit( resultStream, " " );
                 std::ranges::copy(valuesVector, oit );
@@ -162,7 +163,8 @@ std::string CSSParser::getValue(KatanaValue* value)
 
     return str;
 }
-std::vector<std::string> CSSParser::getValues(KatanaArray* values)
+template<typename A>
+std::vector<std::string> CSSParser::getValues(A* values)
 {
     std::vector<std::string> strValues;
     for(size_t k=0;k<values->length;++k)

@@ -5,6 +5,7 @@
 #include "entities.h"
 #include "resizableglimage.h"
 #include "utils.h"
+#include "cssparser.h"
 
 #include <string>
 #include <boost/asio/io_context.hpp>
@@ -29,6 +30,7 @@ private:
     void setErrorMessage(std::string errorMessage);
     void setSubredditStylesheet(listing listingResponse);
     void setBannerPicture(Utils::STBImagePtr data, int width, int height, int channels);
+    std::string getUrlLink(const CSSParser::ValuesType&);
 private:
     access_token token;
     RedditClientProducer* client;

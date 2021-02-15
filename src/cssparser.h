@@ -5,7 +5,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include <katana.h>
+struct KatanaSelector;
+struct KatanaValue;
 
 class CSSParser
 {
@@ -22,7 +23,8 @@ private:
     SelectorsType collectSelectorProperties(KatanaSelector* selector);
     void merge(SelectorsType& source,SelectorsType& destination);
     std::string getValue(KatanaValue* value);
-    std::vector<std::string> getValues(KatanaArray* values);
+    template<typename A>
+    std::vector<std::string> getValues(A* array);
     std::optional<PropertiesType> getSelectorProperties(const std::string& key,const std::string& sel) const;
 private:
     SelectorsType selectors;

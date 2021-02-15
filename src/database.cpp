@@ -136,6 +136,14 @@ int Database::getMediaAudioVolume()
 {
     return getIntProperty("VOLUME",100);
 }
+void Database::setAutoArangeWindowsGrid(bool flag)
+{
+    setBoolProperty(flag,"GRID_AUTO_ARRANGE");
+}
+bool Database::getAutoArangeWindowsGrid() const
+{
+    return getBoolProperty("GRID_AUTO_ARRANGE", false);
+}
 
 void Database::getMainWindowDimensions(int *x, int *y, int *width,int *height)
 {

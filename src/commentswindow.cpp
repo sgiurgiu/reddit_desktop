@@ -13,7 +13,7 @@
 
 namespace
 {
-    const ImU32 commentsBarColors[] = {
+    constexpr ImU32 commentsBarColors[] = {
         IM_COL32(255,1,0,255), // red,
         IM_COL32(3,206,3,255), // green,
         IM_COL32(255,116,0,255), // orange,

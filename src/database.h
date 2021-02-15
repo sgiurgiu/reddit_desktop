@@ -44,6 +44,8 @@ public:
     void setAutoRefreshTimeout(int value);
     void setShowRandomNSFW(bool flag);
     bool getShowRandomNSFW() const;
+    void setAutoArangeWindowsGrid(bool flag);
+    bool getAutoArangeWindowsGrid() const;
 private:
     void setBoolProperty(bool flag, const std::string& propName);
     bool getBoolProperty(const std::string& propName, bool defaultValue) const;

@@ -3,6 +3,7 @@
 #include "macros.h"
 #include "cssparser.h"
 #include <imgui_internal.h>
+#include <algorithm>
 
 SubredditStylesheet::SubredditStylesheet(const access_token& token,
                                          RedditClientProducer* client,
@@ -103,16 +104,51 @@ void SubredditStylesheet::ShowHeader()
         ImGui::EndChild();
     }
 }
+
 void SubredditStylesheet::parseStylesheet()
 {
     if(!stylesheet.stylesheet.empty())
     {
         headerPicture.reset();
-        CSSParser parser(stylesheet.stylesheet);
-        auto headerImgProperties = parser.getIdProperties("header-img");
-        if(headerImgProperties.has_value())
+        try
         {
-
+            CSSParser parser(stylesheet.stylesheet);
+            auto headerImgProperties = parser.getIdProperties("header-img");
+            if(headerImgProperties.has_value())
+            {
+                if(headerImgProperties->contains("background"))
+                {
+                    auto headerImgBackgroundUrl = getUrlLink(headerImgProperties->at("background"));
+                }
+            }
+        }
+        catch(...)
+        {
+            //whatever, moving on
         }
     }
+}
+std::string SubredditStylesheet::getUrlLink(const CSSParser::ValuesType& values)
+{
+    std::string url;
+    auto urlIt = std::ranges::find_if(values,[](const auto& val){
+        return val.find("url(") != std::string::npos && val.find(")") != std::string::npos;
+    });
+    if(urlIt != values.end())
+    {
+        auto urlValueStart = (*urlIt).find_first_of("%%");
+        auto urlValueEnd = (*urlIt).find_last_of("%%");
+        if(urlValueStart != std::string::npos && urlValueEnd != std::string::npos)
+        {
+            auto urlName = (*urlIt).substr(urlValueStart,urlValueEnd-urlValueStart);
+            auto stylesheetDefinedUrlIt = std::ranges::find_if(stylesheet.images,[&urlName](const auto& img){
+                return img.name == urlName;
+            });
+            if(stylesheetDefinedUrlIt != stylesheet.images.end())
+            {
+                url = stylesheetDefinedUrlIt->link;
+            }
+        }
+    }
+    return url;
 }

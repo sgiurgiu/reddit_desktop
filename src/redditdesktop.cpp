@@ -26,6 +26,7 @@ RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
     useMediaHwAccel = db->getUseHWAccelerationForMedia();
     subredditsAutoRefreshTimeout = db->getAutoRefreshTimeout();
     showRandomNSFW = db->getShowRandomNSFW();
+    automaticallyArangeWindowsInGrid = db->getAutoArangeWindowsGrid();
 }
 
 void RedditDesktop::loginCurrentUser()
@@ -145,7 +146,6 @@ void RedditDesktop::updateUserInformation(user_info info)
         {
             userInfoDisplay.append(reinterpret_cast<const char*>(" " ICON_FA_BELL));
         }
-
     }
 }
 
@@ -174,6 +174,10 @@ void RedditDesktop::addSubredditWindow(std::string title)
         subredditWindow->loadSubreddit();
         subredditWindow->setFocused();
         subredditWindows.push_back(std::move(subredditWindow));
+        if(automaticallyArangeWindowsInGrid)
+        {
+            arrangeWindowsGrid();
+        }
     }
 }
 void RedditDesktop::addCommentsWindow(std::string postId,std::string title)
@@ -194,6 +198,10 @@ void RedditDesktop::addCommentsWindow(std::string postId,std::string title)
         commentsWindow->loadComments();
         commentsWindow->setFocused();
         commentsWindows.push_back(std::move(commentsWindow));
+        if(automaticallyArangeWindowsInGrid)
+        {
+            arrangeWindowsGrid();
+        }
     }
     else
     {
@@ -348,7 +356,42 @@ void RedditDesktop::showErrorDialog()
         ImGui::EndPopup();
     }
 }
+void RedditDesktop::arrangeWindowsGrid()
+{
+    auto count = subredditWindows.size();
+    count += commentsWindows.size();
+    if(count > 0)
+    {
+        auto columnsDouble = std::sqrt(static_cast<double>(count));
+        auto columns = static_cast<int>(std::round(columnsDouble));
+        auto lines = static_cast<int>(std::ceil(count / columnsDouble));
+        auto windowWidth = appFrameWidth / columns;
+        auto windowHeight = (appFrameHeight-topPosAfterMenuBar) / lines;
+        auto currentPosX = 0;
+        auto currentPosY = topPosAfterMenuBar;
 
+        for(const auto& sr: subredditWindows)
+        {
+            sr->setWindowPositionAndSize(ImVec2(currentPosX,currentPosY),ImVec2(windowWidth,windowHeight));
+            currentPosX += windowWidth;
+            if(currentPosX >= appFrameWidth)
+            {
+                currentPosX = 0;
+                currentPosY += windowHeight;
+            }
+        }
+        for(const auto& cm: commentsWindows)
+        {
+            cm->setWindowPositionAndSize(ImVec2(currentPosX,currentPosY),ImVec2(windowWidth,windowHeight));
+            currentPosX += windowWidth;
+            if(currentPosX >= appFrameWidth)
+            {
+                currentPosX = 0;
+                currentPosY += windowHeight;
+            }
+        }
+    }
+}
 void RedditDesktop::showMainMenuBar()
 {
     if (ImGui::BeginMainMenuBar())
@@ -391,6 +434,15 @@ void RedditDesktop::showMainMenuBar()
                 ImGui::TextUnformatted("Subreddits refresh timeout, in seconds");
                 ImGui::EndTooltip();
             }
+            if(ImGui::Checkbox("Auto Arrange in Grid", &automaticallyArangeWindowsInGrid))
+            {
+                Database::getInstance()->setAutoArangeWindowsGrid(automaticallyArangeWindowsInGrid);
+                if(automaticallyArangeWindowsInGrid)
+                {
+                    arrangeWindowsGrid();
+                }
+            }
+
 
             ImGui::EndMenu();
         }
@@ -398,39 +450,7 @@ void RedditDesktop::showMainMenuBar()
         {
             if(ImGui::MenuItem("Grid Layout"))
             {
-                auto count = subredditWindows.size();
-                count += commentsWindows.size();
-                if(count > 0)
-                {
-                    auto columnsDouble = std::sqrt(static_cast<double>(count));
-                    auto columns = static_cast<int>(std::round(columnsDouble));
-                    auto lines = static_cast<int>(std::ceil(count / columnsDouble));
-                    auto windowWidth = appFrameWidth / columns;
-                    auto windowHeight = (appFrameHeight-topPosAfterMenuBar) / lines;
-                    auto currentPosX = 0;
-                    auto currentPosY = topPosAfterMenuBar;
-
-                    for(const auto& sr: subredditWindows)
-                    {
-                        sr->setWindowPositionAndSize(ImVec2(currentPosX,currentPosY),ImVec2(windowWidth,windowHeight));
-                        currentPosX += windowWidth;
-                        if(currentPosX >= appFrameWidth)
-                        {
-                            currentPosX = 0;
-                            currentPosY += windowHeight;
-                        }
-                    }
-                    for(const auto& cm: commentsWindows)
-                    {
-                        cm->setWindowPositionAndSize(ImVec2(currentPosX,currentPosY),ImVec2(windowWidth,windowHeight));
-                        currentPosX += windowWidth;
-                        if(currentPosX >= appFrameWidth)
-                        {
-                            currentPosX = 0;
-                            currentPosY += windowHeight;
-                        }
-                    }
-                }
+                arrangeWindowsGrid();
             }
             ImGui::Separator();
             for(const auto& sr: subredditWindows)

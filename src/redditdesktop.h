@@ -50,6 +50,7 @@ private:
     void searchSubreddits();
     void setSearchResultsNames(names_list names);
     void addMessageContextWindow(std::string context);
+    void arrangeWindowsGrid();
 private:
     boost::asio::any_io_executor uiExecutor;
     RedditClientProducer client;
@@ -80,6 +81,7 @@ private:
     names_list searchedNamesList;
     int subredditsAutoRefreshTimeout;
     bool showRandomNSFW = false;
+    bool automaticallyArangeWindowsInGrid = false;
 };
 
 
