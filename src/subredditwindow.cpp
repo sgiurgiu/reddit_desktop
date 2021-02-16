@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "spinner/spinner.h"
 #include "database.h"
+#include <boost/url.hpp>
 #include <boost/asio/post.hpp>
 #include "utils.h"
 #include "macros.h"
@@ -512,7 +513,25 @@ void SubredditWindow::renderPostOpenLinkButton(PostDisplay& p)
         auto subredditTextSize = ImGui::GetItemRectSize();
         if(ImGui::InvisibleButton(p.openLinkButtonText.c_str(),subredditTextSize))
         {
-            Utils::openInBrowser(p.post->url);
+            boost::url_view urlParts(p.post->url);
+            auto host = urlParts.encoded_host().to_string();
+            if(host.find("reddit.com") == std::string::npos || ImGui::GetIO().KeyCtrl)
+            {
+                Utils::openInBrowser(p.post->url);
+            }
+            else
+            {
+                auto target = urlParts.encoded_path().to_string();
+                if(target.find("/comments/") != std::string::npos)
+                {
+                    commentsSignal(p.post->id,p.post->title);
+                }
+                else
+                {
+                    subredditSignal(target);
+                }
+            }
+
         }
         if(ImGui::IsItemHovered())
         {

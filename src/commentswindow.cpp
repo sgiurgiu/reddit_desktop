@@ -395,7 +395,10 @@ void CommentsWindow::renderCommentContents(DisplayComment& c, int level)
     ImVec2 barSize = ImVec2(barWidth,c.markdownHeight);   // Resize canvas to what's available
     ImVec2 barEndPosition = ImVec2(barStartPosition.x + barSize.x, barStartPosition.y + barSize.y);
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
-    draw_list->AddRectFilled(barStartPosition, barEndPosition, commentsBarColors[level % sizeof(commentsBarColors)]);
+    if(level > 0)
+    {
+        draw_list->AddRectFilled(barStartPosition, barEndPosition, commentsBarColors[level % sizeof(commentsBarColors)]);
+    }
     ImGui::NextColumn();
     auto markdownYPos = ImGui::GetCursorScreenPos().y;
     c.renderer.RenderMarkdown();

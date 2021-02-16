@@ -266,25 +266,31 @@ void SubredditsListWindow::setUserMultis(multireddit_list multis)
     all.displayName = "All";
     all.path = "/r/all";
     userMultis.emplace_back(std::move(all));
-    std::move(multis.begin(), multis.end(), std::back_inserter(userMultis));
 
     multireddit saved;
-    saved.displayName = "saved";
+    saved.displayName = "Saved";
     saved.path = "/user/"+username+"/saved";
     userMultis.emplace_back(std::move(saved));
 
     multireddit random;
-    random.displayName = "random";
+    random.displayName = "Random";
     random.path = "/r/random";
     userMultis.emplace_back(std::move(random));
 
     if(showRandomNSFW)
     {
         multireddit randomNsfw;
-        randomNsfw.displayName = "random nsfw";
+        randomNsfw.displayName = "Random NSFW";
         randomNsfw.path = "/r/randnsfw";
         userMultis.emplace_back(std::move(randomNsfw));
     }
+
+    multireddit explore;
+    explore.displayName = "Explore...";
+    explore.path = "r/multihub";
+    userMultis.emplace_back(std::move(explore));
+
+    std::move(multis.begin(), multis.end(), std::back_inserter(userMultis));
 
     filteredUserMultis = userMultis;
 }
