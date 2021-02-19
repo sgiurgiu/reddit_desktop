@@ -483,14 +483,60 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
         }
     }
 }
-void CommentsWindow::showComment(DisplayComment& c, int level)
+
+bool CommentsWindow::commentNode(DisplayComment& c)
 {
-    int flags = ImGuiTreeNodeFlags_DefaultOpen;
+    ImGuiContext& g = *GImGui;
+    ImGuiWindow* window = g.CurrentWindow;
+
+    ImU32 id = window->GetID((void*)&c);
+    ImVec2 pos = window->DC.CursorPos;
+    ImRect bb(pos, ImVec2(pos.x + ImGui::GetContentRegionAvail().x, pos.y + g.FontSize + g.Style.FramePadding.y*2));
+    bool opened = ImGui::TreeNodeBehaviorIsOpen(id, ImGuiTreeNodeFlags_DefaultOpen);
+    bool hovered, held;
+    if (ImGui::ButtonBehavior(bb, id, &hovered, &held, true))
+        window->DC.StateStorage->SetInt(id, opened ? 0 : 1);
+    if (hovered || held)
+        window->DrawList->AddRectFilled(bb.Min, bb.Max, ImGui::GetColorU32(held ? ImGuiCol_HeaderActive : ImGuiCol_HeaderHovered));
+
+    ImGui::RenderText(ImVec2(pos.x, pos.y + g.Style.FramePadding.y * 2),
+                      reinterpret_cast<const char*>( opened ? ICON_FA_CHEVRON_CIRCLE_DOWN :ICON_FA_CHEVRON_CIRCLE_RIGHT));
+
+    float arrowSize = g.FontSize + g.Style.FramePadding.y * 2;
+    ImVec2 authorPos(pos.x + arrowSize + g.Style.ItemInnerSpacing.x, pos.y + g.Style.FramePadding.y);
+    ImVec2 scorePos(authorPos.x+c.authorNameTextSize.x+g.Style.ItemInnerSpacing.x, authorPos.y);
     if(c.commentData.isSubmitter)
     {
-        flags |= ImGuiTreeNodeFlags_Framed;
+        ImRect surroundingRect(ImVec2(authorPos.x - g.Style.ItemInnerSpacing.x, authorPos.y),
+                               ImVec2(authorPos.x + c.authorNameTextSize.x ,
+                                      authorPos.y + g.FontSize));
+        window->DrawList->AddRectFilled(surroundingRect.Min,surroundingRect.Max,ImGui::GetColorU32(ImGuiCol_HeaderActive),5.f);
+        ImGui::RenderText(authorPos,c.commentData.author.c_str());
+        scorePos.x += g.Style.ItemInnerSpacing.x;
     }
-    if(ImGui::TreeNodeEx(c.titleText.c_str(),flags))
+    else
+    {
+        ImGui::RenderText(authorPos,c.commentData.author.c_str());
+    }
+
+    ImGui::RenderText(scorePos,c.commentScoreText.c_str());
+    ImVec2 timeDiffPos(scorePos.x+c.commentScoreTextSize.x+g.Style.ItemInnerSpacing.x, scorePos.y);
+    ImGui::RenderText(timeDiffPos,c.commentData.humanReadableTimeDifference.c_str());
+#ifdef REDDIT_DESKTOP_DEBUG
+    ImVec2 commentNamePos(timeDiffPos.x+c.commentTimeDiffTextSize.x+g.Style.ItemInnerSpacing.x + arrowSize, authorPos.y);
+    ImGui::RenderText(commentNamePos,("("+c.commentData.name +")").c_str());
+#endif
+    ImGui::ItemSize(bb, g.Style.FramePadding.y);
+    ImGui::ItemAdd(bb,id);
+
+    if (opened)
+        ImGui::TreePush((void*)&c);
+    return opened;
+}
+
+void CommentsWindow::showComment(DisplayComment& c, int level)
+{
+    if(commentNode(c))
     {
         renderCommentContents(c,level);
 
@@ -535,6 +581,10 @@ void CommentsWindow::DisplayComment::updateButtonsText()
     }
     postReplyPreviewCheckboxId = fmt::format("Show Preview##{}_postReplyPreview",commentData.name);
     liveReplyPreviewText = fmt::format("Live Preview##{}_commentLivePreview",commentData.name);
+    commentScoreText = " "+commentData.humanScore + " points, ";
+    authorNameTextSize = ImGui::CalcTextSize(commentData.author.c_str());
+    commentScoreTextSize = ImGui::CalcTextSize(commentScoreText.c_str());
+    commentTimeDiffTextSize = ImGui::CalcTextSize(commentData.humanReadableTimeDifference.c_str());
 #ifdef REDDIT_DESKTOP_DEBUG
     titleText = fmt::format("{}  {} points, {} ({})",commentData.author,
                             commentData.humanScore,commentData.humanReadableTimeDifference,

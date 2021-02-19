@@ -77,6 +77,7 @@ private:
         std::string replyIdText;
         std::string saveReplyButtonText;
         std::string titleText;
+        std::string commentScoreText;
         std::string postReplyPreviewCheckboxId;
         std::string liveReplyPreviewText;
         std::vector<DisplayComment> replies;
@@ -88,6 +89,9 @@ private:
         MarkdownRenderer previewRenderer;
         ImVec2 postReplyTextFieldSize;
         ImVec2 postReplyPreviewSize = {0,1};
+        ImVec2 authorNameTextSize;
+        ImVec2 commentScoreTextSize;
+        ImVec2 commentTimeDiffTextSize;
         float markdownHeight = 10.f;
         void updateButtonsText();
     };
@@ -113,6 +117,7 @@ private:
     DisplayComment* getComment(std::string commentName);
     DisplayComment* getChildComment(DisplayComment& c,const std::string& commentName);
     void loadCommentReply(const listing& listingResponse,std::any userData);
+    bool commentNode(DisplayComment& c);
 private:
     std::string postId;
     std::string title;
