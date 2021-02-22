@@ -449,6 +449,21 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
         {
             c.showingReplyArea = !c.showingReplyArea;
         }
+        ImGui::SameLine();
+        if(ImGui::Button(c.quoteButtonText.c_str()))
+        {
+            c.showingReplyArea = !c.showingReplyArea;
+            if(c.postReplyTextBuffer.empty())
+            {
+                std::istringstream comment(c.commentData.body);
+                std::string quotedText;
+                for(std::string line; std::getline(comment,line);)
+                {
+                    quotedText += "> " + line + "\n";
+                }
+                c.postReplyTextBuffer = quotedText + "\n\n";
+            }
+        }
         if(c.showingReplyArea)
         {
 
@@ -572,6 +587,7 @@ void CommentsWindow::DisplayComment::updateButtonsText()
     downvoteButtonText = fmt::format("{}##{}_down",reinterpret_cast<const char*>(ICON_FA_ARROW_DOWN),commentData.name);
     saveButtonText = fmt::format("save##{}_save",commentData.name);
     replyButtonText = fmt::format("reply##{}_reply",commentData.name);
+    quoteButtonText = fmt::format("quote##{}_quote",commentData.name);
     replyIdText = fmt::format("##{}comment_reply",commentData.name);
     saveReplyButtonText = fmt::format("Save##{}save_comment_reply",commentData.name);
     if(commentData.unloadedChildren)

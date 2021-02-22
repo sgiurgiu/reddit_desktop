@@ -246,7 +246,13 @@ int text_callback(MD_TEXTTYPE type, const MD_CHAR* text, MD_SIZE size, void* use
     return 0;
 }
 
+void debug_log(const char* /*msg*/, void* /*userdata*/)
+{
+
 }
+
+} //anonymous namespace
+
 MarkdownRenderer::MarkdownRenderer()
 {}
 MarkdownRenderer::MarkdownRenderer(const std::string& textToRender):text(textToRender)
@@ -268,7 +274,7 @@ void MarkdownRenderer::ParseCurrentText()
             enter_span_callback,
             leave_span_callback,
             text_callback,
-            nullptr,
+            debug_log,
             nullptr
         };
     document = std::make_unique<MarkdownNodeDocument>();

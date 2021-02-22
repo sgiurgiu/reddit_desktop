@@ -87,7 +87,7 @@ void SubredditWindow::loadSubreddit()
     if(!target.starts_with("/")) target = "/" + target;
     loadSubredditListings(target,token);
     lookAndDestroyPostsContents();
-    //subredditStylesheet->LoadSubredditStylesheet(target);
+    subredditStylesheet->LoadSubredditStylesheet(target);
 }
 void SubredditWindow::lookAndDestroyPostsContents()
 {
@@ -588,7 +588,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         scrollToTop = false;
     }
 
-    //subredditStylesheet->ShowHeader();
+    subredditStylesheet->ShowHeader();
 
     //ImGuiStyle& style = ImGui::GetStyle();
    // auto textItemWidth = ImGui::GetItemRectSize().x + style.ItemSpacing.x + style.ItemInnerSpacing.x;

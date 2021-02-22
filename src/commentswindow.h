@@ -72,6 +72,7 @@ private:
         std::string downvoteButtonText;
         std::string saveButtonText;
         std::string replyButtonText;
+        std::string quoteButtonText;
         std::string moreRepliesButtonText;
         std::string spinnerIdText;
         std::string replyIdText;
