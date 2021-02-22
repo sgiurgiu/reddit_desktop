@@ -30,7 +30,7 @@ void RedditCreateCommentConnection::createComment(const std::string& parentId,co
     request.set(boost::beast::http::field::content_type, "application/x-www-form-urlencoded");
     auto escapedText = HtmlParser::escape(text);
     request.body() = fmt::format("api_type=json&text={}"
-                                 "&thing_id={}",
+                                 "&thing_id={}&raw_json=1",
                                  escapedText,parentId);
     request.prepare_payload();
     enqueueRequest(std::move(request), std::move(userData));
