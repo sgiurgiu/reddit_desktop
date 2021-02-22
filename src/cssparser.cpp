@@ -144,7 +144,7 @@ std::string CSSParser::getValue(KatanaValue* value)
                 auto valuesVector = getValues<KatanaArray>(value->list);
                 std::ostringstream resultStream;
                 std::ostream_iterator< std::string > oit( resultStream, " " );
-                std::ranges::copy(valuesVector, oit );
+                std::copy(valuesVector.begin(),valuesVector.end(), oit );
                 str = resultStream.str();
             }
             break;
