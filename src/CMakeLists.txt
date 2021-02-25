@@ -15,8 +15,6 @@ SET(IMGUI_SRCS
 
 SET(GLAD_SRCS glad/glad.c)
 
-SET(FMT_SRCS ../external/fmt/src/format.cc)
-
 set(BOOST_URL_SRC ../external/url/src/src.cpp)
 
 set(SQLITE_SRC sqlite/sqlite3.c)
@@ -71,6 +69,11 @@ set(REDDIT_CONNECTIONS_SRCS
     connections/redditmarkreplyreadconnection.cpp
     )
 
+set(REDDIT_DESKTOP_LOG_SRCS
+        log/spdlogwindowsink.cpp
+        log/loggingwindow.cpp
+   )
+
 set(REDDIT_DESKTOP_SRCS main.cpp
         utils.cpp
         redditdesktop.cpp
@@ -97,7 +100,6 @@ add_executable(${EXECUTABLE_NAME}
     ${REDDIT_DESKTOP_SRCS}
     ${IMGUI_SRCS}
     ${GLAD_SRCS}
-    ${FMT_SRCS}
     ${SQLITE_SRC}
     ${BOOST_URL_SRC}
     ${GUMBO_PARSER_SRCS}
@@ -105,6 +107,7 @@ add_executable(${EXECUTABLE_NAME}
     ${MD4C_SRC}
     ${MARKDOWN_RENDERER_SRCS}
     ${REDDIT_CONNECTIONS_SRCS}
+    ${REDDIT_DESKTOP_LOG_SRCS}
     )
 
 #Disable warnings for glad and gumbo, they're thousands and I really don't care about them
@@ -116,6 +119,7 @@ target_link_libraries(${EXECUTABLE_NAME} PRIVATE  OpenGL::GL SDL2::SDL2)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${CMAKE_DL_LIBS} Threads::Threads )
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE OpenSSL::SSL)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE Boost::boost Boost::system Boost::filesystem)
+target_link_libraries(${EXECUTABLE_NAME} PRIVATE spdlog::spdlog_header_only fmt::fmt-header-only)
 
 if(VCPKG_TOOLCHAIN)
     target_include_directories(${EXECUTABLE_NAME} PRIVATE "strings")
@@ -129,7 +133,6 @@ endif()
 target_include_directories(${EXECUTABLE_NAME} PRIVATE
     "imgui"
     "${CMAKE_CURRENT_SOURCE_DIR}"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../external/fmt/include/"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/stb/"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/url/include"
  #   ${Boost_INCLUDE_DIRS}
@@ -138,6 +141,7 @@ target_include_directories(${EXECUTABLE_NAME} PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/katana-parser/src/"
     )
 
+target_compile_definitions(${EXECUTABLE_NAME} PRIVATE SPDLOG_FMT_EXTERNAL_HO SPDLOG_FMT_EXTERNAL)
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLAD BOOST_ASIO_NO_DEPRECATED)
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "$<$<CONFIG:Debug>:REDDIT_DESKTOP_DEBUG>")
 if(ASAN_ENABLE)

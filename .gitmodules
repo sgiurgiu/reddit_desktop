@@ -16,3 +16,6 @@
 [submodule "external/katana-parser"]
 	path = external/katana-parser
 	url = https://github.com/hackers-painters/katana-parser.git
+[submodule "external/spdlog"]
+	path = external/spdlog
+	url = https://github.com/gabime/spdlog.git

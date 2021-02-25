@@ -447,12 +447,12 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
         ImGui::SameLine();
         if(ImGui::Button(c.replyButtonText.c_str()))
         {
-            c.showingReplyArea = !c.showingReplyArea;
+            c.showingReplyArea = true;
         }
         ImGui::SameLine();
         if(ImGui::Button(c.quoteButtonText.c_str()))
         {
-            c.showingReplyArea = !c.showingReplyArea;
+            c.showingReplyArea = true;
             if(c.postReplyTextBuffer.empty())
             {
                 std::istringstream comment(c.commentData.body);
@@ -480,10 +480,11 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
                 createCommentConnection->createComment(c.commentData.name,c.postReplyTextBuffer,token,CommentUserData{c.commentData.name});
             }
             ImGui::SameLine();
-            if(ImGui::Checkbox(c.postReplyPreviewCheckboxId.c_str(),&c.showingPreview))
+            if(ImGui::Button(c.cancelReplyButtonText.c_str()))
             {
-                c.previewRenderer.SetText(c.postReplyTextBuffer);
+                c.showingReplyArea = false;
             }
+
             if(c.showingPreview)
             {
                 if(ImGui::BeginChild(c.liveReplyPreviewText.c_str(),c.postReplyPreviewSize,true))
@@ -590,6 +591,7 @@ void CommentsWindow::DisplayComment::updateButtonsText()
     quoteButtonText = fmt::format("quote##{}_quote",commentData.name);
     replyIdText = fmt::format("##{}comment_reply",commentData.name);
     saveReplyButtonText = fmt::format("Save##{}save_comment_reply",commentData.name);
+    cancelReplyButtonText = fmt::format("Cancel##{}cancel_comment_reply",commentData.name);
     if(commentData.unloadedChildren)
     {
         moreRepliesButtonText = fmt::format("load {} more comments##{}_more_replies",commentData.unloadedChildren->count,commentData.name);

@@ -1,8 +1,7 @@
 #ifndef COMMENTSWINDOW_H
 #define COMMENTSWINDOW_H
 
-
-#include <boost/asio/io_context.hpp>
+#include <boost/asio/any_io_executor.hpp>
 #include <string>
 #include <memory>
 #include <tuple>
@@ -77,6 +76,7 @@ private:
         std::string spinnerIdText;
         std::string replyIdText;
         std::string saveReplyButtonText;
+        std::string cancelReplyButtonText;
         std::string titleText;
         std::string commentScoreText;
         std::string postReplyPreviewCheckboxId;

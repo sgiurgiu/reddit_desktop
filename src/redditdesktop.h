@@ -12,6 +12,7 @@
 #include "commentswindow.h"
 #include "userinformationwindow.h"
 #include "subredditslistwindow.h"
+#include "log/loggingwindow.h"
 
 class RedditDesktop : public std::enable_shared_from_this<RedditDesktop>
 {
@@ -82,6 +83,12 @@ private:
     int subredditsAutoRefreshTimeout;
     bool showRandomNSFW = false;
     bool automaticallyArangeWindowsInGrid = false;
+    std::shared_ptr<LoggingWindow> loggingWindow;
+#ifdef REDDIT_DESKTOP_DEBUG
+    bool showLoggingWindow = true;
+#else
+    bool showLoggingWindow = false;
+#endif
 };
 
 

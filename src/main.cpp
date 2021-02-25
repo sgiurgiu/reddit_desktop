@@ -32,6 +32,7 @@ using namespace gl;
 #include "utils.h"
 #include "database.h"
 #include "redditdesktop.h"
+#include "log/loggingwindow.h"
 
 #ifdef REDDIT_DESKTOP_DEBUG
 #include "markdownrenderer.h"
@@ -207,11 +208,11 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
             ImGui::ShowDemoWindow(&show_demo_window);
         if(show_markdown_window)
             ShowMarkdownWindow(&show_markdown_window);
-
 #endif
         int windowWidth;
         int windowHeight;
         SDL_GetWindowSize(window,&windowWidth,&windowHeight);
+
         desktop->setAppFrameHeight(windowHeight);
         desktop->setAppFrameWidth(windowWidth);
         desktop->showDesktop();

@@ -1,7 +1,7 @@
 #include "entities.h"
 #include <fmt/format.h>
 #include "utils.h"
-#include <iostream>
+#include <spdlog/spdlog.h>
 #include "fonts/IconsFontAwesome4.h"
 
 std::string make_user_agent(const user& u)
@@ -368,7 +368,7 @@ post::post(const nlohmann::json& json)
 
     //if(isVideo || (postHint != "self" && postHint!="link" && !postHint.empty()))
     {
-        std::cout << title <<", is_video:"<<isVideo<<", hint:"<<postHint<<", url:"<<url<<std::endl;
+        spdlog::debug("{}, is_video: {}, hint: {}, url: {}",title,isVideo,postHint,url);
     }
 }
 

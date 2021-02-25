@@ -13,6 +13,7 @@
 #include <fstream>
 #include <algorithm>
 #include "mediawidget.h"
+#include <spdlog/spdlog.h>
 
 namespace
 {
@@ -160,7 +161,7 @@ void PostContentViewer::stopPlayingMedia(bool flag)
 
 PostContentViewer::~PostContentViewer()
 {
-    std::cerr << "PostcontentViewer going down: " << (currentPost ? currentPost->title : "<no post>") << std::endl;
+    spdlog::debug("PostcontentViewer going down: {} ", (currentPost ? currentPost->title : "<no post>") );
     //stopPlayingMedia();
     destroying = true;
 
@@ -506,7 +507,7 @@ void PostContentViewer::setupMediaContext(std::string file)
     //TODO: figure out a way to pass these to a std::function bound to a shared_from_this or weak_from_this
     mpv_set_wakeup_callback(mpv, &PostContentViewer::onMpvEvents, this);
     mpv_render_context_set_update_callback(mpvRenderContext, &PostContentViewer::mpvRenderUpdate, this);
-    std::cout << "playing URL:"<<file<<std::endl;
+    spdlog::debug("playing URL: {}",file);
     const char *cmd[] = {"loadfile", file.c_str(), nullptr};
     mpv_command_async(mpv, 0, cmd);
 }

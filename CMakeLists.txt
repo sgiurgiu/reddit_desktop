@@ -50,6 +50,9 @@ else()
     pkg_check_modules(FREETYPE REQUIRED IMPORTED_TARGET freetype2)
 endif()
 
+add_subdirectory(external/spdlog)
+add_subdirectory(external/fmt)
+
 if(UNIX AND NOT APPLE)
     set(LINUX TRUE) #wrong here, what if we're BSD?
 endif()

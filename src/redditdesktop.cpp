@@ -18,7 +18,8 @@ constexpr auto ERROR_WINDOW_POPUP_TITLE = "Error Occurred";
 RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
     uiExecutor(uiContext.get_executor()),
     client("api.reddit.com","oauth.reddit.com",3),
-    loginWindow(&client,uiExecutor),loginTokenRefreshTimer(uiExecutor)
+    loginWindow(&client,uiExecutor),loginTokenRefreshTimer(uiExecutor),
+    loggingWindow(std::make_shared<LoggingWindow>(uiExecutor))
 {
     auto db = Database::getInstance();
     current_user = db->getRegisteredUser();
@@ -27,6 +28,9 @@ RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
     subredditsAutoRefreshTimeout = db->getAutoRefreshTimeout();
     showRandomNSFW = db->getShowRandomNSFW();
     automaticallyArangeWindowsInGrid = db->getAutoArangeWindowsGrid();
+
+    loggingWindow->setupLogging();
+    loggingWindow->setWindowOpen(showLoggingWindow);
 }
 
 void RedditDesktop::loginCurrentUser()
@@ -326,6 +330,11 @@ void RedditDesktop::showDesktop()
         }
     }
     showErrorDialog();
+
+    if(loggingWindow->isWindowOpen())
+    {
+        loggingWindow->showWindow(appFrameWidth,appFrameHeight);
+    }
 
     ImGui::PopFont();
 }
