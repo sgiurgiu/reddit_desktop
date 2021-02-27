@@ -95,6 +95,10 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         subredditstylesheet.cpp
         )
 
+if(VCPKG_TOOLCHAIN)
+    list(APPEND REDDIT_DESKTOP_SRCS win/getopt.c)
+endif()
+
 add_executable(${EXECUTABLE_NAME}
     ${WIN32_APP_OPTIONS}
     ${REDDIT_DESKTOP_SRCS}
@@ -122,7 +126,7 @@ target_link_libraries(${EXECUTABLE_NAME} PRIVATE Boost::boost Boost::system Boos
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE spdlog::spdlog_header_only fmt::fmt-header-only)
 
 if(VCPKG_TOOLCHAIN)
-    target_include_directories(${EXECUTABLE_NAME} PRIVATE "strings")
+    target_include_directories(${EXECUTABLE_NAME} PRIVATE "win")
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${LIBMPV} "crypt32.lib" freetype)
     target_include_directories(${EXECUTABLE_NAME} PRIVATE ${LIBMPV_INCLUDE})
 else()
