@@ -472,12 +472,24 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
             {
                 c.previewRenderer.SetText(c.postReplyTextBuffer);
             }
-
+            bool saveDisabled = (c.postingReply || c.postReplyTextBuffer.empty());
+            if(saveDisabled)
+            {
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+                ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_TextDisabled));
+                ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+            }
             if(ImGui::Button(c.saveReplyButtonText.c_str()) && !c.postingReply)
             {
                 c.showingReplyArea = false;
                 c.postingReply = true;
                 createCommentConnection->createComment(c.commentData.name,c.postReplyTextBuffer,token,CommentUserData{c.commentData.name});
+            }
+            if(saveDisabled)
+            {
+                ImGui::PopStyleColor(3);
+                ImGui::PopStyleVar();
             }
             ImGui::SameLine();
             if(ImGui::Button(c.cancelReplyButtonText.c_str()))
