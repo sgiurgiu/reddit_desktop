@@ -484,7 +484,11 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
             {
                 c.showingReplyArea = false;
             }
-
+            ImGui::SameLine();
+            if(ImGui::Checkbox(c.postReplyPreviewCheckboxId.c_str(),&c.showingPreview))
+            {
+                c.previewRenderer.SetText(c.postReplyTextBuffer);
+            }
             if(c.showingPreview)
             {
                 if(ImGui::BeginChild(c.liveReplyPreviewText.c_str(),c.postReplyPreviewSize,true))
@@ -492,7 +496,6 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
                     c.previewRenderer.RenderMarkdown();
                     auto endPos = ImGui::GetCursorPos();
                     c.postReplyPreviewSize.y = endPos.y + ImGui::GetTextLineHeight();
-
                 }
                 ImGui::EndChild();
             }
