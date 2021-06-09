@@ -57,10 +57,10 @@ protected:
     }
 private:
     using LogSignal = boost::signals2::signal<void(std::vector<std::string>)>;
+    boost::asio::steady_timer logsPostingTimer;
     LogSignal logSignal;
     Mutex mutex;
-    std::vector<std::string> lines;
-    boost::asio::steady_timer logsPostingTimer;
+    std::vector<std::string> lines;    
 };
 
 using SpdlogWindowSinkMt = SpdlogWindowSink<std::mutex>;

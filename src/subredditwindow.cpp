@@ -87,7 +87,7 @@ void SubredditWindow::loadSubreddit()
     if(!target.starts_with("/")) target = "/" + target;
     loadSubredditListings(target,token);
     lookAndDestroyPostsContents();
-    subredditStylesheet->LoadSubredditStylesheet(target);
+    //subredditStylesheet->LoadSubredditStylesheet(target);
 }
 void SubredditWindow::lookAndDestroyPostsContents()
 {
