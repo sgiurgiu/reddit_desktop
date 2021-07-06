@@ -3,7 +3,7 @@
 
 #include <stdexcept>
 #include <memory>
-#include <optional>
+#include <vector>
 
 #include "sqlite/sqlite3.h"
 #include "entities.h"
@@ -30,8 +30,9 @@ private:
     Database();
 public:
     static Database* getInstance();
-    std::optional<user> getRegisteredUser() const;
-    void setRegisteredUser(const user& registeredUser);
+    std::vector<user> getRegisteredUsers() const;
+    void addRegisteredUser(const user& registeredUser);
+    void setLoggedInUser(const user& u);
     void getMainWindowDimensions(int *x, int *y, int *width,int *height);
     void setMainWindowDimensions(int x, int y, int width,int height);
     void setMediaAudioVolume(int volume);
@@ -51,6 +52,8 @@ private:
     bool getBoolProperty(const std::string& propName, bool defaultValue) const;
     void setIntProperty(int value, const std::string& propName);
     int getIntProperty(const std::string& propName, int defaultValue) const;
+    int getSchemaVersion();
+    void incrementSchemaVersion(int version);
 private:
     std::unique_ptr<sqlite3,connection_deleter> db;
     static std::unique_ptr<Database> instance;

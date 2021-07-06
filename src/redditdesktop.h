@@ -63,10 +63,11 @@ private:
     int windowsCount = 0;
     int appFrameHeight = 0;
     int appFrameWidth = 0;
-    std::optional<user> current_user;
-    std::optional<user_info> info_user;
+    std::optional<user> currentUser;
+    std::vector<user> registeredUsers;
+    std::optional<user_info> infoUser;
     LoginWindow loginWindow;
-    client_response<access_token> current_access_token;
+    client_response<access_token> currentAccessToken;
     bool showConnectionErrorDialog = false;
     std::string connectionErrorMessage;
     float topPosAfterMenuBar = 0.0f;

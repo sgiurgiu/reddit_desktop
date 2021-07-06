@@ -22,7 +22,11 @@ RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
     loggingWindow(std::make_shared<LoggingWindow>(uiExecutor))
 {
     auto db = Database::getInstance();
-    current_user = db->getRegisteredUser();
+    registeredUsers = db->getRegisteredUsers();
+    if(!registeredUsers.empty())
+    {
+        currentUser = registeredUsers.front();
+    }
     shouldBlurPictures= db->getBlurNSFWPictures();
     useMediaHwAccel = db->getUseHWAccelerationForMedia();
     subredditsAutoRefreshTimeout = db->getAutoRefreshTimeout();
@@ -35,7 +39,7 @@ RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
 
 void RedditDesktop::loginCurrentUser()
 {
-    if(!current_user)
+    if(!currentUser)
     {
         loginWindow.setShowLoginWindow(true);
     }
@@ -68,14 +72,15 @@ void RedditDesktop::refreshLoginToken()
             }
         }
     });
-    client.setUserAgent(make_user_agent(current_user.value()));
-    loginConnection->login(current_user.value());
+    client.setUserAgent(make_user_agent(currentUser.value()));
+    loginConnection->login(currentUser.value());
 }
 
 void RedditDesktop::loginSuccessful(client_response<access_token> token)
 {
-    current_access_token = token;    
-    loginTokenRefreshTimer.expires_after(std::chrono::seconds(std::min(current_access_token.data.expires,10*60)));
+    Database::getInstance()->setLoggedInUser(currentUser.value());
+    currentAccessToken = token;
+    loginTokenRefreshTimer.expires_after(std::chrono::seconds(std::min(currentAccessToken.data.expires,10*60)));
     loginTokenRefreshTimer.async_wait([weak=weak_from_this()](const boost::system::error_code& ec){
         auto self = weak.lock();
         if(self && !ec)
@@ -86,13 +91,13 @@ void RedditDesktop::loginSuccessful(client_response<access_token> token)
 
     if(!subredditsListWindow)
     {
-        subredditsListWindow = std::make_shared<SubredditsListWindow>(current_access_token.data,&client,uiExecutor);
+        subredditsListWindow = std::make_shared<SubredditsListWindow>(currentAccessToken.data,&client,uiExecutor);
         subredditsListWindow->showSubredditListener([weak=weak_from_this()](std::string str){
             auto self = weak.lock();
             if(!self) return;
             self->addSubredditWindow(str);
         });
-        subredditsListWindow->setUserName(current_user->username);
+        subredditsListWindow->setUserName(currentUser->username);
         subredditsListWindow->loadSubredditsList();
     }
 
@@ -134,19 +139,19 @@ void RedditDesktop::loadUserInformation()
             }
         }
      });
-    userInformationConnection->list("/api/v1/me",current_access_token.data);
+    userInformationConnection->list("/api/v1/me",currentAccessToken.data);
 }
 void RedditDesktop::updateUserInformation(user_info info)
 {
-    info_user = std::move(info);
-    if(info_user)
+    infoUser = std::move(info);
+    if(infoUser)
     {
-        userInfoDisplay = fmt::format("{} ({}-{})",info_user->name,info_user->humanLinkKarma,info_user->humanCommentKarma);
-        if(info_user->hasMail)
+        userInfoDisplay = fmt::format("{} ({}-{})",infoUser->name,infoUser->humanLinkKarma,infoUser->humanCommentKarma);
+        if(infoUser->hasMail)
         {
             userInfoDisplay.append(reinterpret_cast<const char*>(" " ICON_FA_ENVELOPE_O));
         }
-        if(info_user->hasModMail)
+        if(infoUser->hasModMail)
         {
             userInfoDisplay.append(reinterpret_cast<const char*>(" " ICON_FA_BELL));
         }
@@ -166,7 +171,7 @@ void RedditDesktop::addSubredditWindow(std::string title)
     else
     {
         auto subredditWindow = std::make_shared<SubredditWindow>(windowsCount++,
-                                                                 title,current_access_token.data,
+                                                                 title,currentAccessToken.data,
                                                                  &client,uiExecutor);
 
         subredditWindow->showCommentsListener([this](std::string id, std::string title){
@@ -193,7 +198,7 @@ void RedditDesktop::addCommentsWindow(std::string postId,std::string title)
     if(it == commentsWindows.end())
     {
         auto commentsWindow = std::make_shared<CommentsWindow>(postId,title,
-                                                               current_access_token.data,
+                                                               currentAccessToken.data,
                                                                &client,uiExecutor);
         using namespace std::placeholders;
         commentsWindow->addOpenSubredditHandler([this](std::string title){
@@ -215,7 +220,7 @@ void RedditDesktop::addCommentsWindow(std::string postId,std::string title)
 void RedditDesktop::addMessageContextWindow(std::string context)
 {
     auto commentsWindow = std::make_shared<CommentsWindow>(context,
-                                                           current_access_token.data,
+                                                           currentAccessToken.data,
                                                            &client,uiExecutor);
     using namespace std::placeholders;
     commentsWindow->addOpenSubredditHandler([this](std::string title){
@@ -238,13 +243,13 @@ void RedditDesktop::updateWindowsTokenData()
 {
     for(auto&& sr : subredditWindows)
     {
-        sr->setAccessToken(current_access_token.data);
+        sr->setAccessToken(currentAccessToken.data);
     }
     for(auto&& cm : commentsWindows)
     {
-        cm->setAccessToken(current_access_token.data);
+        cm->setAccessToken(currentAccessToken.data);
     }
-    subredditsListWindow->setAccessToken(current_access_token.data);
+    subredditsListWindow->setAccessToken(currentAccessToken.data);
 }
 void RedditDesktop::cleanupClosedWindows()
 {
@@ -312,11 +317,16 @@ void RedditDesktop::showDesktop()
 
     if(loginWindow.showLoginWindow())
     {
-        current_user = loginWindow.getConfiguredUser();
-        current_access_token = loginWindow.getAccessToken();
-        Database::getInstance()->setRegisteredUser(current_user.value());
-        client.setUserAgent(make_user_agent(current_user.value()));
-        loginSuccessful(current_access_token);
+        subredditsListWindow.reset();
+        subredditWindows.clear();
+        commentsWindows.clear();
+        currentUser = loginWindow.getConfiguredUser();
+        currentAccessToken = loginWindow.getAccessToken();
+        Database::getInstance()->addRegisteredUser(currentUser.value());
+        client.setUserAgent(make_user_agent(currentUser.value()));
+        registeredUsers = Database::getInstance()->getRegisteredUsers();
+        loggedInFirstTime = true;
+        loginSuccessful(currentAccessToken);
     }
     if(userInfoWindow)
     {
@@ -478,7 +488,7 @@ void RedditDesktop::showMainMenuBar()
             }
             ImGui::EndMenu();
         }
-        if(info_user)
+        if(infoUser)
         {
             const float itemSpacing = ImGui::GetStyle().ItemSpacing.x;
             static float infoButtonWidth = 0.0f;
@@ -488,7 +498,7 @@ void RedditDesktop::showMainMenuBar()
             {
                 if(!userInfoWindow)
                 {
-                    userInfoWindow = std::make_shared<UserInformationWindow>(current_access_token.data,&client,uiExecutor);
+                    userInfoWindow = std::make_shared<UserInformationWindow>(currentAccessToken.data,&client,uiExecutor);
                     userInfoWindow->showContextHandler([weak=weak_from_this()](const std::string& context){
                         auto self = weak.lock();
                         if(!self) return;
@@ -508,16 +518,44 @@ void RedditDesktop::showMainMenuBar()
 
 void RedditDesktop::showMenuFile()
 {
-    if (ImGui::MenuItem(reinterpret_cast<const char*>(ICON_FA_SEARCH " Open Subreddit"), "Ctrl+O"))
+    if (ImGui::MenuItem(reinterpret_cast<const char*>(ICON_FA_SEARCH " Open Subreddit"), "Ctrl+O",false,currentUser.has_value()))
     {
         openSubredditWindow = true;
     }
-
-    /*if (ImGui::BeginMenu("Open Recent"))
+    ImGui::Separator();
+    if(ImGui::BeginMenu("Login As"))
     {
-        ImGui::MenuItem("fish_hat.h");
+        for(const auto& u : registeredUsers)
+        {
+            auto selected = currentUser.has_value() && currentUser->username == u.username;
+            auto enabled = !selected;
+            if (ImGui::MenuItem(u.username.c_str(),nullptr,selected,enabled))
+            {
+                currentUser = u;
+                subredditsListWindow.reset();
+                subredditWindows.clear();
+                commentsWindows.clear();
+                userInfoWindow.reset();
+                loggedInFirstTime = true;
+                refreshLoginToken();
+            }
+        }
+        ImGui::Separator();
+        if (ImGui::MenuItem("Register User"))
+        {
+            loginWindow.setShowLoginWindow(true);
+        }
         ImGui::EndMenu();
-    }*/
+    }
+    if (ImGui::MenuItem("Logout",nullptr,false,currentUser.has_value()))
+    {
+        subredditsListWindow.reset();
+        subredditWindows.clear();
+        commentsWindows.clear();
+        userInfoWindow.reset();
+        currentAccessToken = client_response<access_token>();
+        currentUser.reset();
+    }
     ImGui::Separator();
     if (ImGui::MenuItem(reinterpret_cast<const char*>(ICON_FA_POWER_OFF " Quit"), "Ctrl+Q"))
     {
@@ -649,7 +687,7 @@ void RedditDesktop::searchSubreddits()
          });
     }
 
-    searchNamesConnection->search(selectedSubreddit,current_access_token.data);
+    searchNamesConnection->search(selectedSubreddit,currentAccessToken.data);
 }
 
 void RedditDesktop::setSearchResultsNames(names_list names)

@@ -1,7 +1,6 @@
 #include "subredditstylesheet.h"
 #include "utils.h"
 #include "macros.h"
-#include "cssparser.h"
 #include <imgui_internal.h>
 #include <algorithm>
 
@@ -112,7 +111,7 @@ void SubredditStylesheet::parseStylesheet()
         headerPicture.reset();
         try
         {
-            CSSParser parser(stylesheet.stylesheet);
+            /*CSSParser parser(stylesheet.stylesheet);
             auto headerImgProperties = parser.getIdProperties("header-img");
             if(headerImgProperties.has_value())
             {
@@ -120,7 +119,7 @@ void SubredditStylesheet::parseStylesheet()
                 {
                     auto headerImgBackgroundUrl = getUrlLink(headerImgProperties->at("background"));
                 }
-            }
+            }*/
         }
         catch(...)
         {

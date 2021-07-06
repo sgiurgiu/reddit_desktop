@@ -8,6 +8,7 @@
 #include <SDL.h>
 #include <boost/asio/io_context.hpp>
 #include <memory>
+#include <latch>
 
 #if defined(_MSC_VER)
 #define WIN32_LEAN_AND_MEAN

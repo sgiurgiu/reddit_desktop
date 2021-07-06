@@ -14,10 +14,12 @@ struct user
     user(){}
     user(const std::string& username,const std::string& password,
          const std::string& client_id,const std::string& secret,
-         const std::string& website,const std::string& app_name):
+         const std::string& website,const std::string& app_name,
+         bool lastLoggedIn):
         username(username),password(password),
         client_id(client_id),secret(secret),
-        website(website),app_name(app_name)
+        website(website),app_name(app_name),
+        lastLoggedIn(lastLoggedIn)
     {}
     std::string username;
     std::string password;
@@ -25,6 +27,7 @@ struct user
     std::string secret;
     std::string website;
     std::string app_name;
+    bool lastLoggedIn;
 };
 
 std::string make_user_agent(const user& u);

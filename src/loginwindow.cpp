@@ -34,7 +34,7 @@ void LoginWindow::testingCompleted(const boost::system::error_code ec,
     }
     else
     {
-        configuredUser = user(username,password,clientId,secret,website,appName);
+        configuredUser = user(username,password,clientId,secret,website,appName, true);
         this->token = token;
     }
 }
@@ -128,7 +128,7 @@ bool LoginWindow::showLoginWindow()
             testingInProgress = true;
             tested = false;
             testingErrorMessage.clear();
-            loginConnection->login(user(username,password,clientId,secret,website,appName));
+            loginConnection->login(user(username,password,clientId,secret,website,appName,false));
         }
         if (testDisabled)
         {
