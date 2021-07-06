@@ -32,7 +32,7 @@ RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
     subredditsAutoRefreshTimeout = db->getAutoRefreshTimeout();
     showRandomNSFW = db->getShowRandomNSFW();
     automaticallyArangeWindowsInGrid = db->getAutoArangeWindowsGrid();
-
+    useYoutubeDl = db->getUseYoutubeDownloader();
     loggingWindow->setupLogging();
     loggingWindow->setWindowOpen(showLoggingWindow);
 }
@@ -441,7 +441,17 @@ void RedditDesktop::showMainMenuBar()
                 ImGui::BeginTooltip();
                 ImGui::TextUnformatted("Disable this if you experience crashes when playing media");
                 ImGui::EndTooltip();
-            }            
+            }
+            if(ImGui::Checkbox("Use youtube-dl", &useYoutubeDl))
+            {
+                Database::getInstance()->setUseYoutubeDownloader(useYoutubeDl);
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted("Use the youtube-dl script to download embedded media instead of the built-in algorithm");
+                ImGui::EndTooltip();
+            }
             if(ImGui::InputInt("Refresh (s)", &subredditsAutoRefreshTimeout, 30, 120))
             {
                 if(subredditsAutoRefreshTimeout < 30) subredditsAutoRefreshTimeout = 30;

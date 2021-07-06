@@ -84,6 +84,7 @@ private:
     int subredditsAutoRefreshTimeout;
     bool showRandomNSFW = false;
     bool automaticallyArangeWindowsInGrid = false;
+    bool useYoutubeDl = false;
     std::shared_ptr<LoggingWindow> loggingWindow;
 #ifdef REDDIT_DESKTOP_DEBUG
     bool showLoggingWindow = true;

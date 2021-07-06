@@ -116,6 +116,7 @@ private:
     std::string durationText;
     std::string loopCheckboxText;
     bool mediaLoop = false;
+    bool useYoutubeDlder = false;
 };
 
 #endif // POSTCONTENTVIEWER_H

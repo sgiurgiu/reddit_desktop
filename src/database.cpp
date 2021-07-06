@@ -161,7 +161,14 @@ bool Database::getUseHWAccelerationForMedia() const
 {
     return getBoolProperty("MEDIA_HW_ACCEL", true);
 }
-
+void Database::setUseYoutubeDownloader(bool flag)
+{
+    setBoolProperty(flag,"USE_YOUTUBE_DL");
+}
+bool Database::getUseYoutubeDownloader() const
+{
+    return getBoolProperty("USE_YOUTUBE_DL", false);
+}
 void Database::setMediaAudioVolume(int volume)
 {
     setIntProperty(volume,"VOLUME");

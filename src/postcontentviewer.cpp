@@ -17,6 +17,7 @@
 
 namespace
 {
+//add them to the database
 const std::vector<std::string> mediaDomains ={
     "www.clippituser.tv",
     "clippituser.tv",
@@ -60,6 +61,7 @@ PostContentViewer::PostContentViewer(RedditClientProducer* client,
     SDL_GetDesktopDisplayMode(0, &displayMode);
     mediaState.mediaAudioVolume = Database::getInstance()->getMediaAudioVolume();
     useMediaHwAccel = Database::getInstance()->getUseHWAccelerationForMedia();
+    useYoutubeDlder = Database::getInstance()->getUseYoutubeDownloader();
 }
 void PostContentViewer::loadContent(post_ptr currentPost)
 {
@@ -114,33 +116,42 @@ void PostContentViewer::loadContent(post_ptr currentPost)
         if(isMediaPost)
         {
             loadingPostContent = true;
-            auto mediaStreamingConnection = client->makeMediaStreamingClientConnection();
-            mediaStreamingConnection->streamAvailableHandler([weak=weak_from_this()](HtmlParser::MediaLink link) {
-                auto self = weak.lock();
-                if(!self) return;
-                switch(link.type)
-                {
-                case HtmlParser::MediaType::Video:
-                    boost::asio::post(self->uiExecutor,
-                                      std::bind(&PostContentViewer::setupMediaContext,self,link.url));
-                    break;
-                case HtmlParser::MediaType::Image:
-                    boost::asio::post(self->uiExecutor,
-                                      std::bind(&PostContentViewer::downloadPostImage,self,link.url));
-                    break;
-                case HtmlParser::MediaType::Gif:
-                    break;
-                default:
-                    break;
-                }
+            if(useYoutubeDlder)
+            {
+                setupMediaContext(currentPost->url);
+            }
+            else
+            {
+                auto mediaStreamingConnection = client->makeMediaStreamingClientConnection();
+                mediaStreamingConnection->streamAvailableHandler([weak=weak_from_this()](HtmlParser::MediaLink link) {
+                    auto self = weak.lock();
+                    if(!self) return;
+                    switch(link.type)
+                    {
+                    case HtmlParser::MediaType::Video:
+                        boost::asio::post(self->uiExecutor,
+                                          std::bind(&PostContentViewer::setupMediaContext,self,link.url));
+                        break;
+                    case HtmlParser::MediaType::Image:
+                        boost::asio::post(self->uiExecutor,
+                                          std::bind(&PostContentViewer::downloadPostImage,self,link.url));
+                        break;
+                    case HtmlParser::MediaType::Gif:
+                        break;
+                    default:
+                        boost::asio::post(self->uiExecutor,
+                                          std::bind(&PostContentViewer::setupMediaContext,self,link.url));
+                        break;
+                    }
 
-            });
-            mediaStreamingConnection->errorHandler([weak = weak_from_this()](int /*errorCode*/,const std::string& str){
-                auto self = weak.lock();
-                if (!self) return;
-                boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,self,str));
-            });
-            mediaStreamingConnection->streamMedia(currentPost.get());
+                });
+                mediaStreamingConnection->errorHandler([weak = weak_from_this()](int /*errorCode*/,const std::string& str){
+                    auto self = weak.lock();
+                    if (!self) return;
+                    boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,self,str));
+                });
+                mediaStreamingConnection->streamMedia(currentPost.get());
+            }
         }
     }
 }
@@ -450,11 +461,20 @@ void PostContentViewer::downloadPostImage(std::string url)
 }
 void PostContentViewer::setupMediaContext(std::string file)
 {
+    if(file.empty())
+    {
+        file = currentPost->url;
+    }
     mpv = mpv_create();
     //mpv_set_option_string(mpv, "idle", "no");
     mpv_set_option_string(mpv, "config", "no");
     mpv_set_option_string(mpv, "terminal", "yes");
     mpv_set_option_string(mpv, "msg-level", "all=v");
+    if(useYoutubeDlder)
+    {
+        file = currentPost->url;
+        mpv_set_option_string(mpv, "ytdl", "yes");
+    }
 
     //mpv_set_option_string(mpv, "cache", "yes");
     //int64_t maxBytes = 1024*1024*10;

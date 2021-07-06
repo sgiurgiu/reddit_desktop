@@ -47,6 +47,8 @@ public:
     bool getShowRandomNSFW() const;
     void setAutoArangeWindowsGrid(bool flag);
     bool getAutoArangeWindowsGrid() const;
+    void setUseYoutubeDownloader(bool flag);
+    bool getUseYoutubeDownloader() const;
 private:
     void setBoolProperty(bool flag, const std::string& propName);
     bool getBoolProperty(const std::string& propName, bool defaultValue) const;
