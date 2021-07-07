@@ -2,6 +2,7 @@
 #include "imgui.h"
 #include "images/sprite_reddit.h"
 #include "fonts/fonts.h"
+#include "misc/freetype/imgui_freetype.h"
 #include <array>
 #include <fmt/format.h>
 #include <boost/archive/iterators/binary_from_base64.hpp>
@@ -75,9 +76,6 @@ ImFont* Utils::AddFont(const unsigned int* fontData, const unsigned int fontData
     fontAwesomeConfig.MergeMode = true;
     fontAwesomeConfig.GlyphMinAdvanceX = fontSize; // Use if you want to make the icon monospaced
     static const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
-
-
-
     static const ImWchar romanian_ranges[] = { 0x0100, 0x017F,
                                                0x0180, 0x024F,
                                                0 };
@@ -93,6 +91,19 @@ ImFont* Utils::AddFont(const unsigned int* fontData, const unsigned int fontData
     ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(fontData,fontDataSize, fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesThai());
     ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(fontData,fontDataSize, fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesVietnamese());
     ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(fontData,fontDataSize, fontSize,&config,romanian_ranges);
+
+    ImFontConfig emojiConfig;
+    emojiConfig.MergeMode = true;
+    emojiConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
+    emojiConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_Bitmap;
+    emojiConfig.OversampleH = emojiConfig.OversampleV = 1;
+    //emojiConfig.GlyphMinAdvanceX = fontSize;
+    static const ImWchar emoji_icon_ranges[] = { 0x1, 0x1FFFF,
+                                                 0 };
+    ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(NotoColorEmoji_ttf_compressed_data,
+                                                         NotoColorEmoji_ttf_compressed_size, fontDataSize,
+                                                         &emojiConfig,emoji_icon_ranges);
+    //u8"\uf003"
 
     return ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(FontAwesome_compressed_data,
                                                          FontAwesome_compressed_size, fontSize,
@@ -112,21 +123,12 @@ void Utils::LoadFonts()
     AddFont(NotoSans_Black_ttf_compressed_data,NotoSans_Black_ttf_compressed_size,normalFontSize);
     AddFont(NotoSans_BlackItalic_ttf_compressed_data,NotoSans_BlackItalic_ttf_compressed_size,normalFontSize);
     AddFont(NotoSans_Bold_ttf_compressed_data,NotoSans_Bold_ttf_compressed_size,normalFontSize);
-    /*ImFontConfig emojiConfig;
-    emojiConfig.MergeMode = true;
-    //emojiConfig.GlyphMinAdvanceX = fontSize;
-    static const ImWchar emoji_icon_ranges[] = { 0x231A, 0x26CF,
-                                                 0x26D1, 0x1F251,
-                                                 0 };
-    ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF(NotoColorEmoji_ttf_compressed_data,
-                                                         NotoColorEmoji_ttf_compressed_size, normalFontSize,
-                                                         &emojiConfig,emoji_icon_ranges);*/
-
     AddFont(NotoSans_BoldItalic_ttf_compressed_data,NotoSans_BoldItalic_ttf_compressed_size,normalFontSize);
     AddFont(NotoSans_Italic_ttf_compressed_data,NotoSans_Italic_ttf_compressed_size,normalFontSize);
     AddFont(NotoSans_Light_ttf_compressed_data,NotoSans_Light_ttf_compressed_size,normalFontSize);
     AddFont(NotoSans_LightItalic_ttf_compressed_data,NotoSans_LightItalic_ttf_compressed_size,normalFontSize);
     AddFont(NotoSans_Medium_ttf_compressed_data,NotoSans_Medium_ttf_compressed_size, normalFontSize);
+
     AddFont(NotoSans_MediumItalic_ttf_compressed_data,NotoSans_MediumItalic_ttf_compressed_size, normalFontSize);
     AddFont(NotoSans_Regular_ttf_compressed_data,NotoSans_Regular_ttf_compressed_size,normalFontSize);
 
@@ -136,7 +138,23 @@ void Utils::LoadFonts()
     AddFont(NotoSans_MediumItalic_ttf_compressed_data,NotoSans_MediumItalic_ttf_compressed_size, bigFontSize);
     AddFont(NotoMono_Regular_ttf_compressed_data,NotoMono_Regular_ttf_compressed_size, normalFontSize);
 }
-
+void Utils::DeleteFonts()
+{
+    delete[] NotoSans_Black_ttf_compressed_data;
+    delete[] NotoSans_BlackItalic_ttf_compressed_data;
+    delete[] NotoSans_BoldItalic_ttf_compressed_data;
+    delete[] NotoSans_Italic_ttf_compressed_data;
+    delete[] NotoSans_Light_ttf_compressed_data;
+    delete[] NotoSans_LightItalic_ttf_compressed_data;
+    delete[] NotoSans_Medium_ttf_compressed_data;
+    delete[] NotoSans_MediumItalic_ttf_compressed_data;
+    delete[] NotoSans_Regular_ttf_compressed_data;
+    delete[] NotoSans_Thin_ttf_compressed_data;
+    delete[] NotoSans_ThinItalic_ttf_compressed_data;
+    delete[] NotoMono_Regular_ttf_compressed_data;
+    delete[] NotoColorEmoji_ttf_compressed_data;
+    delete[] FontAwesome_compressed_data;
+}
 int Utils::GetFontIndex(Fonts font)
 {
     return static_cast<int>(font);

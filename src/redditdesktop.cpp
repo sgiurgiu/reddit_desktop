@@ -3,6 +3,7 @@
 #include "fonts/IconsFontAwesome4.h"
 #include "utils.h"
 #include "imgui_internal.h"
+#include "imgui_stdlib.h"
 #include <fmt/format.h>
 #include <algorithm>
 #include "database.h"
@@ -13,6 +14,7 @@ namespace
 {
 constexpr auto OPENSUBREDDIT_WINDOW_POPUP_TITLE = "Open Subreddit";
 constexpr auto ERROR_WINDOW_POPUP_TITLE = "Error Occurred";
+constexpr auto MEDIA_DOMAINS_POPUP_TITLE = "Media Domains Management";
 }
 
 RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
@@ -345,8 +347,76 @@ void RedditDesktop::showDesktop()
     {
         loggingWindow->showWindow(appFrameWidth,appFrameHeight);
     }
+    showMediaDomainsManagementDialog();
 
     ImGui::PopFont();
+}
+
+void RedditDesktop::showMediaDomainsManagementDialog()
+{
+    if(mediaDomainsManagementDialog)
+    {
+        ImGui::OpenPopup(MEDIA_DOMAINS_POPUP_TITLE);
+        mediaDomainsManagementDialog = false;
+        mediaDomains = Database::getInstance()->getMediaDomains();
+        selectedMediaDomain.clear();
+    }
+
+    if(ImGui::BeginPopupModal(MEDIA_DOMAINS_POPUP_TITLE,nullptr,ImGuiWindowFlags_AlwaysAutoResize))
+    {
+
+        ImGui::TextWrapped(
+            "Manage the domains that will be considered as \"Media Domains\". "
+            "Posts from these domains will be treated as containing media (video/audio)"
+            " which we will try to find and play.");
+
+        ImGui::Separator();
+
+        bool activated = ImGui::InputText("##addNewMediaDomain",&newMediaDomain,ImGuiInputTextFlags_EnterReturnsTrue);
+        ImGui::SameLine();
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, newMediaDomain.empty());
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * (newMediaDomain.empty()?0.5f:1.f));
+        activated |= ImGui::Button("Add");
+        ImGui::PopItemFlag();
+        ImGui::PopStyleVar();
+        if(activated && !newMediaDomain.empty())
+        {
+            mediaDomains.push_back(newMediaDomain);
+            Database::getInstance()->addMediaDomain(newMediaDomain);
+            newMediaDomain.clear();
+        }
+        /*ImGui::SetNextItemWidth(-1.0f);
+        if(ImGui::ListBoxHeader("##mediaDomainsPopup",mediaDomains.size()))
+        {
+            for(const auto& domain : mediaDomains)
+            {
+                if(ImGui::Selectable(domain.c_str(), selectedMediaDomain == domain))
+                {
+                    selectedMediaDomain = domain;
+                }
+            }
+            ImGui::ListBoxFooter();
+        }*/
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, selectedMediaDomain.empty());
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * (selectedMediaDomain.empty()?0.5f:1.f));
+        if (ImGui::Button("Remove", ImVec2(120, 0)))
+        {
+            mediaDomains.erase(std::remove_if(mediaDomains.begin(),mediaDomains.end(),[this](const auto& d){
+                return d == selectedMediaDomain;
+            }));
+            Database::getInstance()->removeMediaDomain(selectedMediaDomain);
+            selectedMediaDomain.clear();
+        }
+        ImGui::PopItemFlag();
+        ImGui::PopStyleVar();
+        ImGui::SameLine(0.0f, 120.f);
+        if (ImGui::Button("Close", ImVec2(120, 0)))
+        {
+            selectedMediaDomain.clear();
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
 }
 
 
@@ -470,8 +540,11 @@ void RedditDesktop::showMainMenuBar()
                 {
                     arrangeWindowsGrid();
                 }
+            }            
+            if(ImGui::MenuItem(MEDIA_DOMAINS_POPUP_TITLE))
+            {
+                mediaDomainsManagementDialog = true;
             }
-
 
             ImGui::EndMenu();
         }
@@ -504,6 +577,9 @@ void RedditDesktop::showMainMenuBar()
             static float infoButtonWidth = 0.0f;
             float pos = infoButtonWidth + itemSpacing;            
             ImGui::SameLine(ImGui::GetWindowWidth()-pos);
+            ImGui::Text("%ls",U"\x1f250");
+
+            ImGui::SameLine();
             if(ImGui::Button(userInfoDisplay.c_str()))
             {
                 if(!userInfoWindow)

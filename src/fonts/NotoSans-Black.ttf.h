@@ -1,7 +1,7 @@
 // File: '/home/sergiu/Downloads/Notofonts/NotoSans_Black_ttf' (469760 bytes)
 // Exported using binary_to_compressed_c_cpp
 static const unsigned int NotoSans_Black_ttf_compressed_size = 333958;
-static const unsigned int NotoSans_Black_ttf_compressed_data[333960/4] =
+static const unsigned int* NotoSans_Black_ttf_compressed_data = new unsigned int[333960/4]
 {
     0x0000bc57, 0x00000000, 0x002b0700, 0x00000400, 0x00010025, 0x82120000, 0x043e0804, 0x44472000, 0xd7f04645, 0x0000e7dd, 0x00002c01, 0x5047c005, 
     0xad12534f, 0x000079ca, 0x0000ec06, 0x53477aed, 0x37444255, 0x00006aea, 0x000068f4, 0x534f8016, 0x046e322f, 0x01008f8b, 0x4582e80a, 0x5454602b, 

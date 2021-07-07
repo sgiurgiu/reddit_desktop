@@ -37,12 +37,36 @@ Database::Database():db(nullptr,connection_deleter())
     DB_ERR_CHECK("Cannot create table PROPERTIES");
     rc = sqlite3_exec(db.get(),"CREATE TABLE IF NOT EXISTS SCHEMA_VERSION(VERSION INT)",nullptr,nullptr,nullptr);
     DB_ERR_CHECK("Cannot create table SCHEMA_VERSION");
+    rc = sqlite3_exec(db.get(),"CREATE TABLE IF NOT EXISTS MEDIA_DOMAINS(DOMAIN TEXT)",nullptr,nullptr,nullptr);
+    DB_ERR_CHECK("Cannot create table MEDIA_DOMAINS");
+
     int version = getSchemaVersion();
     if(version < 1)
     {
         incrementSchemaVersion(version);
         rc = sqlite3_exec(db.get(),"ALTER TABLE USER ADD COLUMN LAST_LOGGEDIN INT",nullptr,nullptr,nullptr);
         DB_ERR_CHECK("Cannot alter table USER");
+    }
+    if(version < 2)
+    {
+        addMediaDomains({"www.clippituser.tv",
+        "clippituser.tv",
+        "streamable.com",
+        "streamja.com",
+        "streamvi.com",
+        "streamwo.com",
+        "streamye.com",
+        "v.redd.it",
+        "youtube.com",
+        "www.youtube.com",
+        "youtu.be",
+        "gfycat.com",
+        "imgur.com",
+        "i.imgur.com",
+        "redgifs.com",
+        "www.redgifs.com",
+        "giphy.com"});
+        incrementSchemaVersion(version);
     }
 }
 Database* Database::getInstance()
@@ -78,6 +102,65 @@ void Database::incrementSchemaVersion(int version)
         int rc = sqlite3_exec(db.get(),("UPDATE SCHEMA_VERSION SET VERSION="+std::to_string(version+1)).c_str(),nullptr,nullptr,nullptr);
         DB_ERR_CHECK("Cannot update version");
     }
+}
+std::vector<std::string> Database::getMediaDomains() const
+{
+    std::vector<std::string> domains;
+    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
+    sqlite3_stmt *stmt_ptr;
+    int rc = sqlite3_prepare_v2(db.get(),"SELECT DOMAIN FROM MEDIA_DOMAINS",-1,&stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot find domains");
+
+    while(sqlite3_step(stmt.get()) == SQLITE_ROW)
+    {
+        std::string domain(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(),0)),
+                             sqlite3_column_bytes(stmt.get(),0));
+        domains.push_back(domain);
+    }
+
+    return domains;
+}
+void Database::addMediaDomains(const std::vector<std::string>& domains)
+{
+    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
+    sqlite3_stmt *stmt_ptr;
+    int rc = sqlite3_prepare_v2(db.get(),"INSERT INTO MEDIA_DOMAINS(DOMAIN) VALUES(?)",-1,&stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot insert domain");
+    for(const auto& domain : domains)
+    {
+        rc = sqlite3_bind_text(stmt.get(),1,domain.c_str(),-1,nullptr);
+        DB_ERR_CHECK("Cannot bind values to domain");
+        rc = sqlite3_step(stmt.get());
+        DB_ERR_CHECK("Cannot insert domain");
+        sqlite3_clear_bindings(stmt.get());
+        sqlite3_reset(stmt.get());
+    }
+}
+void Database::addMediaDomain(const std::string& domain)
+{
+    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
+    sqlite3_stmt *stmt_ptr;
+    int rc = sqlite3_prepare_v2(db.get(),"INSERT INTO MEDIA_DOMAINS(DOMAIN) VALUES(?)",-1,&stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot insert domain");
+    rc = sqlite3_bind_text(stmt.get(),1,domain.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to domain");
+    rc = sqlite3_step(stmt.get());
+    DB_ERR_CHECK("Cannot insert domain");
+}
+void Database::removeMediaDomain(const std::string& domain)
+{
+    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
+    sqlite3_stmt *stmt_ptr;
+    int rc = sqlite3_prepare_v2(db.get(),"DELETE FROM MEDIA_DOMAINS WHERE DOMAIN=?",-1,&stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot delete domain");
+    rc = sqlite3_bind_text(stmt.get(),1,domain.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to domain");
+    rc = sqlite3_step(stmt.get());
+    DB_ERR_CHECK("Cannot delete domain");
 }
 
 int Database::getAutoRefreshTimeout() const

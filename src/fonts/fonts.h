@@ -2,7 +2,7 @@
 #define REDDIT_DESKTOP_FONTS_H
 #include "IconsFontAwesome4.h"
 
-//#include "NotoColorEmoji.ttf.h"
+#include "NotoColorEmoji.ttf.h"
 //#include "NotoEmoji-Regular.ttf.h"
 #include "NotoSans-Black.ttf.h"
 #include "NotoSans-BlackItalic.ttf.h"

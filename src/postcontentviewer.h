@@ -117,6 +117,7 @@ private:
     std::string loopCheckboxText;
     bool mediaLoop = false;
     bool useYoutubeDlder = false;
+    std::vector<std::string> mediaDomains;
 };
 
 #endif // POSTCONTENTVIEWER_H

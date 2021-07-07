@@ -49,6 +49,10 @@ public:
     bool getAutoArangeWindowsGrid() const;
     void setUseYoutubeDownloader(bool flag);
     bool getUseYoutubeDownloader() const;
+    std::vector<std::string> getMediaDomains() const;
+    void addMediaDomains(const std::vector<std::string>& domains);
+    void addMediaDomain(const std::string& domain);
+    void removeMediaDomain(const std::string& domain);
 private:
     void setBoolProperty(bool flag, const std::string& propName);
     bool getBoolProperty(const std::string& propName, bool defaultValue) const;

@@ -75,6 +75,9 @@ void SubredditStylesheet::setSubredditStylesheet(listing listingResponse)
 void SubredditStylesheet::setBannerPicture(Utils::STBImagePtr data, int width, int height, int channels)
 {
     UNUSED(channels);
+    UNUSED(data);
+    UNUSED(width);
+    UNUSED(height);
     //headerPicture = Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
 }
 

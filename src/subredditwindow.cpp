@@ -588,7 +588,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         scrollToTop = false;
     }
 
-    subredditStylesheet->ShowHeader();
+    //subredditStylesheet->ShowHeader();
 
     //ImGuiStyle& style = ImGui::GetStyle();
    // auto textItemWidth = ImGui::GetItemRectSize().x + style.ItemSpacing.x + style.ItemInnerSpacing.x;

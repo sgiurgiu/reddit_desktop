@@ -17,26 +17,6 @@
 
 namespace
 {
-//add them to the database
-const std::vector<std::string> mediaDomains ={
-    "www.clippituser.tv",
-    "clippituser.tv",
-    "streamable.com",
-    "streamja.com",
-    "streamvi.com",
-    "streamwo.com",
-    "streamye.com",
-    "v.redd.it",
-    "youtube.com",
-    "www.youtube.com",
-    "youtu.be",
-    "gfycat.com",
-    "imgur.com",
-    "i.imgur.com",
-    "redgifs.com",
-    "www.redgifs.com",
-    "giphy.com"
-};
 const std::vector<std::string> mediaExtensions = {
     ".gif",
     ".gifv",
@@ -62,6 +42,7 @@ PostContentViewer::PostContentViewer(RedditClientProducer* client,
     mediaState.mediaAudioVolume = Database::getInstance()->getMediaAudioVolume();
     useMediaHwAccel = Database::getInstance()->getUseHWAccelerationForMedia();
     useYoutubeDlder = Database::getInstance()->getUseYoutubeDownloader();
+    mediaDomains = Database::getInstance()->getMediaDomains();
 }
 void PostContentViewer::loadContent(post_ptr currentPost)
 {
@@ -472,7 +453,7 @@ void PostContentViewer::setupMediaContext(std::string file)
     mpv_set_option_string(mpv, "msg-level", "all=v");
     if(useYoutubeDlder)
     {
-        file = currentPost->url;
+        file = "ytdl://"+currentPost->url;
         mpv_set_option_string(mpv, "ytdl", "yes");
     }
 

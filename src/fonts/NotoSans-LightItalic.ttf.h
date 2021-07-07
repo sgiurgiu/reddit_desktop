@@ -1,7 +1,7 @@
 // File: '/home/sergiu/Downloads/Notofonts/NotoSans_LightItalic_ttf' (463608 bytes)
 // Exported using binary_to_compressed_c_cpp
 static const unsigned int NotoSans_LightItalic_ttf_compressed_size = 330094;
-static const unsigned int NotoSans_LightItalic_ttf_compressed_data[330096/4] =
+static const unsigned int* NotoSans_LightItalic_ttf_compressed_data = new unsigned int[330096/4]
 {
     0x0000bc57, 0x00000000, 0xf8120700, 0x00000400, 0x00010025, 0x82120000, 0x043e0804, 0x44472000, 0xfbfe4645, 0x0000abf2, 0x00002c01, 0x5047f205, 
     0x9f4e534f, 0x00003bbe, 0x00002007, 0x5347bcf4, 0x0d8d4255, 0x00000953, 0x0000dcfb, 0x534f7a16, 0xad6b322f, 0x01002885, 0x45825812, 0x5454602c, 

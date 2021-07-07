@@ -1,7 +1,7 @@
 // File: '/home/sergiu/Downloads/Notofonts/NotoSans_BoldItalic_ttf' (471004 bytes)
 // Exported using binary_to_compressed_c_cpp
 static const unsigned int NotoSans_BoldItalic_ttf_compressed_size = 327466;
-static const unsigned int NotoSans_BoldItalic_ttf_compressed_data[327468/4] =
+static const unsigned int* NotoSans_BoldItalic_ttf_compressed_data = new unsigned int[327468/4]
 {
     0x0000bc57, 0x00000000, 0xdc2f0700, 0x00000400, 0x00010025, 0x82120000, 0x00043904, 0x45444720, 0xf2fbfe46, 0x010000ab, 0x0500002c, 0x4f5047f2, 
     0xd44feb53, 0x21080f82, 0x00002007, 0x5347eeee, 0x0d8d4255, 0x00000953, 0x000010f6, 0x534f7a16, 0x3d6d322f, 0x01007a89, 0x45828c0c, 0x5454602c, 

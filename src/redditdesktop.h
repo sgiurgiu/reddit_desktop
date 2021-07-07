@@ -52,6 +52,7 @@ private:
     void setSearchResultsNames(names_list names);
     void addMessageContextWindow(std::string context);
     void arrangeWindowsGrid();
+    void showMediaDomainsManagementDialog();
 private:
     boost::asio::any_io_executor uiExecutor;
     RedditClientProducer client;
@@ -91,6 +92,10 @@ private:
 #else
     bool showLoggingWindow = false;
 #endif
+    bool mediaDomainsManagementDialog = false;
+    std::vector<std::string> mediaDomains;
+    std::string newMediaDomain;
+    std::string selectedMediaDomain;
 };
 
 

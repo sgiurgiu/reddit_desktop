@@ -148,6 +148,7 @@ int main(int /*argc*/, char** /*argv*/)
         db->setMainWindowDimensions(x,y,w,h);
     }
     Utils::ReleaseRedditThumbnails();
+    Utils::DeleteFonts();
 
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
@@ -200,7 +201,7 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
 
         // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplSDL2_NewFrame(window);
+        ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
 #ifdef REDDIT_DESKTOP_DEBUG

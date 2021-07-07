@@ -51,6 +51,7 @@ public:
     using STBImagePtr = std::shared_ptr<stbi_uc>;
     static int GetFontIndex(Fonts font);
     static void LoadFonts();
+    static void DeleteFonts();
     static std::string convertSizeToHuman(uint64_t size);
     static std::string decode64(const std::string &val);
     static std::string encode64(const std::string &val);

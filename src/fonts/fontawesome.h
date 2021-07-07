@@ -1,7 +1,7 @@
 // File: '/home/sergiu/Downloads/font-awesome-4.7.0/fonts/FontAwesome.otf' (134808 bytes)
 // Exported using binary_to_compressed_c.cpp
 static const unsigned int FontAwesome_compressed_size = 127211;
-static const unsigned int FontAwesome_compressed_data[127212/4] =
+static const unsigned int* FontAwesome_compressed_data = new unsigned int[127212/4]
 {
     0x0000bc57, 0x00000000, 0x980e0200, 0x00000400, 0x544f2708, 0x0a004f54, 0x03008000, 0x46432000, 0x73392046, 0x000037e4, 0x0100ac00, 0x5045bdfa, 
     0x1d005241, 0x01002800, 0x13826cfb, 0x534f3028, 0x3288322f, 0x0f825e7a, 0x0f829c20, 0x6d636028, 0xc7017061, 0x0f8254a2, 0x0000fc2b, 0x65681c03, 

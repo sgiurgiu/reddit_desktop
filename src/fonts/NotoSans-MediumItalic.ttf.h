@@ -1,7 +1,7 @@
 // File: '/home/sergiu/Downloads/Notofonts/NotoSans_MediumItalic_ttf' (467088 bytes)
 // Exported using binary_to_compressed_c_cpp
 static const unsigned int NotoSans_MediumItalic_ttf_compressed_size = 329589;
-static const unsigned int NotoSans_MediumItalic_ttf_compressed_data[329592/4] =
+static const unsigned int* NotoSans_MediumItalic_ttf_compressed_data = new unsigned int[329592/4]
 {
     0x0000bc57, 0x00000000, 0x90200700, 0x00000400, 0x00010025, 0x82120000, 0x043e0804, 0x44472000, 0xfbfe4645, 0x0000abf2, 0x00002c01, 0x5047f205, 
     0x6afb534f, 0x00002a9b, 0x00002007, 0x5347a8ef, 0x0d8d4255, 0x00000953, 0x0000c8f6, 0x534f7a16, 0x756c322f, 0x01004187, 0x4582440d, 0x5454602c, 
