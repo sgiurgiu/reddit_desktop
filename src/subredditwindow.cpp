@@ -207,7 +207,7 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
 }
 void SubredditWindow::changeSubreddit(std::string newSubreddit)
 {
-    std::string jsonStr = "/.json";
+    const std::string jsonStr {"/.json"};
     if (newSubreddit.ends_with(jsonStr))
     {
         newSubreddit.erase(newSubreddit.length() - jsonStr.length(), jsonStr.length());

@@ -9,6 +9,7 @@
 #include <boost/asio/io_context.hpp>
 #include <memory>
 #include <latch>
+#include <filesystem>
 
 #if defined(_MSC_VER)
 #define WIN32_LEAN_AND_MEAN
@@ -50,9 +51,12 @@ int WINAPI WinMain(
     _In_ int       nCmdShow
 )
 #else
-int main(int /*argc*/, char** /*argv*/)
+int main(int /*argc*/, char** argv)
 #endif
 {
+    std::filesystem::path programPath(argv[0]);
+    auto executablePath = programPath.parent_path();
+
     // Setup window
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
     {
@@ -136,8 +140,8 @@ int main(int /*argc*/, char** /*argv*/)
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // Load Fonts
-    //io.Fonts->AddFontDefault();
-    Utils::LoadFonts();
+
+    Utils::LoadFonts(executablePath);
     Utils::LoadRedditThumbnails();
     runMainLoop(window,io);    
 

@@ -361,8 +361,8 @@ void RedditDesktop::showMediaDomainsManagementDialog()
         mediaDomains = Database::getInstance()->getMediaDomains();
         selectedMediaDomain.clear();
     }
-
-    if(ImGui::BeginPopupModal(MEDIA_DOMAINS_POPUP_TITLE,nullptr,ImGuiWindowFlags_AlwaysAutoResize))
+    ImGui::SetNextWindowSize(ImVec2(375,380),ImGuiCond_Once);
+    if(ImGui::BeginPopupModal(MEDIA_DOMAINS_POPUP_TITLE,nullptr,ImGuiWindowFlags_None))
     {
 
         ImGui::TextWrapped(
@@ -372,7 +372,8 @@ void RedditDesktop::showMediaDomainsManagementDialog()
 
         ImGui::Separator();
 
-        bool activated = ImGui::InputText("##addNewMediaDomain",&newMediaDomain,ImGuiInputTextFlags_EnterReturnsTrue);
+        bool activated = ImGui::InputTextWithHint("##addNewMediaDomain","Domain",
+                                                  &newMediaDomain,ImGuiInputTextFlags_EnterReturnsTrue);
         ImGui::SameLine();
         ImGui::PushItemFlag(ImGuiItemFlags_Disabled, newMediaDomain.empty());
         ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * (newMediaDomain.empty()?0.5f:1.f));
@@ -385,8 +386,8 @@ void RedditDesktop::showMediaDomainsManagementDialog()
             Database::getInstance()->addMediaDomain(newMediaDomain);
             newMediaDomain.clear();
         }
-        /*ImGui::SetNextItemWidth(-1.0f);
-        if(ImGui::ListBoxHeader("##mediaDomainsPopup",mediaDomains.size()))
+        ImGui::SetNextItemWidth(-1.0f);
+        if(ImGui::BeginListBox("##mediaDomainsPopup"))
         {
             for(const auto& domain : mediaDomains)
             {
@@ -395,8 +396,8 @@ void RedditDesktop::showMediaDomainsManagementDialog()
                     selectedMediaDomain = domain;
                 }
             }
-            ImGui::ListBoxFooter();
-        }*/
+            ImGui::EndListBox();
+        }
         ImGui::PushItemFlag(ImGuiItemFlags_Disabled, selectedMediaDomain.empty());
         ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * (selectedMediaDomain.empty()?0.5f:1.f));
         if (ImGui::Button("Remove", ImVec2(120, 0)))
@@ -577,9 +578,8 @@ void RedditDesktop::showMainMenuBar()
             static float infoButtonWidth = 0.0f;
             float pos = infoButtonWidth + itemSpacing;            
             ImGui::SameLine(ImGui::GetWindowWidth()-pos);
-            ImGui::Text("%ls",U"\x1f250");
-
-            ImGui::SameLine();
+            //ImGui::Text("%ls",L"\x01f449");
+            //ImGui::SameLine();
             if(ImGui::Button(userInfoDisplay.c_str()))
             {
                 if(!userInfoWindow)

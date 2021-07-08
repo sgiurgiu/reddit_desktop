@@ -7,6 +7,7 @@
 #include <stb_image.h>
 #include "imgui.h"
 #include "entities.h"
+#include <filesystem>
 
 class Utils
 {
@@ -50,7 +51,7 @@ public:
 
     using STBImagePtr = std::shared_ptr<stbi_uc>;
     static int GetFontIndex(Fonts font);
-    static void LoadFonts();
+    static void LoadFonts(const std::filesystem::path& executablePath);
     static void DeleteFonts();
     static std::string convertSizeToHuman(uint64_t size);
     static std::string decode64(const std::string &val);
@@ -71,7 +72,7 @@ public:
     static std::string formatDuration(std::chrono::seconds diff);
     static ResizableGLImagePtr GetRedditHeader();
 private:
-    static ImFont* AddFont(const unsigned int* fontData, const unsigned int fontDataSize, float fontSize);
+    static ImFont* AddFont(const std::filesystem::path& fontsFolder, const std::string& font, float fontSize);
     static ResizableGLImagePtr GetRedditSpriteSubimage(int x, int y, int width, int height);
 private:
     static ResizableGLImagePtr redditDefaultSprites;

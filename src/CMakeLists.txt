@@ -1,6 +1,8 @@
 file(GLOB_RECURSE HEADERS *.h *.hpp *.hxx )
 add_custom_target(Headers SOURCES ${HEADERS})
 
+file(GLOB_RECURSE FONTS ../fonts/*.ttf)
+
 SET(IMGUI_SRCS
     imgui/imgui.cpp
     imgui/imgui_demo.cpp
@@ -162,10 +164,18 @@ target_compile_options(${EXECUTABLE_NAME} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/bi
 target_compile_options(${EXECUTABLE_NAME} PRIVATE "$<$<C_COMPILER_ID:MSVC>:/bigobj>")
 set_property(TARGET ${EXECUTABLE_NAME} PROPERTY  MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../test/data/spec.txt" "${CMAKE_CURRENT_BINARY_DIR}/spec.txt" COPYONLY)
-
+#configure_file("${FONTS}" "${CMAKE_CURRENT_BINARY_DIR}/fonts" COPYONLY)
+add_custom_target(build-time-make-directory ALL
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/fonts)
+add_custom_target(copy-test-makefile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/fonts)
+add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/fonts
+                   COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../fonts/*.ttf
+                                                    ${CMAKE_CURRENT_BINARY_DIR}/fonts
+                   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/fonts)
 
 if(WIN32_APP_OPTIONS)
     target_compile_definitions(${EXECUTABLE_NAME} PRIVATE WIN32_WINMAIN)
 endif()
 
 install(TARGETS ${EXECUTABLE_NAME} DESTINATION bin)
+#install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/fonts DESTINATION bin)
