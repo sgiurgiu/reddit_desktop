@@ -1,5 +1,7 @@
 #include "database.h"
 #include <SDL.h>
+#include <pwd.h>
+#include <sys/types.h>
 
 #define DB_ERR_CHECK(msg) \
     if (rc != SQLITE_OK && rc != SQLITE_DONE) \
@@ -27,8 +29,9 @@ std::unique_ptr<Database> Database::instance(nullptr);
 
 Database::Database():db(nullptr,connection_deleter())
 {
+    auto appConfigFolder = getAppConfigFolder();
     sqlite3* db_ptr;
-    int rc = sqlite3_open("rd.db",&db_ptr);
+    int rc = sqlite3_open((appConfigFolder / "rd.db").string().c_str(),&db_ptr);
     db.reset(db_ptr);
     DB_ERR_CHECK("Cannot open database");
     rc = sqlite3_exec(db.get(),"CREATE TABLE IF NOT EXISTS USER(USERNAME TEXT, PASSWORD TEXT, CLIENT_ID TEXT, SECRET TEXT, WEBSITE TEXT, APP_NAME TEXT)",nullptr,nullptr,nullptr);
@@ -69,6 +72,31 @@ Database::Database():db(nullptr,connection_deleter())
         incrementSchemaVersion(version);
     }
 }
+
+std::filesystem::path Database::getAppConfigFolder()
+{
+    auto pwd = getpwuid(getuid());
+    std::filesystem::path homePath;
+    if (pwd)
+    {
+        homePath = pwd->pw_dir;
+    }
+    else
+    {
+        // try the $HOME environment variable
+        homePath = getenv("HOME");
+    }
+
+    if(homePath.empty())
+    {
+        homePath = "./";
+    }
+
+    std::filesystem::path  configFolder = homePath / ".config/reddit_desktop";
+    std::filesystem::create_directories(configFolder);
+    return configFolder;
+}
+
 Database* Database::getInstance()
 {
     if(!instance)

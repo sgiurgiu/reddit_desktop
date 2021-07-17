@@ -513,23 +513,27 @@ void SubredditWindow::renderPostOpenLinkButton(PostDisplay& p)
         auto subredditTextSize = ImGui::GetItemRectSize();
         if(ImGui::InvisibleButton(p.openLinkButtonText.c_str(),subredditTextSize))
         {
-            boost::url_view urlParts(p.post->url);
-            auto host = urlParts.encoded_host().to_string();
-            if(host.find("reddit.com") == std::string::npos || ImGui::GetIO().KeyCtrl)
-            {
-                Utils::openInBrowser(p.post->url);
-            }
-            else
-            {
-                auto target = urlParts.encoded_path().to_string();
-                if(target.find("/comments/") != std::string::npos)
+            try {
+                boost::url_view urlParts(p.post->url);
+                auto host = urlParts.encoded_host().to_string();
+                if(host.find("reddit.com") == std::string::npos || ImGui::GetIO().KeyCtrl)
                 {
-                    commentsSignal(p.post->id,p.post->title);
+                    Utils::openInBrowser(p.post->url);
                 }
                 else
                 {
-                    subredditSignal(target);
+                    auto target = urlParts.encoded_path().to_string();
+                    if(target.find("/comments/") != std::string::npos)
+                    {
+                        commentsSignal(p.post->id,p.post->title);
+                    }
+                    else
+                    {
+                        subredditSignal(target);
+                    }
                 }
+            }  catch (const std::exception& ex) {
+                p.errorMessageText = ex.what();
             }
 
         }

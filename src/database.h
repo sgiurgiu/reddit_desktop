@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <memory>
 #include <vector>
+#include <filesystem>
 
 #include "sqlite/sqlite3.h"
 #include "entities.h"
@@ -60,6 +61,7 @@ private:
     int getIntProperty(const std::string& propName, int defaultValue) const;
     int getSchemaVersion();
     void incrementSchemaVersion(int version);
+    std::filesystem::path getAppConfigFolder();
 private:
     std::unique_ptr<sqlite3,connection_deleter> db;
     static std::unique_ptr<Database> instance;

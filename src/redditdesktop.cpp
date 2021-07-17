@@ -626,7 +626,10 @@ void RedditDesktop::showMenuFile()
                 refreshLoginToken();
             }
         }
-        ImGui::Separator();
+        if(!registeredUsers.empty())
+        {
+            ImGui::Separator();
+        }
         if (ImGui::MenuItem("Register User"))
         {
             loginWindow.setShowLoginWindow(true);
