@@ -12,6 +12,8 @@
 #include <boost/algorithm/string.hpp>
 #include <chrono>
 #include <iostream>
+#include <locale>
+#include <codecvt>
 
 #ifdef RD_WINDOWS
 #include <shlobj.h>
@@ -85,15 +87,17 @@ ImFont* Utils::AddFont(const std::filesystem::path& fontsFolder, const std::stri
     config.MergeMode = true;
 
     auto fontFile = fontsFolder / font;
+    auto fontFilenameString = fontFile.string();
+    const char* fontFilename = fontFilenameString.c_str();
 
-    ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFile.c_str(), fontSize);
-    ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFile.c_str(), fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesChineseFull());
-    ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFile.c_str(), fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
-    ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFile.c_str(), fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesKorean());
-    ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFile.c_str(), fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesJapanese());
-    ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFile.c_str(), fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesThai());
-    ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFile.c_str(), fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesVietnamese());
-    ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFile.c_str(), fontSize,&config,romanian_ranges);
+    ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFilename, fontSize);
+    ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFilename, fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesChineseFull());
+    ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFilename, fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
+    ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFilename, fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesKorean());
+    ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFilename, fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesJapanese());
+    ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFilename, fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesThai());
+    ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFilename, fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesVietnamese());
+    ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFilename, fontSize,&config,romanian_ranges);
 
     ImFontConfig emojiConfig;
     emojiConfig.MergeMode = true;
@@ -103,14 +107,15 @@ ImFont* Utils::AddFont(const std::filesystem::path& fontsFolder, const std::stri
     //emojiConfig.GlyphMinAdvanceX = fontSize;
     static const ImWchar emoji_icon_ranges[] = { 0x1, 0x1FFFF,
                                                  0 };
-    ImGui::GetIO().Fonts->AddFontFromFileTTF((fontsFolder / "seguiemj.ttf").c_str(), fontSize,
+    auto seguiemjFile = (fontsFolder / "seguiemj.ttf").string();
+    auto notoColorEmojiFile = (fontsFolder / "NotoColorEmoji.ttf").string();
+    auto fontAwesomeFile = (fontsFolder / FONT_ICON_FILE_NAME_FA).string();
+
+    ImGui::GetIO().Fonts->AddFontFromFileTTF(seguiemjFile.c_str(), fontSize,
                                                          &emojiConfig,emoji_icon_ranges);
-
-    ImGui::GetIO().Fonts->AddFontFromFileTTF((fontsFolder / "NotoColorEmoji.ttf").c_str(), fontSize,
+    ImGui::GetIO().Fonts->AddFontFromFileTTF(notoColorEmojiFile.c_str(), fontSize,
                                                          &emojiConfig,emoji_icon_ranges);
-
-
-    return ImGui::GetIO().Fonts->AddFontFromFileTTF((fontsFolder / FONT_ICON_FILE_NAME_FA).c_str(), fontSize,
+    return ImGui::GetIO().Fonts->AddFontFromFileTTF(fontAwesomeFile.c_str(), fontSize,
                                                          &fontAwesomeConfig, icon_ranges);
 }
 

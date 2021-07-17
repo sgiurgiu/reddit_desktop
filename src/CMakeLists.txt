@@ -1,7 +1,8 @@
 file(GLOB_RECURSE HEADERS *.h *.hpp *.hxx )
 add_custom_target(Headers SOURCES ${HEADERS})
 
-file(GLOB_RECURSE FONTS ../fonts/*.ttf)
+file(GLOB_RECURSE FONTS "${CMAKE_CURRENT_SOURCE_DIR}/../fonts/*.ttf")
+message("Fonts collected: ${FONTS}")
 
 SET(IMGUI_SRCS
     imgui/imgui.cpp
@@ -164,14 +165,16 @@ target_compile_options(${EXECUTABLE_NAME} PRIVATE "$<$<CXX_COMPILER_ID:MSVC>:/bi
 target_compile_options(${EXECUTABLE_NAME} PRIVATE "$<$<C_COMPILER_ID:MSVC>:/bigobj>")
 set_property(TARGET ${EXECUTABLE_NAME} PROPERTY  MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../test/data/spec.txt" "${CMAKE_CURRENT_BINARY_DIR}/spec.txt" COPYONLY)
-#configure_file("${FONTS}" "${CMAKE_CURRENT_BINARY_DIR}/fonts" COPYONLY)
-add_custom_target(build-time-make-directory ALL
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/fonts)
+
+
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fonts)
 add_custom_target(copy-test-makefile ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/fonts)
-add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/fonts
-                   COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../fonts/*.ttf
-                                                    ${CMAKE_CURRENT_BINARY_DIR}/fonts
-                   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/fonts)
+
+foreach(FONT ${FONTS})
+    message("Copying ${FONT} to ${CMAKE_CURRENT_BINARY_DIR}/fonts")
+    configure_file(${FONT} ${CMAKE_CURRENT_BINARY_DIR}/fonts/ COPYONLY)
+endforeach()
+
 
 if(WIN32_APP_OPTIONS)
     target_compile_definitions(${EXECUTABLE_NAME} PRIVATE WIN32_WINMAIN)

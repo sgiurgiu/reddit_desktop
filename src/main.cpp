@@ -50,11 +50,15 @@ int WINAPI WinMain(
     _In_ LPSTR     lpCmdLine,
     _In_ int       nCmdShow
 )
+{
+    TCHAR szPath[MAX_PATH];
+    GetModuleFileName(nullptr, szPath, MAX_PATH);
+    std::filesystem::path programPath(szPath);
 #else
 int main(int /*argc*/, char** argv)
-#endif
 {
     std::filesystem::path programPath(argv[0]);
+#endif    
     auto executablePath = programPath.parent_path();
 
     // Setup window
