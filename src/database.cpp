@@ -1,6 +1,11 @@
 #include "database.h"
 #include <SDL.h>
+#ifdef RD_WINDOWS
+#include <windows.h>
+#include <Shlobj.h>
+#else
 #include <pwd.h>
+#endif
 #include <sys/types.h>
 
 #define DB_ERR_CHECK(msg) \
@@ -75,8 +80,17 @@ Database::Database():db(nullptr,connection_deleter())
 
 std::filesystem::path Database::getAppConfigFolder()
 {
-    auto pwd = getpwuid(getuid());
     std::filesystem::path homePath;
+    std::string relativeConfigFolder;
+#ifdef RD_WINDOWS
+    char homeDirStr[MAX_PATH];
+    if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, homeDirStr)))
+    {
+        homePath = homeDirStr;
+    }
+    relativeConfigFolder = "reddit_desktop";
+#else
+    auto pwd = getpwuid(getuid());
     if (pwd)
     {
         homePath = pwd->pw_dir;
@@ -86,13 +100,16 @@ std::filesystem::path Database::getAppConfigFolder()
         // try the $HOME environment variable
         homePath = getenv("HOME");
     }
+    relativeConfigFolder = ".config/reddit_desktop"
+#endif
+
 
     if(homePath.empty())
     {
         homePath = "./";
     }
 
-    std::filesystem::path  configFolder = homePath / ".config/reddit_desktop";
+    std::filesystem::path  configFolder = homePath / relativeConfigFolder;
     std::filesystem::create_directories(configFolder);
     return configFolder;
 }
