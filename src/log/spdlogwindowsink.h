@@ -19,6 +19,7 @@ public:
     SpdlogWindowSink(const boost::asio::any_io_executor &executor):
         logsPostingTimer(executor)
     {}
+    ~SpdlogWindowSink() override = default;
     SpdlogWindowSink(const SpdlogWindowSink &) = delete;
     SpdlogWindowSink &operator=(const SpdlogWindowSink &) = delete;
     template<typename S>
@@ -26,28 +27,33 @@ public:
     {
         logSignal.connect(slot);
     }
+    void cancel()
+    {
+        std::lock_guard<Mutex> _(mutex);
+        lines.clear();
+        logsPostingTimer.cancel();
+        logSignal.disconnect_all_slots();
+        cancelled = true;
+    }
 protected:
     void sink_it_(const spdlog::details::log_msg &msg) override
     {
-        {
-            std::lock_guard<Mutex> _(mutex);
-            spdlog::memory_buf_t formatted;
-            spdlog::sinks::base_sink<Mutex>::formatter_->format(msg, formatted);
-            lines.emplace_back(formatted.data(), static_cast<std::streamsize>(formatted.size()));
-        }
+        std::lock_guard<Mutex> _(mutex);
+        if (cancelled) return;
+        spdlog::memory_buf_t formatted;
+        spdlog::sinks::base_sink<Mutex>::formatter_->format(msg, formatted);
+        lines.emplace_back(formatted.data(), static_cast<std::streamsize>(formatted.size()));        
         logsPostingTimer.expires_after(std::chrono::seconds(1));
         logsPostingTimer.async_wait([weak = this->weak_from_this()](const boost::system::error_code& ec){
             auto self = weak.lock();
             if(self && !ec)
             {
+                std::lock_guard<Mutex> _(self->mutex);
+                if (self->cancelled) return;
                 std::vector<std::string> tmp;
-                {
-                    std::lock_guard<Mutex> _(self->mutex);
-                    std::move(self->lines.begin(),self->lines.end(),std::back_inserter(tmp));
-                    self->lines.clear();
-                }
+                std::move(self->lines.begin(),self->lines.end(),std::back_inserter(tmp));
+                self->lines.clear();
                 self->logSignal(std::move(tmp));
-
             }
         });
     }
@@ -60,7 +66,8 @@ private:
     boost::asio::steady_timer logsPostingTimer;
     LogSignal logSignal;
     Mutex mutex;
-    std::vector<std::string> lines;    
+    std::vector<std::string> lines;
+    bool cancelled = false;
 };
 
 using SpdlogWindowSinkMt = SpdlogWindowSink<std::mutex>;

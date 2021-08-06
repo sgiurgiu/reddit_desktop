@@ -7,6 +7,11 @@ LoggingWindow::LoggingWindow(const boost::asio::any_io_executor &executor):
     uiExecutor(executor)
 {
 }
+LoggingWindow::~LoggingWindow()
+{
+    logSink->cancel();
+    logSink.reset();
+}
 void LoggingWindow::setupLogging()
 {
     std::vector<spdlog::sink_ptr> sinks;

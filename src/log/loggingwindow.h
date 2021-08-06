@@ -11,6 +11,7 @@ class LoggingWindow : public std::enable_shared_from_this<LoggingWindow>
 {
 public:
     LoggingWindow(const boost::asio::any_io_executor& executor);
+    ~LoggingWindow();
     bool isWindowOpen() const {return windowOpen;}
     void setWindowOpen(bool flag)
     {
