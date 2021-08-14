@@ -2,13 +2,12 @@
 #define MARKDOWNNODELINK_H
 
 #include "markdownnode.h"
-#include <md4c.h>
 #include <string>
 
 class MarkdownNodeLink : public MarkdownNode
 {
 public:
-    MarkdownNodeLink(const MD_SPAN_A_DETAIL*);
+    MarkdownNodeLink(std::string href, std::string title);
     void Render() override;
     virtual void AddChild(std::unique_ptr<MarkdownNode> child) override;
     NodeType GetNodeType() const override

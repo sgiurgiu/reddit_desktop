@@ -1,8 +1,8 @@
 #include "markdownnodetablecellhead.h"
 #include <imgui.h>
 
-MarkdownNodeTableCellHead::MarkdownNodeTableCellHead(const MD_BLOCK_TD_DETAIL* detail):
-    detail(*detail)
+MarkdownNodeTableCellHead::MarkdownNodeTableCellHead(NodeAlign align):
+    align(align)
 {
 
 }

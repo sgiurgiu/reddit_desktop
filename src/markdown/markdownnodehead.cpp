@@ -2,8 +2,7 @@
 #include <imgui.h>
 #include "utils.h"
 
-MarkdownNodeHead::MarkdownNodeHead(const MD_BLOCK_H_DETAIL* detail):
-    detail(*detail)
+MarkdownNodeHead::MarkdownNodeHead(unsigned level):level(level)
 {
 }
 void MarkdownNodeHead::Render()

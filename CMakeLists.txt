@@ -8,6 +8,13 @@ include("${CMAKE_SOURCE_DIR}/cmake/CMakeCCache.txt")
 
 option(ENABLE_TESTS "Build tests" ON)
 option(ASAN_ENABLE "Build with sanitization on" OFF)
+option(ENABLE_CMARK "Use cmark as the markdown parser" OFF)
+option(ENABLE_M4DC "Use m4dc as the markdown parser" ON)
+
+if(ENABLE_M4DC AND ENABLE_CMARK)
+    message(ERROR "Please only choose one of cmark or m4dc markdown parsers")
+endif()
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
 SET(REDDITDESKTOP_VERSION_MAJOR "0")

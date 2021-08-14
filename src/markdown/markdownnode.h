@@ -5,6 +5,14 @@
 #include <vector>
 #include <boost/signals2.hpp>
 
+enum class NodeAlign
+{
+    AlignDefault,
+    AlignLeft,
+    AlignCenter,
+    AlignRight
+};
+
 class MarkdownNode
 {
 public:

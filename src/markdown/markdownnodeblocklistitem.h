@@ -7,7 +7,7 @@
 class MarkdownNodeBlockListItem : public MarkdownNode
 {
 public:
-    MarkdownNodeBlockListItem(const MD_BLOCK_LI_DETAIL*);
+    MarkdownNodeBlockListItem();
     void Render() override;
     NodeType GetNodeType() const override
     {
@@ -18,7 +18,6 @@ public:
         this->index = index;
     }
 private:
-    MD_BLOCK_LI_DETAIL detail;
     int index;
 };
 

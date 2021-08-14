@@ -1,8 +1,7 @@
 #include "markdownnodeimage.h"
 
-MarkdownNodeImage::MarkdownNodeImage(const MD_SPAN_IMG_DETAIL* detail):
-    src(detail->src.text,detail->src.size),
-    title(detail->title.text,detail->title.size)
+MarkdownNodeImage::MarkdownNodeImage(std::string src, std::string title):
+    src(std::move(src)),title(std::move(title))
 {
 
 }

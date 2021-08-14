@@ -7,7 +7,7 @@
 class MarkdownNodeBlockUnorderedList : public MarkdownNode
 {
 public:
-    MarkdownNodeBlockUnorderedList(const MD_BLOCK_UL_DETAIL*);
+    MarkdownNodeBlockUnorderedList(char mark);
     void Render() override;
     NodeType GetNodeType() const override
     {
@@ -15,10 +15,10 @@ public:
     }
     char GetMarkChar() const
     {
-        return detail.mark;
+        return mark;
     }
 private:
-    MD_BLOCK_UL_DETAIL detail;
+    char mark;
 };
 
 #endif // MARKDOWNNODEBLOCKUNORDEREDLIST_H

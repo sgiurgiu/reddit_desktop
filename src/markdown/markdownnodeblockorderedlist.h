@@ -7,7 +7,7 @@
 class MarkdownNodeBlockOrderedList : public MarkdownNode
 {
 public:
-    MarkdownNodeBlockOrderedList(const MD_BLOCK_OL_DETAIL*);
+    MarkdownNodeBlockOrderedList(unsigned start, char mark);
     void Render() override;
     NodeType GetNodeType() const override
     {
@@ -15,10 +15,11 @@ public:
     }
     unsigned GetStartIndex() const
     {
-        return detail.start;
+        return startIndex;
     }
 private:
-    MD_BLOCK_OL_DETAIL detail;
+    unsigned startIndex;
+    char mark;
 };
 
 #endif // MARKDOWNNODEORDEREDLIST_H

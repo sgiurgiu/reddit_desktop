@@ -2,15 +2,15 @@
 #include "markdownnodeblocklistitem.h"
 #include <imgui.h>
 
-MarkdownNodeBlockOrderedList::MarkdownNodeBlockOrderedList(const MD_BLOCK_OL_DETAIL* detail):
-    detail(*detail)
+MarkdownNodeBlockOrderedList::MarkdownNodeBlockOrderedList(unsigned start, char mark):
+    startIndex(start),mark(mark)
 {    
 }
 void MarkdownNodeBlockOrderedList::Render()
 {
     ImGui::Indent();
 
-    int index = 1;
+    auto index = GetStartIndex();
     for(const auto& child : children)
     {
         if(child->GetNodeType() == NodeType::BlockListItem)

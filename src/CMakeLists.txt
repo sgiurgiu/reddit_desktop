@@ -24,7 +24,9 @@ set(SQLITE_SRC sqlite/sqlite3.c)
 
 file(GLOB_RECURSE GUMBO_PARSER_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/../external/gumbo-parser/src/*.c")
 
-set(MD4C_SRC ../external/md4c/src/md4c.c)
+if(ENABLE_M4DC)
+    set(MD4C_SRC ../external/md4c/src/md4c.c)
+endif()
 
 set (MARKDOWN_RENDERER_SRCS
     markdown/markdownnode.cpp
@@ -99,23 +101,29 @@ if(VCPKG_TOOLCHAIN)
     list(APPEND REDDIT_DESKTOP_SRCS win/getopt.c)
 endif()
 
-add_executable(${EXECUTABLE_NAME}
+set(EXECUTABLE_SOURCES
     ${WIN32_APP_OPTIONS}
     ${REDDIT_DESKTOP_SRCS}
     ${IMGUI_SRCS}
     ${GLAD_SRCS}
     ${SQLITE_SRC}
     ${BOOST_URL_SRC}
-    ${GUMBO_PARSER_SRCS}    
-    ${MD4C_SRC}
+    ${GUMBO_PARSER_SRCS}
     ${MARKDOWN_RENDERER_SRCS}
     ${REDDIT_CONNECTIONS_SRCS}
     ${REDDIT_DESKTOP_LOG_SRCS}
-    )
+)
 
-#Disable warnings for glad and gumbo, they're thousands and I really don't care about them
+if(ENABLE_M4DC)
+    list(APPEND EXECUTABLE_SOURCES  ${MD4C_SRC})
+endif()
+
+
+add_executable(${EXECUTABLE_NAME} ${EXECUTABLE_SOURCES})
+
+#Disable warnings for glad, gumbo, katana and sqlite, they're thousands and I really don't care about them
 set_source_files_properties(${GLAD_SRCS}
-    ${GUMBO_PARSER_SRCS} ${KATANA_PARSER_SRCS}
+    ${GUMBO_PARSER_SRCS} ${KATANA_PARSER_SRCS} ${SQLITE_SRC}
     PROPERTIES COMPILE_FLAGS "-w")
 
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE  OpenGL::GL SDL2::SDL2)
@@ -132,16 +140,20 @@ else()
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE PkgConfig::MPV PkgConfig::FREETYPE)
 endif()
 
-
-target_include_directories(${EXECUTABLE_NAME} PRIVATE
+set(EXECUTABLE_INCLUDES
     "imgui"
     "${CMAKE_CURRENT_SOURCE_DIR}"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/stb/"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/url/include"
- #   ${Boost_INCLUDE_DIRS}
-    "${CMAKE_CURRENT_SOURCE_DIR}/../external/md4c/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/gumbo-parser/src/"
     )
+
+if(ENABLE_M4DC)
+    list(APPEND EXECUTABLE_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../external/md4c/src")
+endif()
+
+
+target_include_directories(${EXECUTABLE_NAME} PRIVATE ${EXECUTABLE_INCLUDES})
 
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE SPDLOG_FMT_EXTERNAL_HO SPDLOG_FMT_EXTERNAL)
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLAD BOOST_ASIO_NO_DEPRECATED)

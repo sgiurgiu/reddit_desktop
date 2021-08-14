@@ -7,8 +7,7 @@
 #include "markdownnodetext.h"
 #include "markdownnodeblockorderedlist.h"
 
-MarkdownNodeBlockListItem::MarkdownNodeBlockListItem(const MD_BLOCK_LI_DETAIL* detail):
-    detail(*detail)
+MarkdownNodeBlockListItem::MarkdownNodeBlockListItem()
 {
 
 }

@@ -56,22 +56,36 @@ int enter_block_callback(MD_BLOCKTYPE type, void* detail, void* userdata)
             newNode = std::make_unique<MarkdownNodeBlockQuote>();
         break;
         case MD_BLOCK_UL:       //RENDER_VERBATIM(r, "<ul>\n");
-            newNode = std::make_unique<MarkdownNodeBlockUnorderedList>((const MD_BLOCK_UL_DETAIL*)detail);
+        {
+            auto block_ul_detail = (const MD_BLOCK_UL_DETAIL*)detail;
+            newNode = std::make_unique<MarkdownNodeBlockUnorderedList>(block_ul_detail->mark);
+        }
         break;
         case MD_BLOCK_OL:       //render_open_ol_block(r, (const MD_BLOCK_OL_DETAIL*)detail);
-            newNode = std::make_unique<MarkdownNodeBlockOrderedList>((const MD_BLOCK_OL_DETAIL*)detail);
+        {
+            auto block_ol_detail = (const MD_BLOCK_OL_DETAIL*)detail;
+            newNode = std::make_unique<MarkdownNodeBlockOrderedList>(block_ol_detail->start,block_ol_detail->mark_delimiter);
+        }
         break;
         case MD_BLOCK_LI:       //render_open_li_block(r, (const MD_BLOCK_LI_DETAIL*)detail);
-            newNode = std::make_unique<MarkdownNodeBlockListItem>((const MD_BLOCK_LI_DETAIL*)detail);
+            newNode = std::make_unique<MarkdownNodeBlockListItem>();
         break;
         case MD_BLOCK_HR:       //RENDER_VERBATIM(r, (r->flags & MD_HTML_FLAG_XHTML) ? "<hr />\n" : "<hr>\n");
             newNode = std::make_unique<MarkdownNodeThematicBreak>();
         break;
         case MD_BLOCK_H:        //RENDER_VERBATIM(r, head[((MD_BLOCK_H_DETAIL*)detail)->level - 1]);
-            newNode = std::make_unique<MarkdownNodeHead>((const MD_BLOCK_H_DETAIL*)detail);
+        {
+            auto head_detail = (const MD_BLOCK_H_DETAIL*)detail;
+            newNode = std::make_unique<MarkdownNodeHead>(head_detail->level);
+        }
         break;
         case MD_BLOCK_CODE:     //render_open_code_block(r, (const MD_BLOCK_CODE_DETAIL*) detail);
-            newNode = std::make_unique<MarkdownNodeBlockCode>((const MD_BLOCK_CODE_DETAIL*)detail);
+        {
+            auto block_code_detail = (const MD_BLOCK_CODE_DETAIL*)detail;
+            newNode = std::make_unique<MarkdownNodeBlockCode>("",
+                                                              std::string(block_code_detail->lang.text,block_code_detail->lang.size),
+                                                              std::string(block_code_detail->info.text,block_code_detail->info.size));
+        }
         break;
         case MD_BLOCK_HTML:
             newNode = std::make_unique<MarkdownNodeBlockHtml>();
@@ -92,10 +106,49 @@ int enter_block_callback(MD_BLOCKTYPE type, void* detail, void* userdata)
             newNode = std::make_unique<MarkdownNodeTableRow>();
         break;
         case MD_BLOCK_TH:       //render_open_td_block(r, "th", (MD_BLOCK_TD_DETAIL*)detail);
-            newNode = std::make_unique<MarkdownNodeTableCellHead>((const MD_BLOCK_TD_DETAIL*)detail);
+        {
+            auto td_detail = (const MD_BLOCK_TD_DETAIL*)detail;
+            NodeAlign align = NodeAlign::AlignDefault;
+            switch(td_detail->align)
+            {
+                case MD_ALIGN_LEFT:
+                    align = NodeAlign::AlignLeft;
+                    break;
+                case MD_ALIGN_CENTER:
+                    align = NodeAlign::AlignCenter;
+                    break;
+                case MD_ALIGN_RIGHT:
+                    align = NodeAlign::AlignRight;
+                    break;
+                default:
+                    align = NodeAlign::AlignDefault;
+                    break;
+            }
+
+            newNode = std::make_unique<MarkdownNodeTableCellHead>(align);
+        }
         break;
         case MD_BLOCK_TD:       //render_open_td_block(r, "td", (MD_BLOCK_TD_DETAIL*)detail);
-            newNode = std::make_unique<MarkdownNodeTableCell>((const MD_BLOCK_TD_DETAIL*)detail);
+        {
+            auto td_detail = (const MD_BLOCK_TD_DETAIL*)detail;
+            NodeAlign align = NodeAlign::AlignDefault;
+            switch(td_detail->align)
+            {
+                case MD_ALIGN_LEFT:
+                    align = NodeAlign::AlignLeft;
+                    break;
+                case MD_ALIGN_CENTER:
+                    align = NodeAlign::AlignCenter;
+                    break;
+                case MD_ALIGN_RIGHT:
+                    align = NodeAlign::AlignRight;
+                    break;
+                default:
+                    align = NodeAlign::AlignDefault;
+                    break;
+            }
+            newNode = std::make_unique<MarkdownNodeTableCell>(align);
+        }
         break;
     }
 
@@ -146,10 +199,22 @@ int enter_span_callback(MD_SPANTYPE type, void* detail, void* userdata)
             newNode = std::make_unique<MarkdownNodeUnderline>();
         break;
         case MD_SPAN_A:                 //render_open_a_span(r, (MD_SPAN_A_DETAIL*) detail);
-            newNode = std::make_unique<MarkdownNodeLink>((const MD_SPAN_A_DETAIL*) detail);
+        {
+            auto span_a_detail = (const MD_SPAN_A_DETAIL*) detail;
+            newNode = std::make_unique<MarkdownNodeLink>(
+                        std::string(span_a_detail->href.text,span_a_detail->href.size),
+                        std::string(span_a_detail->title.text,span_a_detail->title.size)
+                        );
+        }
         break;
         case MD_SPAN_IMG:               //render_open_img_span(r, (MD_SPAN_IMG_DETAIL*) detail);
-            newNode = std::make_unique<MarkdownNodeImage>((const MD_SPAN_IMG_DETAIL*) detail);
+        {
+            auto img_detail = (const MD_SPAN_IMG_DETAIL*) detail;
+            newNode = std::make_unique<MarkdownNodeImage>(
+                        std::string(img_detail->src.text,img_detail->src.size),
+                        std::string(img_detail->title.text,img_detail->title.size)
+                        );
+        }
         break;
         case MD_SPAN_CODE:              //RENDER_VERBATIM(r, "<code>");
             newNode = std::make_unique<MarkdownNodeCode>();

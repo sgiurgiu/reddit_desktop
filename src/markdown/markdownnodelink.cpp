@@ -9,9 +9,8 @@ namespace
     static const ImVec4 linkColor(0.5f,0.5f,1.f,1.f);
     static const ImVec4 tooltipColor(0.9f, 0.9f, 0.9f, 1.f);
 }
-MarkdownNodeLink::MarkdownNodeLink(const MD_SPAN_A_DETAIL* detail):
-    href(detail->href.text,detail->href.size),
-    title(detail->title.text,detail->title.size)
+MarkdownNodeLink::MarkdownNodeLink(std::string href, std::string title):
+    href(std::move(href)),title(std::move(title))
 {
 }
 void MarkdownNodeLink::AddChild(std::unique_ptr<MarkdownNode> child)

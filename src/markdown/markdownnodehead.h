@@ -7,14 +7,14 @@
 class MarkdownNodeHead : public MarkdownNode
 {
 public:
-    MarkdownNodeHead(const MD_BLOCK_H_DETAIL*);
+    MarkdownNodeHead(unsigned level);
     void Render() override;
     NodeType GetNodeType() const override
     {
         return NodeType::Head;
     }
 private:
-    MD_BLOCK_H_DETAIL detail;
+    unsigned level;
 };
 
 #endif // MARKDOWNNODEHEAD_H

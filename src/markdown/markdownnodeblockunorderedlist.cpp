@@ -1,8 +1,8 @@
 #include "markdownnodeblockunorderedlist.h"
 #include <imgui.h>
 
-MarkdownNodeBlockUnorderedList::MarkdownNodeBlockUnorderedList(const MD_BLOCK_UL_DETAIL* detail):
-    detail(*detail)
+MarkdownNodeBlockUnorderedList::MarkdownNodeBlockUnorderedList(char mark):
+    mark(mark)
 {
 
 }
