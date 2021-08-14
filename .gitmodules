@@ -19,3 +19,6 @@
 [submodule "external/spdlog"]
 	path = external/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "external/cmark-gfm"]
+	path = external/cmark-gfm
+	url = https://github.com/github/cmark-gfm
