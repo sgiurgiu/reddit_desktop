@@ -100,7 +100,7 @@ std::filesystem::path Database::getAppConfigFolder()
         // try the $HOME environment variable
         homePath = getenv("HOME");
     }
-    relativeConfigFolder = ".config/reddit_desktop"
+    relativeConfigFolder = ".config/reddit_desktop";
 #endif
 
 
