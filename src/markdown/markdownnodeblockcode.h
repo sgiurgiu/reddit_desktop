@@ -2,7 +2,6 @@
 #define MARKDOWNNODEBLOCKCODE_H
 
 #include "markdownnode.h"
-#include <md4c.h>
 #include <string>
 
 class MarkdownNodeBlockCode : public MarkdownNode

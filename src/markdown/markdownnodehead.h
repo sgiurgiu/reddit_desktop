@@ -2,7 +2,6 @@
 #define MARKDOWNNODEHEAD_H
 
 #include "markdownnode.h"
-#include <md4c.h>
 
 class MarkdownNodeHead : public MarkdownNode
 {

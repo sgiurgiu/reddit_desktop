@@ -2,7 +2,6 @@
 #define MARKDOWNNODEBLOCKLISTITEM_H
 
 #include "markdownnode.h"
-#include <md4c.h>
 
 class MarkdownNodeBlockListItem : public MarkdownNode
 {

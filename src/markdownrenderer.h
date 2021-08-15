@@ -3,7 +3,6 @@
 
 #include <string>
 #include <memory>
-#include <vector>
 
 #include "markdown/markdownnode.h"
 
@@ -22,7 +21,7 @@ private:
 private:
     std::string text;
     std::unique_ptr<MarkdownNode> document;
-    MarkdownNode* currentNode = nullptr;
+
 };
 
 #endif // MARKDOWNRENDERER_H

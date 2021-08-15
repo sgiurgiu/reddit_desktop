@@ -2,7 +2,6 @@
 #define MARKDOWNNODEIMAGE_H
 
 #include "markdownnode.h"
-#include <md4c.h>
 #include <string>
 
 class MarkdownNodeImage : public MarkdownNode

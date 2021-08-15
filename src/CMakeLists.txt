@@ -57,7 +57,16 @@ set (MARKDOWN_RENDERER_SRCS
     markdown/markdownnodetexthtml.cpp
     markdown/markdownnodetextentity.cpp
     markdown/markdownnodetext.cpp
-    markdown/markdownnodedocument.cpp)
+    markdown/markdownnodedocument.cpp
+    markdown/markdownparser.cpp
+    )
+
+if(ENABLE_M4DC)
+    list(APPEND MARKDOWN_RENDERER_SRCS  markdown/m4dcmarkdownparser.cpp)
+endif()
+if(ENABLE_CMARK)
+    list(APPEND MARKDOWN_RENDERER_SRCS  markdown/cmarkmarkdownparser.cpp)
+endif()
 
 set(REDDIT_CONNECTIONS_SRCS
     connections/redditloginconnection.cpp
@@ -149,11 +158,18 @@ set(EXECUTABLE_INCLUDES
     )
 
 if(ENABLE_M4DC)
-    list(APPEND EXECUTABLE_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../external/md4c/src")
+    list(APPEND EXECUTABLE_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../external/md4c/src")   
 endif()
 
 
 target_include_directories(${EXECUTABLE_NAME} PRIVATE ${EXECUTABLE_INCLUDES})
+
+if(ENABLE_M4DC)
+    target_compile_definitions(${EXECUTABLE_NAME} PRIVATE M4DC_ENABLED)
+endif()
+if(ENABLE_CMARK)
+    target_compile_definitions(${EXECUTABLE_NAME} PRIVATE CMARK_ENABLED)
+endif()
 
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE SPDLOG_FMT_EXTERNAL_HO SPDLOG_FMT_EXTERNAL)
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLAD BOOST_ASIO_NO_DEPRECATED)
@@ -164,6 +180,7 @@ if(ASAN_ENABLE)
 else()
     target_compile_options(${EXECUTABLE_NAME} PUBLIC $<$<AND:$<CONFIG:Debug>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-Wall -pedantic -Wextra>)
 endif(ASAN_ENABLE)
+
 
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "$<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>")
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "$<$<C_COMPILER_ID:MSVC>:NOMINMAX>")
