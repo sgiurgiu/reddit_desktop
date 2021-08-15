@@ -149,6 +149,10 @@ else()
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE PkgConfig::MPV PkgConfig::FREETYPE)
 endif()
 
+if(ENABLE_CMARK)
+    target_link_libraries(${EXECUTABLE_NAME} PRIVATE libcmark-gfm-extensions_static libcmark-gfm_static)
+endif()
+
 set(EXECUTABLE_INCLUDES
     "imgui"
     "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -161,6 +165,14 @@ if(ENABLE_M4DC)
     list(APPEND EXECUTABLE_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../external/md4c/src")   
 endif()
 
+if(ENABLE_CMARK)
+    list(APPEND EXECUTABLE_INCLUDES
+        "${CMAKE_CURRENT_SOURCE_DIR}/../external/cmark-gfm/src"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../external/cmark-gfm/extensions"
+        "${CMAKE_BINARY_DIR}/external/cmark-gfm/src"
+        "${CMAKE_BINARY_DIR}/external/cmark-gfm/extensions"
+        )
+endif()
 
 target_include_directories(${EXECUTABLE_NAME} PRIVATE ${EXECUTABLE_INCLUDES})
 

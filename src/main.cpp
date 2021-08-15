@@ -37,8 +37,12 @@ using namespace gl;
 #include "log/loggingwindow.h"
 
 #ifdef REDDIT_DESKTOP_DEBUG
-#include "markdownrenderer.h"
+    #include "markdownrenderer.h"
     void ShowMarkdownWindow(bool *open);
+#endif
+
+#ifdef CMARK_ENABLED
+#include "markdown/cmarkmarkdownparser.h"
 #endif
 
 void runMainLoop(SDL_Window* window,ImGuiIO& io);
@@ -144,9 +148,13 @@ int main(int /*argc*/, char** argv)
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // Load Fonts
-
     Utils::LoadFonts(executablePath);
     Utils::LoadRedditThumbnails();
+
+#ifdef CMARK_ENABLED
+    CMarkMarkdownParser::InitCMarkEngine();
+#endif
+
     runMainLoop(window,io);    
 
     {
@@ -166,6 +174,10 @@ int main(int /*argc*/, char** argv)
     SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
     SDL_Quit();
+
+#ifdef CMARK_ENABLED
+    CMarkMarkdownParser::ReleaseCMarkEngine();
+#endif
 
     return EXIT_SUCCESS;
 }

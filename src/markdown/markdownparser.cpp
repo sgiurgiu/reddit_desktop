@@ -21,11 +21,11 @@ void MarkdownParser::SetCurrentNode(MarkdownNode* node)
 }
 std::unique_ptr<MarkdownParser> MarkdownParser::GetParser()
 {
-#ifdef M4DC_ENABLED
+#if defined(M4DC_ENABLED)
     return std::make_unique<M4DCMarkdownParser>();
 #elif defined(CMARK_ENABLED)
     return std::make_unique<CMarkMarkdownParser>();
 #else
-#error "No markdown parser defined"
+    return std::unique_ptr<MarkdownParser>();
 #endif
 }

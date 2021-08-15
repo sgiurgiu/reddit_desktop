@@ -57,6 +57,13 @@ else()
     pkg_check_modules(FREETYPE REQUIRED IMPORTED_TARGET freetype2)
 endif()
 
+
+if(ENABLE_CMARK)
+    set(CMARK_STATIC ON)
+    set(CMARK_SHARED OFF)
+    set(CMARK_TESTS OFF)
+    add_subdirectory(external/cmark-gfm)
+endif()
 add_subdirectory(external/spdlog)
 add_subdirectory(external/fmt)
 

@@ -8,6 +8,7 @@ class MarkdownParser
 {
 public:
     MarkdownParser();
+    virtual ~MarkdownParser() = default;
     MarkdownNode* GetCurrentNode() const;
     void SetCurrentNode(MarkdownNode*);
     virtual std::unique_ptr<MarkdownNode> ParseText(const std::string& text) = 0;

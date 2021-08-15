@@ -6,9 +6,11 @@
 #include "utils.h"
 #include "markdown/markdownparser.h"
 
-MarkdownRenderer::MarkdownRenderer()
+MarkdownRenderer::MarkdownRenderer(): MarkdownRenderer("")
 {}
-MarkdownRenderer::MarkdownRenderer(const std::string& textToRender):text(textToRender)
+MarkdownRenderer::MarkdownRenderer(const std::string& textToRender):
+    text(textToRender), parser(MarkdownParser::GetParser())
+
 {
     ParseCurrentText();
 }
@@ -19,7 +21,10 @@ void MarkdownRenderer::SetText(const std::string& textToRender)
 }
 void MarkdownRenderer::ParseCurrentText()
 {
-    document = MarkdownParser::GetParser()->ParseText(text);
+    if(parser)
+    {
+        document = parser->ParseText(text);
+    }
 }
 MarkdownNode* MarkdownRenderer::GetDocument() const
 {

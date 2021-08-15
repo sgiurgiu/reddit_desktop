@@ -17,6 +17,7 @@ class MarkdownNode
 {
 public:
     MarkdownNode();
+    virtual ~MarkdownNode() = default;
     virtual void Render() = 0;
     virtual void AddChild(std::unique_ptr<MarkdownNode> child);
     MarkdownNode* GetParent() const;

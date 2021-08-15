@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "markdown/markdownnode.h"
+#include "markdown/markdownparser.h"
 
 class MarkdownRenderer
 {
@@ -21,7 +22,7 @@ private:
 private:
     std::string text;
     std::unique_ptr<MarkdownNode> document;
-
+    std::unique_ptr<MarkdownParser> parser;
 };
 
 #endif // MARKDOWNRENDERER_H

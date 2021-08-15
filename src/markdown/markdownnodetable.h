@@ -12,6 +12,10 @@ public:
     {
         return NodeType::Table;
     }
+    void SetColumns(int columns)
+    {
+        this->columns = columns;
+    }
 private:
     int columns = -1;
 };
