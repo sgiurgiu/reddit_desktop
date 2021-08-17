@@ -247,6 +247,10 @@ void CMarkMarkdownParser::constructDocument(cmark_node *node,cmark_event_type ev
     {
         if(!leafNode)
         {
+            //leaf nodes do not get an EXIT event
+            //so no point in making them the current node
+            //keep the current parent of the leaf node as the
+            //current node.
             SetCurrentNode(newNode.get());
         }
         curNode->AddChild(std::move(newNode));

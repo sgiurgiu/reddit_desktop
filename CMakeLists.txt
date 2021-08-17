@@ -12,6 +12,7 @@ option(ENABLE_CMARK "Use cmark as the markdown parser" OFF)
 option(ENABLE_M4DC "Use m4dc as the markdown parser" ON)
 
 if(ENABLE_M4DC AND ENABLE_CMARK)
+    # TODO: Make this a runtime choice not a compile time one
     message(ERROR "Please only choose one of cmark or m4dc markdown parsers")
 endif()
 
@@ -80,8 +81,6 @@ endif()
 if(APPLE)
     add_definitions(-DRD_APPLE)
 endif()
-
-
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
