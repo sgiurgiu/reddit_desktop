@@ -129,7 +129,11 @@ void Utils::LoadFonts(const std::filesystem::path& executablePath)
     const float bigFontSize = 24.f;
 #endif // WIN
 
+#ifdef FONTS_DIRECTORY
+    auto fontsFolder = std::filesystem::path(FONTS_DIRECTORY);
+#else
     auto fontsFolder = executablePath / "fonts";
+#endif
     if(!std::filesystem::exists(fontsFolder)) throw std::runtime_error(
                 fmt::format("Fonts folder does not exists ({})",fontsFolder.string()));
 
