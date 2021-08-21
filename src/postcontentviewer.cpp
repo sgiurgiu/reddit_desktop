@@ -43,6 +43,9 @@ PostContentViewer::PostContentViewer(RedditClientProducer* client,
     useMediaHwAccel = Database::getInstance()->getUseHWAccelerationForMedia();
     useYoutubeDlder = Database::getInstance()->getUseYoutubeDownloader();
     mediaDomains = Database::getInstance()->getMediaDomains();
+#ifndef MPV_RENDER_API_TYPE_SW
+    useMediaHwAccel = true;
+#endif
 }
 void PostContentViewer::loadContent(post_ptr currentPost)
 {
@@ -488,12 +491,14 @@ void PostContentViewer::setupMediaContext(std::string file)
     }
     else
     {
+#ifdef MPV_RENDER_API_TYPE_SW
         mpv_render_param params[] = {
             {MPV_RENDER_PARAM_API_TYPE, const_cast<char*>(MPV_RENDER_API_TYPE_SW)},
             {MPV_RENDER_PARAM_ADVANCED_CONTROL, &mpv_advanced_control},
             {MPV_RENDER_PARAM_INVALID, 0}
         };
         mpv_render_context_create(&mpvRenderContext, mpv, params);
+#endif
     }
     mpv_observe_property(mpv, 0, "duration", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "time-pos", MPV_FORMAT_DOUBLE);
@@ -608,6 +613,7 @@ void PostContentViewer::setPostMediaFrame()
     }
     else
     {
+#ifdef MPV_RENDER_API_TYPE_SW
         int rgbaBitsPerPixel = 32;
         size_t stride = (postPicture->width * rgbaBitsPerPixel + 7) / 8;
         std::unique_ptr<uint8_t[]> pixels = std::make_unique<uint8_t[]>(stride*postPicture->height);
@@ -627,10 +633,7 @@ void PostContentViewer::setPostMediaFrame()
                             GL_RGBA,GL_UNSIGNED_BYTE,pixels.get());
             glBindTexture(GL_TEXTURE_2D, 0);
         }
-        else
-        {
-
-        }
+#endif
     }
 
 

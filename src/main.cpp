@@ -8,7 +8,6 @@
 #include <SDL.h>
 #include <boost/asio/io_context.hpp>
 #include <memory>
-#include <latch>
 #include <filesystem>
 
 #if defined(_MSC_VER)

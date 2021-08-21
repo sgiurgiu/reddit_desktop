@@ -1,0 +1,16 @@
+FROM docker.io/debian:11
+
+LABEL maintainer="Sergiu Giurgiu <sgiurgiu11@gmail.com>"
+
+WORKDIR /tmp/workdir
+COPY build_reddit_desktop.sh /tmp/workdir/
+
+RUN apt update && \
+    apt install -y dpkg cmake gcc g++ libboost-all-dev \
+                libmpv-dev libsdl2-dev libssl-dev \
+                libfreetype-dev pkg-config generate-ninja ninja-build && \
+    apt clean && \
+    chmod 777 /tmp/workdir/build_reddit_desktop.sh
+
+
+

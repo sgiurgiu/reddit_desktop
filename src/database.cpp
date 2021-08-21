@@ -4,9 +4,10 @@
 #include <windows.h>
 #include <Shlobj.h>
 #else
+#include <unistd.h>
+#include <sys/types.h>
 #include <pwd.h>
 #endif
-#include <sys/types.h>
 
 #define DB_ERR_CHECK(msg) \
     if (rc != SQLITE_OK && rc != SQLITE_DONE) \
