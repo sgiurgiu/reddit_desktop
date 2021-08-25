@@ -45,17 +45,19 @@ set(OpenGL_GL_PREFERENCE GLVND)
 find_package(OpenGL COMPONENTS OpenGL REQUIRED)
 find_package(Threads REQUIRED)
 find_package(SDL2 CONFIG REQUIRED)
-find_package(Boost 1.71 REQUIRED system filesystem program_options)
+find_package(Boost 1.74 REQUIRED system filesystem program_options)
 find_package(OpenSSL REQUIRED)
 
 if(VCPKG_TOOLCHAIN)
     find_library(LIBMPV mpv ${LIBMPV_DIR})
     find_package(freetype CONFIG REQUIRED)
+    #ADD IBUS TO VCPKG
 else()
     #set(ENV{PKG_CONFIG_PATH} "/usr/local/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
     pkg_check_modules(FREETYPE REQUIRED IMPORTED_TARGET freetype2)
+    pkg_check_modules(IBUS REQUIRED IMPORTED_TARGET ibus-1.0)
 endif()
 
 
@@ -102,7 +104,7 @@ SET(CPACK_PACKAGE_VERSION_MAJOR ${REDDITDESKTOP_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${REDDITDESKTOP_VERSION_MINOR})
 SET(CPACK_PACKAGE_VERSION_PATCH ${REDDITDESKTOP_VERSION_PATCH})
 SET(CPACK_PACKAGE_CONTACT "Sergiu Giurgiu <sgiurgiu11@gmail.com>")
-set (CPACK_DEBIAN_PACKAGE_DEPENDS "libmpv, libsdl2, libssl, libfreetype ")
+set (CPACK_DEBIAN_PACKAGE_DEPENDS "libmpv, libssl, libfreetype ")
 
 set(CPACK_RPM_RELOCATION_PATHS "/${CMAKE_INSTALL_SYSCONFDIR}" "${CMAKE_INSTALL_BINDIR}")
 set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0) # don't prepend package name
@@ -110,5 +112,9 @@ set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0) # don't prepend package name
 #set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/postinstall")
 
 SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+
+if(CPACK_DISTRIBUTION)
+    SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}-${CPACK_DISTRIBUTION}")
+endif()
 
 INCLUDE(CPack)

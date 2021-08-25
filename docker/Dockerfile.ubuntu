@@ -1,6 +1,8 @@
-FROM docker.io/debian:11
-
+FROM docker.io/ubuntu:21.10
 LABEL maintainer="Sergiu Giurgiu <sgiurgiu11@gmail.com>"
+
+ARG DEBIAN_FRONTEND=noninteractive
+ENV TZ=America/Toronto
 
 WORKDIR /tmp/workdir
 COPY build_reddit_desktop.sh /tmp/workdir/
@@ -8,10 +10,9 @@ COPY build_reddit_desktop.sh /tmp/workdir/
 RUN apt update && \
     apt install -y dpkg cmake gcc g++ libboost-all-dev libdrm-dev \
                 libgbm-dev libmpv-dev libsdl2-dev libssl-dev \
-                libfreetype-dev pkg-config generate-ninja ninja-build && \
+                libfreetype-dev pkg-config ninja-build && \
     apt clean && \
     chmod 777 /tmp/workdir/build_reddit_desktop.sh
 
-
 ENTRYPOINT ["/tmp/workdir/build_reddit_desktop.sh"]
-CMD ["debian"]
+CMD ["ubuntu"]

@@ -135,7 +135,9 @@ set_source_files_properties(${GLAD_SRCS}
     ${GUMBO_PARSER_SRCS} ${KATANA_PARSER_SRCS} ${SQLITE_SRC}
     PROPERTIES COMPILE_FLAGS "-w")
 
-target_link_libraries(${EXECUTABLE_NAME} PRIVATE  OpenGL::GL SDL2::SDL2)
+set_property(TARGET ${EXECUTABLE_NAME} PROPERTY POSITION_INDEPENDENT_CODE TRUE)
+
+target_link_libraries(${EXECUTABLE_NAME} PRIVATE  OpenGL::GL SDL2::SDL2-static)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${CMAKE_DL_LIBS} Threads::Threads )
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE OpenSSL::SSL)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE Boost::boost Boost::system Boost::filesystem)
@@ -147,6 +149,7 @@ if(VCPKG_TOOLCHAIN)
     target_include_directories(${EXECUTABLE_NAME} PRIVATE ${LIBMPV_INCLUDE})
 else()
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE PkgConfig::MPV PkgConfig::FREETYPE)
+    target_link_libraries(${EXECUTABLE_NAME} PRIVATE PkgConfig::IBUS)
 endif()
 
 if(ENABLE_CMARK)
