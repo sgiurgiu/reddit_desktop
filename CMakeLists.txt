@@ -45,7 +45,7 @@ set(OpenGL_GL_PREFERENCE GLVND)
 find_package(OpenGL COMPONENTS OpenGL REQUIRED)
 find_package(Threads REQUIRED)
 find_package(SDL2 CONFIG REQUIRED)
-find_package(Boost 1.74 REQUIRED system filesystem program_options)
+find_package(Boost 1.71 REQUIRED system filesystem program_options)
 find_package(OpenSSL REQUIRED)
 
 if(VCPKG_TOOLCHAIN)
