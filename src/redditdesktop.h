@@ -13,6 +13,7 @@
 #include "userinformationwindow.h"
 #include "subredditslistwindow.h"
 #include "log/loggingwindow.h"
+#include "aboutwindow.h"
 
 class RedditDesktop : public std::enable_shared_from_this<RedditDesktop>
 {
@@ -96,6 +97,7 @@ private:
     std::vector<std::string> mediaDomains;
     std::string newMediaDomain;
     std::string selectedMediaDomain;
+    AboutWindow aboutWindow;
 };
 
 

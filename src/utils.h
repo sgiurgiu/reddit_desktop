@@ -66,11 +66,12 @@ public:
     static ImVec4 GetDownVoteColor();
     static ImVec4 GetUpVoteColor();
     static std::string CalculateScore(int& score,Voted originalVote,Voted newVote);
-    static void LoadRedditThumbnails();
-    static void ReleaseRedditThumbnails();
+    static void LoadRedditImages();
+    static void ReleaseRedditImages();
     static ResizableGLImagePtr GetRedditThumbnail(const std::string& kind);
     static std::string formatDuration(std::chrono::seconds diff);
     static ResizableGLImagePtr GetRedditHeader();
+    static ResizableGLImagePtr GetApplicationIcon();
 private:
     static ImFont* AddFont(const std::filesystem::path& fontsFolder, const std::string& font, float fontSize);
     static ResizableGLImagePtr GetRedditSpriteSubimage(int x, int y, int width, int height);

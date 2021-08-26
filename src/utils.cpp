@@ -1,6 +1,7 @@
 #include "utils.h"
 #include "imgui.h"
 #include "images/sprite_reddit.h"
+#include "images/reddit_icon_256.h"
 #include "fonts/fonts.h"
 
 #include "misc/freetype/imgui_freetype.h"
@@ -213,13 +214,13 @@ std::string Utils::encode64(const std::string &val)
     auto tmp = std::string(It(std::begin(val)), It(std::end(val)));
     return tmp.append((3 - val.size() % 3) % 3, '=');
 }
-void Utils::LoadRedditThumbnails()
+void Utils::LoadRedditImages()
 {
-    int width, height, channels;
+    int width, height, channels;    
     auto data = decodeImageData(sprite_reddit_png,sprite_reddit_png_len,&width,&height,&channels);
     redditDefaultSprites = Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
 }
-void Utils::ReleaseRedditThumbnails()
+void Utils::ReleaseRedditImages()
 {
     redditDefaultSprites.reset();
 }
@@ -252,6 +253,12 @@ ResizableGLImagePtr Utils::GetRedditSpriteSubimage(int x, int y, int width, int 
     image->textureId = image_texture;
 
     return image;
+}
+ResizableGLImagePtr Utils::GetApplicationIcon()
+{
+    int width, height, channels;
+    auto data = decodeImageData(_reddit_icon_256_png,_reddit_icon_256_png_len,&width,&height,&channels);
+    return Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
 }
 ResizableGLImagePtr Utils::GetRedditHeader()
 {

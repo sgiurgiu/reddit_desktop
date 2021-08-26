@@ -104,6 +104,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         subredditslistwindow.cpp
         mediawidget.cpp
         subredditstylesheet.cpp
+        aboutwindow.cpp
         )
 
 if(VCPKG_TOOLCHAIN)

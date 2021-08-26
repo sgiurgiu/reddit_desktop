@@ -34,6 +34,7 @@ using namespace gl;
 #include "database.h"
 #include "redditdesktop.h"
 #include "log/loggingwindow.h"
+#include "images/reddit_icon_48.h"
 
 #ifdef REDDIT_DESKTOP_DEBUG
     #include "markdownrenderer.h"
@@ -95,6 +96,17 @@ int main(int /*argc*/, char** argv)
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     SDL_Window* window = SDL_CreateWindow("Reddit Desktop", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
+    {
+        int iconWidth, iconHeight, iconChannels;
+        auto iconData = Utils::decodeImageData(_reddit_icon_48_png,_reddit_icon_48_png_len,
+                                               &iconWidth,&iconHeight,&iconChannels);
+        auto iconSurface = SDL_CreateRGBSurfaceFrom((void*)iconData.get(),
+                                                    iconWidth,iconHeight,32,iconWidth*4,
+                                                    0x000000ff,0x0000ff00,0x00ff0000,0xff000000);
+
+        SDL_SetWindowIcon(window, iconSurface);
+        SDL_FreeSurface(iconSurface);
+    }
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, gl_context);
     SDL_GL_SetSwapInterval(1); // Enable vsync
@@ -148,7 +160,7 @@ int main(int /*argc*/, char** argv)
 
     // Load Fonts
     Utils::LoadFonts(executablePath);
-    Utils::LoadRedditThumbnails();
+    Utils::LoadRedditImages();
 
 #ifdef CMARK_ENABLED
     CMarkMarkdownParser::InitCMarkEngine();
@@ -162,7 +174,7 @@ int main(int /*argc*/, char** argv)
         SDL_GetWindowSize(window,&w,&h);
         db->setMainWindowDimensions(x,y,w,h);
     }
-    Utils::ReleaseRedditThumbnails();
+    Utils::ReleaseRedditImages();
     Utils::DeleteFonts();
 
     // Cleanup

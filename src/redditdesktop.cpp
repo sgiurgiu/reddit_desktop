@@ -348,6 +348,7 @@ void RedditDesktop::showDesktop()
         loggingWindow->showWindow(appFrameWidth,appFrameHeight);
     }
     showMediaDomainsManagementDialog();
+    aboutWindow.showAboutWindow(appFrameWidth,appFrameHeight);
 
     ImGui::PopFont();
 }
@@ -569,6 +570,14 @@ void RedditDesktop::showMainMenuBar()
                 {
                     cm->setFocused();
                 }
+            }
+            ImGui::EndMenu();
+        }
+        if(ImGui::BeginMenu("Help"))
+        {
+            if(ImGui::MenuItem("About"))
+            {
+                aboutWindow.setWindowShowing(true);
             }
             ImGui::EndMenu();
         }
