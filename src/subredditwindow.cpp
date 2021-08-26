@@ -420,7 +420,7 @@ float SubredditWindow::renderPostThumbnail(PostDisplay& p)
         height = std::max(height,ImGui::GetCursorPosY());
         auto rectMin = ImGui::GetItemRectMin();
         auto rectMax = ImGui::GetItemRectMax();
-        if(ImGui::IsMouseHoveringRect(rectMin,rectMax))
+        if(ImGui::IsWindowFocused() && ImGui::IsMouseHoveringRect(rectMin,rectMax))
         {
             if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
             {
@@ -442,7 +442,8 @@ float SubredditWindow::renderPostThumbnail(PostDisplay& p)
         height = std::max(height,ImGui::GetCursorPosY());
         auto rectMin = ImGui::GetItemRectMin();
         auto rectMax = ImGui::GetItemRectMax();
-        if(ImGui::IsMouseHoveringRect(rectMin,rectMax) && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) &&
+        if(ImGui::IsWindowFocused() && ImGui::IsMouseHoveringRect(rectMin,rectMax) &&
+                ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) &&
                 p.blurredThumbnailPicture)
         {
             p.shouldShowUnblurredImage = false;
