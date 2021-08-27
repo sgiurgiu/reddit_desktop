@@ -149,6 +149,7 @@ private:
     std::string moreRepliesButtonText;
     std::string loadingSpinnerIdText;
     std::string postCommentPreviewCheckboxId;
+    std::string clearCommentButtonText;
     std::optional<unloaded_children> unloadedPostComments;
     bool loadingUnloadedReplies = false;
     std::string postCommentTextBuffer;

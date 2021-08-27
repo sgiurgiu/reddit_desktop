@@ -72,6 +72,7 @@ public:
     static std::string formatDuration(std::chrono::seconds diff);
     static ResizableGLImagePtr GetRedditHeader();
     static ResizableGLImagePtr GetApplicationIcon();
+    static std::filesystem::path GetAppConfigFolder();
 private:
     static ImFont* AddFont(const std::filesystem::path& fontsFolder, const std::string& font, float fontSize);
     static ResizableGLImagePtr GetRedditSpriteSubimage(int x, int y, int width, int height);

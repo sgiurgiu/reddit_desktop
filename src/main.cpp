@@ -148,7 +148,9 @@ int main(int /*argc*/, char** argv)
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    auto appConfigFolder = Utils::GetAppConfigFolder();
+    auto iniFilePathString = (appConfigFolder / "imgui.ini").string();
+    io.IniFilename = iniFilePathString.c_str();
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();

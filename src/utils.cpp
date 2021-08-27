@@ -17,12 +17,16 @@
 #include <codecvt>
 
 #ifdef RD_WINDOWS
+#include <windows.h>
 #include <shlobj.h>
 #include <shlwapi.h>
 #include <objbase.h>
 #else
 #include <boost/process/spawn.hpp>
 #include <boost/process/search_path.hpp>
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)
@@ -503,3 +507,40 @@ std::string Utils::CalculateScore(int& score,Voted originalVote,Voted newVote)
     }
     return Utils::getHumanReadableNumber(score);
 }
+
+std::filesystem::path Utils::GetAppConfigFolder()
+{
+    std::filesystem::path homePath;
+    std::string relativeConfigFolder;
+#ifdef RD_WINDOWS
+    char homeDirStr[MAX_PATH];
+    if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, homeDirStr)))
+    {
+        homePath = homeDirStr;
+    }
+    relativeConfigFolder = "reddit_desktop";
+#else
+    auto pwd = getpwuid(getuid());
+    if (pwd)
+    {
+        homePath = pwd->pw_dir;
+    }
+    else
+    {
+        // try the $HOME environment variable
+        homePath = getenv("HOME");
+    }
+    relativeConfigFolder = ".config/reddit_desktop";
+#endif
+
+
+    if(homePath.empty())
+    {
+        homePath = "./";
+    }
+
+    std::filesystem::path  configFolder = homePath / relativeConfigFolder;
+    std::filesystem::create_directories(configFolder);
+    return configFolder;
+}
+

@@ -383,6 +383,7 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
                                        reinterpret_cast<const char*>(ICON_FA_EXTERNAL_LINK_SQUARE " Open Link"),
                                        parentPost->name);
     commentButtonText = fmt::format("Save##{}_comment",parentPost->name);
+    clearCommentButtonText = fmt::format("Clear##{}_comment",parentPost->name);
     postCommentTextFieldId = fmt::format("##{}_postComment",parentPost->name);
     postCommentPreviewCheckboxId = fmt::format("Show Preview##{}_postCommentPreview",parentPost->name);
 }
@@ -495,6 +496,7 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
             if(ImGui::Button(c.cancelReplyButtonText.c_str()))
             {
                 c.showingReplyArea = false;
+                c.postReplyTextBuffer.clear();
             }
             ImGui::SameLine();
             if(ImGui::Checkbox(c.postReplyPreviewCheckboxId.c_str(),&c.showingPreview))
@@ -863,11 +865,17 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
                 postingComment = true;
                 createCommentConnection->createComment(parentPost->name,postCommentTextBuffer,token, PostUserData());
             }
+            ImGui::SameLine();
+            if(ImGui::Button(clearCommentButtonText.c_str()) && !postingComment && !postCommentTextBuffer.empty())
+            {
+                postCommentTextBuffer.clear();
+            }
             if(saveDisabled)
             {
                 ImGui::PopStyleColor(3);
                 ImGui::PopStyleVar();
             }
+
             ImGui::SameLine();
             if(ImGui::Checkbox(postCommentPreviewCheckboxId.c_str(),&showingPostPreview))
             {

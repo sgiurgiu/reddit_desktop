@@ -1,13 +1,6 @@
 #include "database.h"
 #include <SDL.h>
-#ifdef RD_WINDOWS
-#include <windows.h>
-#include <Shlobj.h>
-#else
-#include <unistd.h>
-#include <sys/types.h>
-#include <pwd.h>
-#endif
+#include "utils.h"
 
 #define DB_ERR_CHECK(msg) \
     if (rc != SQLITE_OK && rc != SQLITE_DONE) \
@@ -35,7 +28,7 @@ std::unique_ptr<Database> Database::instance(nullptr);
 
 Database::Database():db(nullptr,connection_deleter())
 {
-    auto appConfigFolder = getAppConfigFolder();
+    auto appConfigFolder = Utils::GetAppConfigFolder();
     sqlite3* db_ptr;
     int rc = sqlite3_open((appConfigFolder / "rd.db").string().c_str(),&db_ptr);
     db.reset(db_ptr);
@@ -79,41 +72,6 @@ Database::Database():db(nullptr,connection_deleter())
     }
 }
 
-std::filesystem::path Database::getAppConfigFolder()
-{
-    std::filesystem::path homePath;
-    std::string relativeConfigFolder;
-#ifdef RD_WINDOWS
-    char homeDirStr[MAX_PATH];
-    if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, homeDirStr)))
-    {
-        homePath = homeDirStr;
-    }
-    relativeConfigFolder = "reddit_desktop";
-#else
-    auto pwd = getpwuid(getuid());
-    if (pwd)
-    {
-        homePath = pwd->pw_dir;
-    }
-    else
-    {
-        // try the $HOME environment variable
-        homePath = getenv("HOME");
-    }
-    relativeConfigFolder = ".config/reddit_desktop";
-#endif
-
-
-    if(homePath.empty())
-    {
-        homePath = "./";
-    }
-
-    std::filesystem::path  configFolder = homePath / relativeConfigFolder;
-    std::filesystem::create_directories(configFolder);
-    return configFolder;
-}
 
 Database* Database::getInstance()
 {
