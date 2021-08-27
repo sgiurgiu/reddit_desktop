@@ -5,7 +5,7 @@ cd /tmp/build
 
 
 CMAKE_ARGS="-GNinja -DFONTS_DIRECTORY=/usr/share/reddit_desktop -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=OFF -DENABLE_M4DC=ON -DENABLE_CMARK=OFF"
-
+distro=""
 if [ -n "$1" ]
 then
     distro=$1
@@ -27,4 +27,4 @@ cmake ${CMAKE_ARGS} /tmp/reddit_desktop
 ninja package
 
 mkdir -p /tmp/reddit_desktop/packages
-cp *.deb /tmp/reddit_desktop/packages/
+cp reddit_desktop-*-${distro}.* /tmp/reddit_desktop/packages/

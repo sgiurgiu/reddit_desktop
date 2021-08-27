@@ -1,0 +1,24 @@
+FROM registry.fedoraproject.org/fedora
+
+LABEL maintainer="Sergiu Giurgiu <sgiurgiu11@gmail.com>"
+
+WORKDIR /tmp/workdir
+COPY build_reddit_desktop.sh /tmp/workdir/
+
+RUN dnf install -yq \
+    http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-stable.noarch.rpm \
+    http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-stable.noarch.rpm && \
+    rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-latest && \
+    rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-latest && \
+    dnf upgrade -y && \
+    dnf clean all
+
+RUN dnf -yq install cmake gcc g++ pkgconf-pkg-config \
+        tar rpm-build ninja-build boost-devel boost-static \
+        openssl-devel SDL2-devel SDL2-static ibus-devel \
+        freetype-devel mpv-libs-devel && \
+        dnf clean all
+
+
+ENTRYPOINT ["/tmp/workdir/build_reddit_desktop.sh"]
+CMD ["fedora"]
