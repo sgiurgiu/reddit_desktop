@@ -88,10 +88,17 @@ ImFont* Utils::AddFont(const std::filesystem::path& fontsFolder, const std::stri
     config.MergeMode = true;
 
     auto fontFile = fontsFolder / font;
+
+    if(!std::filesystem::exists(fontFile)) throw std::runtime_error(
+                fmt::format("Font file {} does not exists",fontFile.string()));
+
     auto fontFilenameString = fontFile.string();
     const char* fontFilename = fontFilenameString.c_str();
 
-    ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFilename, fontSize);
+
+    auto fontData = ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFilename, fontSize);
+    if(!fontData) throw std::runtime_error(
+                fmt::format("Unable to load font {}",fontFile.string()));
     ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFilename, fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesChineseFull());
     ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFilename, fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesCyrillic());
     ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFilename, fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesKorean());
@@ -131,7 +138,7 @@ void Utils::LoadFonts(const std::filesystem::path& executablePath)
 #endif // WIN
 
 #ifdef FONTS_DIRECTORY
-    auto fontsFolder = std::filesystem::path(FONTS_DIRECTORY);
+    auto fontsFolder = std::filesystem::path(FONTS_DIRECTORY) / "fonts";
 #else
     auto fontsFolder = executablePath / "fonts";
 #endif
