@@ -733,13 +733,19 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
     ImGui::SetNextWindowSize(ImVec2(appFrameWidth*0.6,appFrameHeight*0.8),ImGuiCond_FirstUseEver);
     if(!ImGui::Begin(windowName.c_str(),&windowOpen,ImGuiWindowFlags_None))
     {
-        if(postContentViewer) postContentViewer->stopPlayingMedia();
+        if(postContentViewer) {
+            postContentViewer->stopPlayingMedia();
+            postContentViewer.reset();
+        }
         ImGui::End();
         return;
     }
     if(!windowOpen)
     {
-        if(postContentViewer) postContentViewer->stopPlayingMedia();
+        if(postContentViewer) {
+            postContentViewer->stopPlayingMedia();
+            postContentViewer.reset();
+        }
         ImGui::End();
         return;
     }
@@ -784,7 +790,15 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::PopFont();
         ImGui::NewLine();
 
-        postContentViewer->showPostContent();
+        if(postContentViewer)
+        {
+            postContentViewer->showPostContent();
+        }
+        else
+        {
+            postContentViewer = std::make_shared<PostContentViewer>(client,uiExecutor);
+            postContentViewer->loadContent(parentPost);
+        }
 
         if(parentPost->voted == Voted::UpVoted)
         {

@@ -53,6 +53,7 @@ void SubredditWindow::clearExistingPostsData()
         if(p.postContentViewer)
         {
             p.postContentViewer->stopPlayingMedia();
+            p.postContentViewer.reset();
             //auto postContentViewerTextures = p.postContentViewer->getAndResetTextures();
             //std::move(postContentViewerTextures.begin(),postContentViewerTextures.end(),std::back_inserter(textures));
             /*auto fbo = p.postContentViewer->getAndResetMediaFBO();
