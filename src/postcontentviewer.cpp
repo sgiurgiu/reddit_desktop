@@ -102,7 +102,7 @@ void PostContentViewer::loadContent(post_ptr currentPost)
             loadingPostContent = true;
             if(useYoutubeDlder)
             {
-                setupMediaContext(currentPost->url);
+                setupMediaContext(currentPost->url, false);
             }
             else
             {
@@ -114,7 +114,7 @@ void PostContentViewer::loadContent(post_ptr currentPost)
                     {
                     case HtmlParser::MediaType::Video:
                         boost::asio::post(self->uiExecutor,
-                                          std::bind(&PostContentViewer::setupMediaContext,self,link.url));
+                                          std::bind(&PostContentViewer::setupMediaContext,self,link.url, false));
                         break;
                     case HtmlParser::MediaType::Image:
                         boost::asio::post(self->uiExecutor,
@@ -124,7 +124,7 @@ void PostContentViewer::loadContent(post_ptr currentPost)
                         break;
                     default:
                         boost::asio::post(self->uiExecutor,
-                                          std::bind(&PostContentViewer::setupMediaContext,self,link.url));
+                                          std::bind(&PostContentViewer::setupMediaContext,self,link.url, false));
                         break;
                     }
 
@@ -189,6 +189,208 @@ void PostContentViewer::setErrorMessage(std::string errorMessage)
     this->errorMessage = errorMessage;
     loadingPostContent = false;
 }
+void PostContentViewer::loadPostGalleryImages()
+{
+    loadingPostContent = true;
+    for(size_t i=0;i<currentPost->gallery.size();i++)
+    {
+        const auto& galImage = currentPost->gallery.at(i);
+        gallery.images.emplace_back();
+        if(galImage.url.empty()) continue;
+        auto resourceConnection = client->makeResourceClientConnection();
+        resourceConnection->connectionCompleteHandler(
+                    [weak = weak_from_this(),index=i](const boost::system::error_code& ec,
+                         resource_response response)
+        {
+            auto self = weak.lock();
+            if (!self) return;
+            if(ec)
+            {
+                boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,self,ec.message()));
+                return;
+            }
+            else if(response.status == 200)
+            {
+                int width, height, channels;
+                auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
+                boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setPostGalleryImage,self,
+                                                             data,width,height,channels,(int)index));
+            }
+        });
+        resourceConnection->getResource(galImage.url);
+    }
+}
+void PostContentViewer::setPostGalleryImage(Utils::STBImagePtr data, int width, int height, int channels, int index)
+{
+    UNUSED(channels);
+    auto image = Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
+    gallery.images[index] = std::move(image);
+    loadingPostContent = false;
+}
+void PostContentViewer::loadPostImage()
+{
+    loadingPostContent = true;
+
+    if(currentPost->domain == "imgur.com")
+    {
+        auto mediaStreamingConnection = client->makeMediaStreamingClientConnection();
+        mediaStreamingConnection->streamAvailableHandler([weak=weak_from_this()](HtmlParser::MediaLink link) {
+            auto self = weak.lock();
+            if (!self) return;
+            self->downloadPostImage(link.url);
+        });
+        mediaStreamingConnection->errorHandler([weak = weak_from_this()](int /*errorCode*/,const std::string& str){
+            auto self = weak.lock();
+            if (!self) return;
+            boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,self,str));
+        });
+        mediaStreamingConnection->streamMedia(currentPost.get());
+    }
+    else
+    {
+        //has media preview
+        std::string mediaUrl;
+        for (const auto& p : currentPost->previews)
+        {
+            for (const auto& v : p.variants)
+            {
+                if (v.kind == "mp4")
+                {
+                    mediaUrl = v.source.url;
+                    break;
+                }
+            }
+        }
+        if (mediaUrl.empty())
+        {
+            downloadPostImage(currentPost->url);
+        }
+        else
+        {
+            setupMediaContext(mediaUrl, true);
+        }
+    }
+}
+void PostContentViewer::downloadPostImage(std::string url)
+{
+    auto resourceConnection = client->makeResourceClientConnection();
+    resourceConnection->connectionCompleteHandler(
+                [weak=weak_from_this(),url=url](const boost::system::error_code& ec,
+                     resource_response response)
+    {
+        auto self = weak.lock();
+        if (!self) return;
+        if(ec)
+        {
+            boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,self,ec.message()));
+            return;
+        }
+        if(response.status == 200)
+        {
+            int* delays = nullptr;
+            int count;
+            int width, height, channels;
+            if(url.ends_with(".gif"))
+            {
+                auto data = Utils::decodeGifData(response.data.data(),response.data.size(),
+                                                   &width,&height,&channels,&count,&delays);
+                boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setPostGif,self,
+                                                             data,width,height,channels,count,delays));
+            }
+            else
+            {
+                auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
+                boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setPostImage,self,data,width,height,channels));
+            }
+        }
+    });
+    resourceConnection->getResource(url);
+}
+void PostContentViewer::setupMediaContext(std::string file, bool useProvidedFile)
+{
+    if(file.empty())
+    {
+        file = currentPost->url;
+    }
+    mpv = mpv_create();
+    //mpv_set_option_string(mpv, "idle", "no");
+    mpv_set_option_string(mpv, "config", "no");
+    mpv_set_option_string(mpv, "terminal", "yes");
+    mpv_set_option_string(mpv, "msg-level", "all=v");
+    if(useYoutubeDlder && !useProvidedFile)
+    {
+        file = "ytdl://"+currentPost->url;
+        mpv_set_option_string(mpv, "ytdl", "yes");
+    }
+
+    //mpv_set_option_string(mpv, "cache", "yes");
+    //int64_t maxBytes = 1024*1024*10;
+    //mpv_set_option(mpv, "demuxer-max-bytes", MPV_FORMAT_INT64,&maxBytes);
+
+    mpv_initialize(mpv);
+    int64_t cacheDefault = 15000;
+    int64_t cacheBackBuffer = 15000;
+    int64_t cacheSecs = 10;
+    mpv_set_property(mpv, "cache-default", MPV_FORMAT_INT64, &cacheDefault);
+    mpv_set_property(mpv, "cache-backbuffer", MPV_FORMAT_INT64, &cacheBackBuffer);
+    mpv_set_property(mpv, "cache-secs", MPV_FORMAT_INT64, &cacheSecs);
+    //char* voProp = "libmpv";
+    //char* hwdecInteropProp = "auto";
+   // mpv_set_property(mpv, "vo", MPV_FORMAT_STRING,&voProp);
+    // Enable opengl-hwdec-interop so we can set hwdec at runtime
+    //mpv_set_property(mpv, "gpu-hwdec-interop",MPV_FORMAT_STRING, &hwdecInteropProp);
+
+    int mpv_advanced_control = 1;
+    if(useMediaHwAccel)
+    {
+        mpv_opengl_init_params gl_params = {get_proc_address_mpv, nullptr, nullptr};
+        mpv_render_param params[] = {
+            {MPV_RENDER_PARAM_API_TYPE, const_cast<char*>(MPV_RENDER_API_TYPE_OPENGL)},
+            {MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_params},
+            {MPV_RENDER_PARAM_ADVANCED_CONTROL, &mpv_advanced_control},
+            {MPV_RENDER_PARAM_INVALID, 0}
+        };
+        mpv_render_context_create(&mpvRenderContext, mpv, params);
+    }
+    else
+    {
+#ifdef MPV_RENDER_API_TYPE_SW
+        mpv_render_param params[] = {
+            {MPV_RENDER_PARAM_API_TYPE, const_cast<char*>(MPV_RENDER_API_TYPE_SW)},
+            {MPV_RENDER_PARAM_ADVANCED_CONTROL, &mpv_advanced_control},
+            {MPV_RENDER_PARAM_INVALID, 0}
+        };
+        mpv_render_context_create(&mpvRenderContext, mpv, params);
+#endif
+    }
+    mpv_observe_property(mpv, 0, "duration", MPV_FORMAT_DOUBLE);
+    mpv_observe_property(mpv, 0, "time-pos", MPV_FORMAT_DOUBLE);
+    mpv_observe_property(mpv, 0, "height", MPV_FORMAT_DOUBLE);
+    mpv_observe_property(mpv, 0, "width", MPV_FORMAT_DOUBLE);
+    mpv_observe_property(mpv, 0, "pause", MPV_FORMAT_FLAG);
+
+    mediaState.finished = false;
+    double vol = mediaState.mediaAudioVolume;
+    mpv_set_property(mpv,"volume",MPV_FORMAT_DOUBLE,&vol);
+    mpv_observe_property(mpv, 0, "volume", MPV_FORMAT_DOUBLE);
+    //TODO: figure out a way to pass these to a std::function bound to a shared_from_this or weak_from_this
+    mpv_set_wakeup_callback(mpv, &PostContentViewer::onMpvEvents, this);
+    mpv_render_context_set_update_callback(mpvRenderContext, &PostContentViewer::mpvRenderUpdate, this);
+    spdlog::debug("playing URL: {}",file);
+    const char *cmd[] = {"loadfile", file.c_str(), nullptr};
+    mpv_command_async(mpv, 0, cmd);
+}
+
+void PostContentViewer::mpvRenderUpdate(void *context)
+{
+    auto win=reinterpret_cast<PostContentViewer*>(context);
+    if(!win) return;
+    auto weak = win->weak_from_this();
+    auto self = weak.lock();
+    if (!self) return;
+    if(self->destroying) return;
+    boost::asio::post(win->uiExecutor,std::bind(&PostContentViewer::setPostMediaFrame,self));
+}
 void PostContentViewer::onMpvEvents(void* context)
 {
     auto win=reinterpret_cast<PostContentViewer*>(context);
@@ -205,7 +407,7 @@ void PostContentViewer::handleMpvEvents()
     while (true)
     {
        mpv_event *mp_event = mpv_wait_event(mpv, 0);
-       //std::cout << "event:"<<mp_event->event_id<<std::endl;
+
        if (mp_event->event_id == MPV_EVENT_NONE)
            break;
        switch(mp_event->event_id)
@@ -214,6 +416,7 @@ void PostContentViewer::handleMpvEvents()
        {
             mediaState.finished = true;
             mediaState.timePosition = mediaState.duration;
+
        }
            break;
        case MPV_EVENT_START_FILE:
@@ -326,208 +529,7 @@ void PostContentViewer::mpvDoublePropertyChanged(std::string name, double value)
     }
 
 }
-void PostContentViewer::loadPostGalleryImages()
-{
-    loadingPostContent = true;
-    for(size_t i=0;i<currentPost->gallery.size();i++)
-    {
-        const auto& galImage = currentPost->gallery.at(i);
-        gallery.images.emplace_back();
-        if(galImage.url.empty()) continue;
-        auto resourceConnection = client->makeResourceClientConnection();
-        resourceConnection->connectionCompleteHandler(
-                    [weak = weak_from_this(),index=i](const boost::system::error_code& ec,
-                         resource_response response)
-        {
-            auto self = weak.lock();
-            if (!self) return;
-            if(ec)
-            {
-                boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,self,ec.message()));
-                return;
-            }
-            else if(response.status == 200)
-            {
-                int width, height, channels;
-                auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
-                boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setPostGalleryImage,self,
-                                                             data,width,height,channels,(int)index));
-            }
-        });
-        resourceConnection->getResource(galImage.url);
-    }
-}
-void PostContentViewer::setPostGalleryImage(Utils::STBImagePtr data, int width, int height, int channels, int index)
-{
-    UNUSED(channels);
-    auto image = Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
-    gallery.images[index] = std::move(image);
-    loadingPostContent = false;
-}
-void PostContentViewer::loadPostImage()
-{
-    loadingPostContent = true;
 
-    if(currentPost->domain == "imgur.com")
-    {
-        auto mediaStreamingConnection = client->makeMediaStreamingClientConnection();
-        mediaStreamingConnection->streamAvailableHandler([weak=weak_from_this()](HtmlParser::MediaLink link) {
-            auto self = weak.lock();
-            if (!self) return;
-            self->downloadPostImage(link.url);
-        });
-        mediaStreamingConnection->errorHandler([weak = weak_from_this()](int /*errorCode*/,const std::string& str){
-            auto self = weak.lock();
-            if (!self) return;
-            boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,self,str));
-        });
-        mediaStreamingConnection->streamMedia(currentPost.get());
-    }
-    else
-    {
-        //has media preview
-        std::string mediaUrl;
-        for (const auto& p : currentPost->previews)
-        {
-            for (const auto& v : p.variants)
-            {
-                if (v.kind == "mp4")
-                {
-                    mediaUrl = v.source.url;
-                    break;
-                }
-            }
-        }
-        if (mediaUrl.empty())
-        {
-            downloadPostImage(currentPost->url);
-        }
-        else
-        {
-            setupMediaContext(mediaUrl);
-        }
-    }
-}
-void PostContentViewer::downloadPostImage(std::string url)
-{
-    auto resourceConnection = client->makeResourceClientConnection();
-    resourceConnection->connectionCompleteHandler(
-                [weak=weak_from_this(),url=url](const boost::system::error_code& ec,
-                     resource_response response)
-    {
-        auto self = weak.lock();
-        if (!self) return;
-        if(ec)
-        {
-            boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,self,ec.message()));
-            return;
-        }
-        if(response.status == 200)
-        {
-            int* delays = nullptr;
-            int count;
-            int width, height, channels;
-            if(url.ends_with(".gif"))
-            {
-                auto data = Utils::decodeGifData(response.data.data(),response.data.size(),
-                                                   &width,&height,&channels,&count,&delays);
-                boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setPostGif,self,
-                                                             data,width,height,channels,count,delays));
-            }
-            else
-            {
-                auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
-                boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setPostImage,self,data,width,height,channels));
-            }
-        }
-    });
-    resourceConnection->getResource(url);
-}
-void PostContentViewer::setupMediaContext(std::string file)
-{
-    if(file.empty())
-    {
-        file = currentPost->url;
-    }
-    mpv = mpv_create();
-    //mpv_set_option_string(mpv, "idle", "no");
-    mpv_set_option_string(mpv, "config", "no");
-    mpv_set_option_string(mpv, "terminal", "yes");
-    mpv_set_option_string(mpv, "msg-level", "all=v");
-    if(useYoutubeDlder)
-    {
-        file = "ytdl://"+currentPost->url;
-        mpv_set_option_string(mpv, "ytdl", "yes");
-    }
-
-    //mpv_set_option_string(mpv, "cache", "yes");
-    //int64_t maxBytes = 1024*1024*10;
-    //mpv_set_option(mpv, "demuxer-max-bytes", MPV_FORMAT_INT64,&maxBytes);
-
-    mpv_initialize(mpv);
-    int64_t cacheDefault = 15000;
-    int64_t cacheBackBuffer = 15000;
-    int64_t cacheSecs = 10;
-    mpv_set_property(mpv, "cache-default", MPV_FORMAT_INT64, &cacheDefault);
-    mpv_set_property(mpv, "cache-backbuffer", MPV_FORMAT_INT64, &cacheBackBuffer);
-    mpv_set_property(mpv, "cache-secs", MPV_FORMAT_INT64, &cacheSecs);
-    //char* voProp = "libmpv";
-    //char* hwdecInteropProp = "auto";
-   // mpv_set_property(mpv, "vo", MPV_FORMAT_STRING,&voProp);
-    // Enable opengl-hwdec-interop so we can set hwdec at runtime
-    //mpv_set_property(mpv, "gpu-hwdec-interop",MPV_FORMAT_STRING, &hwdecInteropProp);
-
-    int mpv_advanced_control = 1;
-    if(useMediaHwAccel)
-    {
-        mpv_opengl_init_params gl_params = {get_proc_address_mpv, nullptr, nullptr};
-        mpv_render_param params[] = {
-            {MPV_RENDER_PARAM_API_TYPE, const_cast<char*>(MPV_RENDER_API_TYPE_OPENGL)},
-            {MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_params},
-            {MPV_RENDER_PARAM_ADVANCED_CONTROL, &mpv_advanced_control},
-            {MPV_RENDER_PARAM_INVALID, 0}
-        };
-        mpv_render_context_create(&mpvRenderContext, mpv, params);
-    }
-    else
-    {
-#ifdef MPV_RENDER_API_TYPE_SW
-        mpv_render_param params[] = {
-            {MPV_RENDER_PARAM_API_TYPE, const_cast<char*>(MPV_RENDER_API_TYPE_SW)},
-            {MPV_RENDER_PARAM_ADVANCED_CONTROL, &mpv_advanced_control},
-            {MPV_RENDER_PARAM_INVALID, 0}
-        };
-        mpv_render_context_create(&mpvRenderContext, mpv, params);
-#endif
-    }
-    mpv_observe_property(mpv, 0, "duration", MPV_FORMAT_DOUBLE);
-    mpv_observe_property(mpv, 0, "time-pos", MPV_FORMAT_DOUBLE);
-    mpv_observe_property(mpv, 0, "height", MPV_FORMAT_DOUBLE);
-    mpv_observe_property(mpv, 0, "width", MPV_FORMAT_DOUBLE);
-    mpv_observe_property(mpv, 0, "pause", MPV_FORMAT_FLAG);
-
-    mediaState.finished = false;
-    double vol = mediaState.mediaAudioVolume;
-    mpv_set_property(mpv,"volume",MPV_FORMAT_DOUBLE,&vol);
-    mpv_observe_property(mpv, 0, "volume", MPV_FORMAT_DOUBLE);
-    //TODO: figure out a way to pass these to a std::function bound to a shared_from_this or weak_from_this
-    mpv_set_wakeup_callback(mpv, &PostContentViewer::onMpvEvents, this);
-    mpv_render_context_set_update_callback(mpvRenderContext, &PostContentViewer::mpvRenderUpdate, this);
-    spdlog::debug("playing URL: {}",file);
-    const char *cmd[] = {"loadfile", file.c_str(), nullptr};
-    mpv_command_async(mpv, 0, cmd);
-}
-
-void PostContentViewer::mpvRenderUpdate(void *context)
-{
-    auto win=reinterpret_cast<PostContentViewer*>(context);
-    if(!win) return;
-    auto weak = win->weak_from_this();
-    auto self = weak.lock();
-    if (!self) return;
-    if(self->destroying) return;
-    boost::asio::post(win->uiExecutor,std::bind(&PostContentViewer::setPostMediaFrame,self));
-}
 //void resetOpenGlState()
 //{
 //    glBindBuffer(GL_ARRAY_BUFFER,0);

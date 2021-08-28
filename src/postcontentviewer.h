@@ -37,7 +37,7 @@ private:
     void setPostMediaFrame();
     void loadPostImage();
     void downloadPostImage(std::string url);
-    void setupMediaContext(std::string file);
+    void setupMediaContext(std::string file, bool useProvidedFile = false);
     void static mpvRenderUpdate(void* context);
     void static onMpvEvents(void* context);
     void handleMpvEvents();
