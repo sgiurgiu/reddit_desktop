@@ -421,3 +421,31 @@ void Database::setLoggedInUser(const user& u)
     rc = sqlite3_step(stmt.get());
     DB_ERR_CHECK("Cannot update user");
 }
+user Database::getLoggedInUser() const
+{
+    user user;
+    std::unique_ptr<sqlite3_stmt, statement_finalizer> stmt;
+    sqlite3_stmt* stmt_ptr;
+    int rc = sqlite3_prepare_v2(db.get(), "SELECT USERNAME,PASSWORD,CLIENT_ID,SECRET,WEBSITE,APP_NAME,LAST_LOGGEDIN FROM USER WHERE LAST_LOGGEDIN=1", -1, &stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot find users");
+
+    if (sqlite3_step(stmt.get()) == SQLITE_ROW)
+    {
+        user.username = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 0)),
+            sqlite3_column_bytes(stmt.get(), 0));
+        user.password = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 1)),
+            sqlite3_column_bytes(stmt.get(), 1));
+        user.client_id = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 2)),
+            sqlite3_column_bytes(stmt.get(), 2));
+        user.secret = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 3)),
+            sqlite3_column_bytes(stmt.get(), 3));
+        user.website = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 4)),
+            sqlite3_column_bytes(stmt.get(), 4));
+        user.app_name = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 5)),
+            sqlite3_column_bytes(stmt.get(), 5));
+        user.lastLoggedIn = sqlite3_column_int(stmt.get(), 6) == 1;
+    }
+
+    return user;
+}

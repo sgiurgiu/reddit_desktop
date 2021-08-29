@@ -16,6 +16,8 @@ public:
                                   const std::string& userAgent);
     void createComment(const std::string& parentId,const std::string& text,
                     const access_token& token, std::any userData = std::any());
+    void updateComment(const std::string& postId, const std::string& text,
+        const access_token& token, std::any userData = std::any());
 protected:
     virtual void responseReceivedComplete(std::any userData) override;
 private:

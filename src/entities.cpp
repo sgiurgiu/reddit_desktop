@@ -372,7 +372,7 @@ post::post(const nlohmann::json& json)
     }
 }
 
-comment::comment(const nlohmann::json& json)
+comment::comment(const nlohmann::json& json, const user& currentUser)
 {
     if(json.contains("id") && json["id"].is_string())
     {
@@ -403,6 +403,7 @@ comment::comment(const nlohmann::json& json)
     if(json.contains("author") && json["author"].is_string())
     {
         author = json["author"].get<std::string>();
+        isUsersComment = (author == currentUser.username);
     }
     if(json.contains("link_id") && json["link_id"].is_string())
     {
@@ -431,6 +432,19 @@ comment::comment(const nlohmann::json& json)
     {
         isSubmitter = json["is_submitter"].get<bool>();
     }
+    if (json.contains("edited") && json["edited"].is_boolean())
+    {
+        edited = json["edited"].get<bool>();
+    }
+    if (json.contains("locked") && json["locked"].is_boolean())
+    {
+        locked = json["locked"].get<bool>();
+    }
+    if (json.contains("removed") && json["removed"].is_boolean())
+    {
+        removed = json["removed"].get<bool>();
+    }
+
     if(json.contains("replies") && json["replies"].is_object())
     {
         const auto& replies_json = json["replies"];
@@ -458,7 +472,7 @@ comment::comment(const nlohmann::json& json)
             else if(child.contains("kind") && child["kind"].get<std::string>() == "t1" &&
                     child.contains("data") && child["data"].is_object())
             {
-                replies.emplace_back(child["data"]);
+                replies.emplace_back(child["data"], currentUser);
             }
         }
     }

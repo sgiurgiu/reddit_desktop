@@ -34,6 +34,7 @@ public:
     std::vector<user> getRegisteredUsers() const;
     void addRegisteredUser(const user& registeredUser);
     void setLoggedInUser(const user& u);
+    user getLoggedInUser() const;
     void getMainWindowDimensions(int *x, int *y, int *width,int *height);
     void setMainWindowDimensions(int x, int y, int width,int height);
     void setMediaAudioVolume(int volume);

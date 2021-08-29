@@ -187,7 +187,7 @@ using comments_list = std::vector<comment>;
 struct comment
 {
     comment(){}
-    comment(const nlohmann::json& json);
+    comment(const nlohmann::json& json, const user& currentUser);
     std::string id;
     std::string name;
     std::string linkId;
@@ -201,10 +201,15 @@ struct comment
     std::string humanScore;
     std::string authorFullName;
     std::string author;
-    uint64_t createdAt;
+    uint64_t createdAt = 0;
     std::string humanReadableTimeDifference;
     comments_list replies;
     bool isSubmitter = false;
+    bool edited = false;
+    bool locked = false;
+    bool removed = false;
+    // set to true if this comment is a user's comment
+    bool isUsersComment = false;
 };
 
 struct user_info

@@ -13,6 +13,28 @@ RedditCreateCommentConnection::RedditCreateCommentConnection(const boost::asio::
 {
 
 }
+void RedditCreateCommentConnection::updateComment(const std::string& postId, const std::string& text,
+    const access_token& token, std::any userData)
+{
+    if (text.empty() || postId.empty()) return;
+    request_t request;
+    request.clear();
+    request.version(11);
+    request.method(boost::beast::http::verb::post);
+    request.target("/api/editusertext");
+    request.set(boost::beast::http::field::host, host);
+    request.set(boost::beast::http::field::accept, "*/*");
+    request.set(boost::beast::http::field::connection, "keep-alive");
+    request.set(boost::beast::http::field::user_agent, userAgent);
+    request.set(boost::beast::http::field::authorization, fmt::format("Bearer {}", token.token));
+    request.set(boost::beast::http::field::content_type, "application/x-www-form-urlencoded");
+    auto escapedText = HtmlParser::escape(text);
+    request.body() = fmt::format("api_type=json&text={}"
+        "&thing_id={}&raw_json=1",
+        escapedText, postId);
+    request.prepare_payload();
+    enqueueRequest(std::move(request), std::move(userData));
+}
 void RedditCreateCommentConnection::createComment(const std::string& parentId,const std::string& text,
                                                   const access_token& token, std::any userData)
 {

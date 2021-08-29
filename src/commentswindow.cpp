@@ -167,9 +167,21 @@ void CommentsWindow::loadCommentReply(const listing& listingResponse,std::any us
             c->showingPreview = false;
             c->previewRenderer.SetText(c->postReplyTextBuffer);
             auto replies = std::move(std::get<0>(receivedComments));
-            for(auto&& reply : replies)
+            if (commentData.isUpdating)
             {
-                c->replies.emplace(c->replies.begin(),std::move(reply));
+                if (!replies.empty())
+                {
+                    c->commentData.body = replies.begin()->body;
+                    c->renderer.SetText(c->commentData.body);
+                }
+            }
+            else
+            {
+                
+                for (auto&& reply : replies)
+                {
+                    c->replies.emplace(c->replies.begin(), std::move(reply));
+                }
             }
         }
     }
@@ -252,6 +264,7 @@ CommentsWindow::comments_tuple CommentsWindow::getJsonComments(const nlohmann::j
     if(!windowOpen || !children.is_array()) return std::make_tuple<comments_list,std::optional<unloaded_children>>({},{});
     comments_list comments;
     std::optional<unloaded_children> unloadedPostComments;
+    auto currentUser = Database::getInstance()->getLoggedInUser();
     for(const auto& child: children)
     {
         if(!child.is_object())
@@ -266,7 +279,7 @@ CommentsWindow::comments_tuple CommentsWindow::getJsonComments(const nlohmann::j
         if(kind == "t1")
         {
             //load comments
-            comments.emplace_back(child["data"]);
+            comments.emplace_back(child["data"], currentUser);
         }
         else if (kind == "more")
         {
@@ -305,6 +318,7 @@ void CommentsWindow::loadListingChildren(const nlohmann::json& children)
     comments_list comments;
     post_ptr pp;
     std::optional<unloaded_children> unloadedPostComments;
+    auto currentUser = Database::getInstance()->getLoggedInUser();
     for(const auto& child: children)
     {
         if(!child.is_object())
@@ -319,7 +333,7 @@ void CommentsWindow::loadListingChildren(const nlohmann::json& children)
         if(kind == "t1")
         {
             //load comments
-            comments.emplace_back(child["data"]);
+            comments.emplace_back(child["data"], currentUser);
         }
         else if (kind == "t3")
         {
@@ -465,6 +479,18 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
                 c.postReplyTextBuffer = quotedText + "\n\n";
             }
         }
+        if (c.commentData.isUsersComment)
+        {
+            ImGui::SameLine();
+            if (ImGui::Button(c.editButtonText.c_str()))
+            {
+                c.showingReplyArea = true;
+                if (c.postReplyTextBuffer.empty())
+                {
+                    c.postReplyTextBuffer = c.commentData.body;
+                }
+            }
+        }
         if(c.showingReplyArea)
         {
 
@@ -485,7 +511,14 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
             {
                 c.showingReplyArea = false;
                 c.postingReply = true;
-                createCommentConnection->createComment(c.commentData.name,c.postReplyTextBuffer,token,CommentUserData{c.commentData.name});
+                if (!c.commentData.isSubmitter)
+                {
+                    createCommentConnection->createComment(c.commentData.name, c.postReplyTextBuffer, token, CommentUserData{ c.commentData.name, false });
+                }
+                else
+                {
+                    createCommentConnection->updateComment(c.commentData.name, c.postReplyTextBuffer, token, CommentUserData{ c.commentData.name, true });
+                }
             }
             if(saveDisabled)
             {
@@ -606,6 +639,7 @@ void CommentsWindow::DisplayComment::updateButtonsText()
     saveButtonText = fmt::format("save##{}_save",commentData.name);
     replyButtonText = fmt::format("reply##{}_reply",commentData.name);
     quoteButtonText = fmt::format("quote##{}_quote",commentData.name);
+    editButtonText = fmt::format("edit##{}_edit", commentData.name);
     replyIdText = fmt::format("##{}comment_reply",commentData.name);
     saveReplyButtonText = fmt::format("Save##{}save_comment_reply",commentData.name);
     cancelReplyButtonText = fmt::format("Cancel##{}cancel_comment_reply",commentData.name);

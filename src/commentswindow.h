@@ -72,6 +72,7 @@ private:
         std::string saveButtonText;
         std::string replyButtonText;
         std::string quoteButtonText;
+        std::string editButtonText;
         std::string moreRepliesButtonText;
         std::string spinnerIdText;
         std::string replyIdText;
@@ -166,6 +167,7 @@ private:
     struct CommentUserData
     {
         std::string commentName;
+        bool isUpdating = false;
     };
 };
 
