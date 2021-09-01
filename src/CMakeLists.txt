@@ -245,3 +245,4 @@ if(WIN32)
         install(PROGRAMS "${YOUTUBE_DL_EXE}" DESTINATION ${CMAKE_INSTALL_BINDIR})
     endif()
 endif()
+

@@ -123,4 +123,16 @@ if(CPACK_DISTRIBUTION)
     SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}-${CPACK_DISTRIBUTION}")
 endif()
 
+if(NOT WIN32)
+    # if we're not building for windows, add the icons and the desktop files to the package
+    install(FILES "${CMAKE_SOURCE_DIR}/icons/reddit_icon_24.png"  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/24x24/apps" RENAME "reddit-desktop.png")
+    install(FILES "${CMAKE_SOURCE_DIR}/icons/reddit_icon_32.png"  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/32x32/apps" RENAME "reddit-desktop.png")
+    install(FILES "${CMAKE_SOURCE_DIR}/icons/reddit_icon_48.png"  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/48x48/apps" RENAME "reddit-desktop.png")
+    install(FILES "${CMAKE_SOURCE_DIR}/icons/reddit_icon_64.png"  DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/64x64/apps" RENAME "reddit-desktop.png")
+    install(FILES "${CMAKE_SOURCE_DIR}/icons/reddit_icon_128.png" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/128x128/apps" RENAME "reddit-desktop.png")
+    install(FILES "${CMAKE_SOURCE_DIR}/icons/reddit_icon_256.png" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/256x256/apps" RENAME "reddit-desktop.png")
+    install(FILES "${CMAKE_SOURCE_DIR}/desktop/reddit_desktop.desktop" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications" RENAME "reddit-desktop.desktop")
+
+endif()
+
 INCLUDE(CPack)
