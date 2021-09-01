@@ -100,7 +100,7 @@ void PostContentViewer::loadContent(post_ptr currentPost)
         if(isMediaPost)
         {
             loadingPostContent = true;
-            if(useYoutubeDlder)
+            if(false)
             {
                 setupMediaContext(currentPost->url, false);
             }
@@ -323,17 +323,20 @@ void PostContentViewer::setupMediaContext(std::string file, bool useProvidedFile
         mpv_set_option_string(mpv, "ytdl", "yes");
     }
 
-    //mpv_set_option_string(mpv, "cache", "yes");
+    mpv_set_option_string(mpv, "cache", "yes");
     //int64_t maxBytes = 1024*1024*10;
     //mpv_set_option(mpv, "demuxer-max-bytes", MPV_FORMAT_INT64,&maxBytes);
 
     mpv_initialize(mpv);
-    int64_t cacheDefault = 15000;
-    int64_t cacheBackBuffer = 15000;
-    int64_t cacheSecs = 10;
+    int64_t cacheDefault = 150000;
+    int64_t cacheBackBuffer = 150000;
+    int64_t cacheSecs = 30;
     mpv_set_property(mpv, "cache-default", MPV_FORMAT_INT64, &cacheDefault);
     mpv_set_property(mpv, "cache-backbuffer", MPV_FORMAT_INT64, &cacheBackBuffer);
     mpv_set_property(mpv, "cache-secs", MPV_FORMAT_INT64, &cacheSecs);
+    mpv_set_property(mpv, "demuxer-readahead-secs", MPV_FORMAT_INT64, &cacheSecs);
+    //demuxer-cache-wait="yes|no
+
     //char* voProp = "libmpv";
     //char* hwdecInteropProp = "auto";
    // mpv_set_property(mpv, "vo", MPV_FORMAT_STRING,&voProp);
