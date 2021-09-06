@@ -11,17 +11,15 @@
 #include "redditconnection.h"
 #include "htmlparser.h"
 
-//TODO: This class' meaning and function has changed, now it just reads the URL html and tries to
-// figure out the actual media URL from the HTML. Rename this, rethink this.
 using dummy_response = client_response<void*>;
-class MediaStreamingConnection : public RedditGetConnection<dummy_response>
+class UrlDetectionConnection : public RedditGetConnection<dummy_response>
 {
 public:
-    MediaStreamingConnection(const boost::asio::any_io_executor& executor,
+    UrlDetectionConnection(const boost::asio::any_io_executor& executor,
                              boost::asio::ssl::context& ssl_context,
                              const std::string& userAgent);
-    ~MediaStreamingConnection();
-    void streamMedia(post* mediaPost);
+    ~UrlDetectionConnection();
+    void detectMediaUrl(post* mediaPost);
     using StreamingSignal = boost::signals2::signal<void(HtmlParser::MediaLink)>;
     using ErrorSignal = boost::signals2::signal<void(int errorCode,const std::string&)>;
     template<typename S>
@@ -41,7 +39,7 @@ protected:
     virtual void onError(const boost::system::error_code& ec) override;
 
 private:
-    void startStreaming(const HtmlParser::MediaLink& link);
+    void urlDetected(const HtmlParser::MediaLink& link);
     void downloadUrl(const std::string& url);
 private:
     std::string userAgent;

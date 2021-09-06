@@ -5,7 +5,7 @@
 #include "connections/redditloginconnection.h"
 #include "connections/redditlistingconnection.h"
 #include "connections/redditresourceconnection.h"
-#include "connections/mediastreamingconnection.h"
+#include "connections/urldetectionconnection.h"
 #include "connections/redditcreatepostconnection.h"
 #include "connections/redditsearchnamesconnection.h"
 #include "connections/redditvoteconnection.h"
@@ -28,7 +28,7 @@ public:
     using RedditLoginClientConnection = std::shared_ptr<RedditLoginConnection>;
     using RedditListingClientConnection = std::shared_ptr<RedditListingConnection>;
     using RedditResourceClientConnection = std::shared_ptr<RedditResourceConnection>;
-    using MediaStreamingClientConnection = std::shared_ptr<MediaStreamingConnection>;
+    using UrlDetectionClientConnection = std::shared_ptr<UrlDetectionConnection>;
     using RedditCreatePostClientConnection = std::shared_ptr<RedditCreatePostConnection>;
     using RedditSearchNamesClientConnection = std::shared_ptr<RedditSearchNamesConnection>;
     using RedditVoteClientConnection = std::shared_ptr<RedditVoteConnection>;
@@ -38,7 +38,7 @@ public:
     RedditLoginClientConnection makeLoginClientConnection();
     RedditListingClientConnection makeListingClientConnection();
     RedditResourceClientConnection makeResourceClientConnection();
-    MediaStreamingClientConnection makeMediaStreamingClientConnection();
+    UrlDetectionClientConnection makeUrlDetectionClientConnection();
     RedditCreatePostClientConnection makeCreatePostClientConnection();
     RedditSearchNamesClientConnection makeRedditSearchNamesClientConnection();
     RedditVoteClientConnection makeRedditVoteClientConnection();

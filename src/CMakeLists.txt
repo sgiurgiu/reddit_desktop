@@ -72,7 +72,7 @@ set(REDDIT_CONNECTIONS_SRCS
     connections/redditloginconnection.cpp
     connections/redditlistingconnection.cpp
     connections/redditresourceconnection.cpp
-    connections/mediastreamingconnection.cpp
+    connections/urldetectionconnection.cpp
     connections/redditcreatepostconnection.cpp
     connections/redditsearchnamesconnection.cpp
     connections/redditvoteconnection.cpp

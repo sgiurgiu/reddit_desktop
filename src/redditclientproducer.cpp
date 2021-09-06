@@ -70,9 +70,9 @@ RedditClientProducer::RedditResourceClientConnection RedditClientProducer::makeR
 {
     return std::make_shared<RedditResourceConnection>(executor,ssl_context,userAgent);
 }
-RedditClientProducer::MediaStreamingClientConnection RedditClientProducer::makeMediaStreamingClientConnection()
+RedditClientProducer::UrlDetectionClientConnection RedditClientProducer::makeUrlDetectionClientConnection()
 {
-    return std::make_shared<MediaStreamingConnection>(executor,ssl_context,userAgent);
+    return std::make_shared<UrlDetectionConnection>(executor,ssl_context,userAgent);
 }
 RedditClientProducer::RedditCreatePostClientConnection RedditClientProducer::makeCreatePostClientConnection()
 {

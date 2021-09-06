@@ -1,4 +1,4 @@
-#include "mediastreamingconnection.h"
+#include "urldetectionconnection.h"
 #include <boost/asio.hpp>
 #include <boost/url.hpp>
 #include <fstream>
@@ -7,7 +7,7 @@
 #include "htmlparser.h"
 #include "macros.h"
 
-MediaStreamingConnection::MediaStreamingConnection(const boost::asio::any_io_executor& executor,
+UrlDetectionConnection::UrlDetectionConnection(const boost::asio::any_io_executor& executor,
                                                    boost::asio::ssl::context& ssl_context,
                                                    const std::string& userAgent):
     RedditConnection(executor,ssl_context,"",""),userAgent(userAgent),cancel(false)
@@ -15,18 +15,18 @@ MediaStreamingConnection::MediaStreamingConnection(const boost::asio::any_io_exe
     responseParser->body_limit(10*1024*1024);//10 MB html file limit should be plenty
 }
 
-MediaStreamingConnection::~MediaStreamingConnection()
+UrlDetectionConnection::~UrlDetectionConnection()
 {
     clearAllSlots();
     cancel = true;
 }
-void MediaStreamingConnection::clearAllSlots()
+void UrlDetectionConnection::clearAllSlots()
 {
     streamingSignal.disconnect_all_slots();
     errorSignal.disconnect_all_slots();
 }
 
-void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::size_t bytesTransferred)
+void UrlDetectionConnection::onWrite(const boost::system::error_code& ec,std::size_t bytesTransferred)
 {
     boost::ignore_unused(bytesTransferred);
 
@@ -107,7 +107,7 @@ void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::
     }
 
     using namespace std::placeholders;
-    auto readMethod = std::bind(&MediaStreamingConnection::onRead,this->shared_from_base<MediaStreamingConnection>(),_1,_2);
+    auto readMethod = std::bind(&UrlDetectionConnection::onRead,this->shared_from_base<UrlDetectionConnection>(),_1,_2);
     if(isSsl)
     {
         boost::beast::http::async_read(stream.value(), readBuffer, responseParser.value(), readMethod);
@@ -118,12 +118,12 @@ void MediaStreamingConnection::onWrite(const boost::system::error_code& ec,std::
     }
 }
 
-void MediaStreamingConnection::onError(const boost::system::error_code& ec)
+void UrlDetectionConnection::onError(const boost::system::error_code& ec)
 {
     errorSignal(ec.value(),ec.message());
 }
 
-void MediaStreamingConnection::responseReceivedComplete()
+void UrlDetectionConnection::responseReceivedComplete()
 {
     auto status = responseParser->get().result_int();
     if(status >= 400)
@@ -145,16 +145,16 @@ void MediaStreamingConnection::responseReceivedComplete()
         downloadingHtml = false;
         //std::filesystem::remove(targetPath);
         //stream.emplace(boost::asio::make_strand(context), ssl_context);
-        startStreaming(videoUrl);
+        urlDetected(videoUrl);
     }
     else
     {
-        startStreaming({currentUrl,HtmlParser::MediaType::Unknown});
+        urlDetected({currentUrl,HtmlParser::MediaType::Unknown});
         //BOOST_ASSERT(false);
     }
 }
 
-void MediaStreamingConnection::streamMedia(post* mediaPost)
+void UrlDetectionConnection::detectMediaUrl(post* mediaPost)
 {
     currentPost = mediaPost;
     currentUrl = currentPost->url;
@@ -163,8 +163,8 @@ void MediaStreamingConnection::streamMedia(post* mediaPost)
         currentUrl = currentPost->postMedia->redditVideo->dashUrl;
         HtmlParser::MediaLink link{currentUrl,HtmlParser::MediaType::Video};
         boost::asio::post(strand,std::bind(
-                               &MediaStreamingConnection::startStreaming,
-                               this->shared_from_base<MediaStreamingConnection>(),link));
+                               &UrlDetectionConnection::urlDetected,
+                               this->shared_from_base<UrlDetectionConnection>(),link));
     }
     else
     {
@@ -174,7 +174,7 @@ void MediaStreamingConnection::streamMedia(post* mediaPost)
     }
 }
 
-void MediaStreamingConnection::downloadUrl(const std::string& url)
+void UrlDetectionConnection::downloadUrl(const std::string& url)
 {
     boost::url_view urlParts(url);
     if(!urlParts.port().empty() || !urlParts.scheme().empty())
@@ -213,7 +213,7 @@ void MediaStreamingConnection::downloadUrl(const std::string& url)
     performRequest(std::move(request));
 }
 
-void MediaStreamingConnection::startStreaming(const HtmlParser::MediaLink& link)
+void UrlDetectionConnection::urlDetected(const HtmlParser::MediaLink& link)
 {   
     streamingSignal(link);
 }

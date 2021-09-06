@@ -106,8 +106,8 @@ void PostContentViewer::loadContent(post_ptr currentPost)
             }
             else
             {
-                auto mediaStreamingConnection = client->makeMediaStreamingClientConnection();
-                mediaStreamingConnection->streamAvailableHandler([weak=weak_from_this()](HtmlParser::MediaLink link) {
+                auto urlDetectionConnection = client->makeUrlDetectionClientConnection();
+                urlDetectionConnection->streamAvailableHandler([weak=weak_from_this()](HtmlParser::MediaLink link) {
                     auto self = weak.lock();
                     if(!self) return;
                     switch(link.type)
@@ -129,12 +129,12 @@ void PostContentViewer::loadContent(post_ptr currentPost)
                     }
 
                 });
-                mediaStreamingConnection->errorHandler([weak = weak_from_this()](int /*errorCode*/,const std::string& str){
+                urlDetectionConnection->errorHandler([weak = weak_from_this()](int /*errorCode*/,const std::string& str){
                     auto self = weak.lock();
                     if (!self) return;
                     boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,self,str));
                 });
-                mediaStreamingConnection->streamMedia(currentPost.get());
+                urlDetectionConnection->detectMediaUrl(currentPost.get());
             }
         }
     }
@@ -233,18 +233,18 @@ void PostContentViewer::loadPostImage()
 
     if(currentPost->domain == "imgur.com")
     {
-        auto mediaStreamingConnection = client->makeMediaStreamingClientConnection();
-        mediaStreamingConnection->streamAvailableHandler([weak=weak_from_this()](HtmlParser::MediaLink link) {
+        auto urlDetectionConnection = client->makeUrlDetectionClientConnection();
+        urlDetectionConnection->streamAvailableHandler([weak=weak_from_this()](HtmlParser::MediaLink link) {
             auto self = weak.lock();
             if (!self) return;
             self->downloadPostImage(link.url);
         });
-        mediaStreamingConnection->errorHandler([weak = weak_from_this()](int /*errorCode*/,const std::string& str){
+        urlDetectionConnection->errorHandler([weak = weak_from_this()](int /*errorCode*/,const std::string& str){
             auto self = weak.lock();
             if (!self) return;
             boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,self,str));
         });
-        mediaStreamingConnection->streamMedia(currentPost.get());
+        urlDetectionConnection->detectMediaUrl(currentPost.get());
     }
     else
     {
