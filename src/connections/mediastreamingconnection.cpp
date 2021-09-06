@@ -137,11 +137,11 @@ void MediaStreamingConnection::responseReceivedComplete()
         auto videoUrl = htmlParser.getMediaLink(currentPost->domain);
         //boost::system::error_code ec;
         //stream->shutdown(ec);
-        if(videoUrl.type == HtmlParser::MediaType::Unknown)
-        {
-            errorSignal(-1,"No video URL found in post");
-            return;
-        }
+//        if(videoUrl.type == HtmlParser::MediaType::Unknown)
+//        {
+//            errorSignal(-1,"No video URL found in post");
+//            return;
+//        }
         downloadingHtml = false;
         //std::filesystem::remove(targetPath);
         //stream.emplace(boost::asio::make_strand(context), ssl_context);

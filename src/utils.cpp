@@ -3,6 +3,7 @@
 #include "images/sprite_reddit.h"
 #include "images/reddit_icon_256.h"
 #include "fonts/fonts.h"
+#include "macros.h"
 
 #include "misc/freetype/imgui_freetype.h"
 #include <array>
@@ -142,6 +143,7 @@ void Utils::LoadFonts(const std::filesystem::path& executablePath)
 #endif // WIN
 
 #ifdef FONTS_DIRECTORY
+    UNUSED(executablePath);
     auto fontsFolder = std::filesystem::path(FONTS_DIRECTORY) / "fonts";
 #else
     auto fontsFolder = executablePath / "fonts";
@@ -237,6 +239,8 @@ void Utils::ReleaseRedditImages()
 }
 ResizableGLImagePtr Utils::GetRedditSpriteSubimage(int x, int y, int width, int height)
 {
+    if(!redditDefaultSprites || redditDefaultSprites->textureId == 0) return ResizableGLImagePtr();
+
     auto image = std::make_unique<ResizableGLImage>();
     GLuint image_texture;
     glGenTextures(1, &image_texture);
