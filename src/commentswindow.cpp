@@ -391,6 +391,7 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
     }
     postContentViewer = std::make_shared<PostContentViewer>(client,uiExecutor);
     postContentViewer->loadContent(parentPost);
+    postContentViewer->stopPlayingMedia();
     postUpvoteButtonText = fmt::format("{}##_up{}",reinterpret_cast<const char*>(ICON_FA_ARROW_UP),parentPost->name);
     postDownvoteButtonText = fmt::format("{}##_down{}",reinterpret_cast<const char*>(ICON_FA_ARROW_DOWN),parentPost->name);
     openLinkButtonText = fmt::format("{}##_openLink{}",
@@ -832,6 +833,7 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
         {
             postContentViewer = std::make_shared<PostContentViewer>(client,uiExecutor);
             postContentViewer->loadContent(parentPost);
+            postContentViewer->stopPlayingMedia();
         }
 
         if(parentPost->voted == Voted::UpVoted)

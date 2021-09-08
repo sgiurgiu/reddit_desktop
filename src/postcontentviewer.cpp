@@ -382,6 +382,11 @@ void PostContentViewer::setupMediaContext(std::string file, bool useProvidedFile
     spdlog::debug("playing URL: {}",file);
     const char *cmd[] = {"loadfile", file.c_str(), nullptr};
     mpv_command_async(mpv, 0, cmd);
+    if(mediaState.paused)
+    {
+        int shouldPause = mediaState.paused;
+        mpv_set_property_async(mpv, 0, "pause", MPV_FORMAT_FLAG, &shouldPause);
+    }
 }
 
 void PostContentViewer::mpvRenderUpdate(void *context)
