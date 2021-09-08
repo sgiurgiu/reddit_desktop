@@ -3,6 +3,8 @@
 #include "fonts/IconsFontAwesome4.h"
 #include "imgui_internal.h"
 #include "spinner/spinner.h"
+#include "markdown/markdownnodetext.h"
+#include "markdown/markdownnodelink.h"
 
 #include <string>
 #include <string_view>
@@ -12,6 +14,11 @@ namespace
 constexpr std::string_view LOGIN_WINDOW_POPUP_TITLE = "Reddit Login";
 constexpr std::string_view LABEL_TEMPLATE = "XXXXXXXXXXX";
 constexpr std::string_view FIELD_TEMPLATE = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+constexpr std::string_view LINK_TEXT = "Reddit preferences";
+constexpr std::string_view HELP1_TEXT = "To obtain this information, go to";
+constexpr std::string_view HELP2_TEXT = "and add an app of type <script>. Then insert "
+                                        "here the values that you obtain from reddit.";
+
 }
 
 LoginWindow::LoginWindow(RedditClientProducer* client,
@@ -22,6 +29,12 @@ LoginWindow::LoginWindow(RedditClientProducer* client,
                                                client_response<access_token> token){
         boost::asio::post(this->uiExecutor,std::bind(&LoginWindow::testingCompleted,this,ec,std::move(token)));
     });
+    auto preferencesLink = std::make_unique<MarkdownNodeLink>("https://www.reddit.com/prefs/apps/","Reddit preferences");
+    preferencesLink->AddChild(std::make_unique<MarkdownNodeText>(LINK_TEXT.data(),LINK_TEXT.size()));
+
+    helpParagraph.AddChild(std::make_unique<MarkdownNodeText>(HELP1_TEXT.data(),HELP1_TEXT.size()));
+    helpParagraph.AddChild(std::move(preferencesLink));
+    helpParagraph.AddChild(std::make_unique<MarkdownNodeText>(HELP2_TEXT.data(),HELP2_TEXT.size()));
 }
 void LoginWindow::testingCompleted(const boost::system::error_code ec,
                                    client_response<access_token> token)
@@ -144,9 +157,7 @@ bool LoginWindow::showLoginWindow()
             ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f),"OK");
         }
 
-        ImGui::TextWrapped(
-            "To obtain this information, go to https://www.reddit.com/prefs/apps/ and add "
-            "an app of type <script>. Then insert here the values that you obtain from reddit.");
+        helpParagraph.Render();
 
         ImGui::Separator();
         bool okDisabled = !tested;

@@ -3,6 +3,7 @@
 
 #include "redditclientproducer.h"
 #include <boost/asio/io_context.hpp>
+#include "markdown/markdownnodeblockparagraph.h"
 
 class LoginWindow
 {
@@ -40,6 +41,7 @@ private:
     client_response<access_token> token;
     RedditClientProducer::RedditLoginClientConnection loginConnection;
     const boost::asio::any_io_executor& uiExecutor;
+    MarkdownNodeBlockParagraph helpParagraph;
 };
 
 #endif // LOGINWINDOW_H
