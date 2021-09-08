@@ -11,10 +11,12 @@ RUN curl -s http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-st
     rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-latest && \
     rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-latest
 
-RUN microdnf -y install libglvnd-opengl openssl ibus-libs \
+RUN  microdnf clean all && \
+      microdnf -y install libglvnd-opengl openssl ibus-libs \
         freetype mpv-libs youtube-dl mesa-libGL mesa-libGLU mesa-dri-drivers && \
+        microdnf -y upgrade && \
         microdnf clean all
 
-RUN rpm -i ${RDRPM}
+RUN rpm -i ${RDRPM} &&  mkdir -p /root/.config/reddit_desktop
 
 ENTRYPOINT ["/usr/bin/reddit_desktop"]
