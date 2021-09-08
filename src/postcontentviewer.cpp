@@ -424,7 +424,12 @@ void PostContentViewer::handleMpvEvents()
        {
             mediaState.finished = true;
             mediaState.timePosition = mediaState.duration;
-
+            if(mp_event->error < 0)
+            {
+                errorMessage = "Cannot play video file";
+                //mpv_event_end_file* ev_data = (mpv_event_end_file*)mp_event->data;
+                //ev_data->
+            }
        }
            break;
        case MPV_EVENT_START_FILE:
@@ -934,6 +939,7 @@ void PostContentViewer::showMediaControls(int width)
         if(ImGui::Button(mediaState.paused ? mediaButtonPlayText.c_str() : mediaButtonPauseText.c_str()))
         {
             int shouldPause = !mediaState.paused;
+            errorMessage.clear();
             mpv_set_property_async(mpv,0,"pause",MPV_FORMAT_FLAG,&shouldPause);
         }
         if(ImGui::IsItemHovered())
