@@ -254,7 +254,7 @@ void Database::setUseYoutubeDownloader(bool flag)
 }
 bool Database::getUseYoutubeDownloader() const
 {
-    return getBoolProperty("USE_YOUTUBE_DL", false);
+    return getBoolProperty("USE_YOUTUBE_DL", true);
 }
 void Database::setMediaAudioVolume(int volume)
 {
