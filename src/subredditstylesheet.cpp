@@ -9,7 +9,7 @@ SubredditStylesheet::SubredditStylesheet(const access_token& token,
                                          const boost::asio::any_io_executor& executor):
     token(token),client(client),uiExecutor(executor),headerColor(206.f/255.f,227.f/255.f,248.f/255.f,1.f)
 {
-    headerPicture = Utils::GetRedditHeader();
+    //headerPicture = Utils::GetRedditHeader();
 }
 void SubredditStylesheet::setErrorMessage(std::string errorMessage)
 {

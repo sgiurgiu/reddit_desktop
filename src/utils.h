@@ -9,6 +9,16 @@
 #include "entities.h"
 #include <filesystem>
 
+struct StandardRedditThumbnail
+{
+    StandardRedditThumbnail(ImVec2 uv0,ImVec2 uv1,ImVec2 size):
+        uv0(std::move(uv0)),uv1(std::move(uv1)),size(std::move(size))
+    {}
+    ImVec2 uv0;
+    ImVec2 uv1;
+    ImVec2 size;
+};
+
 class Utils
 {
 public:
@@ -68,16 +78,17 @@ public:
     static std::string CalculateScore(int& score,Voted originalVote,Voted newVote);
     static void LoadRedditImages();
     static void ReleaseRedditImages();
-    static ResizableGLImagePtr GetRedditThumbnail(const std::string& kind);
+    static std::optional<StandardRedditThumbnail> GetRedditThumbnail(const std::string& kind);
     static std::string formatDuration(std::chrono::seconds diff);
-    static ResizableGLImagePtr GetRedditHeader();
+    static StandardRedditThumbnail GetRedditHeader();
     static ResizableGLImagePtr GetApplicationIcon();
     static std::filesystem::path GetAppConfigFolder();
+    static ResizableGLImageSharedPtr GetRedditDefaultSprites();
 private:
     static ImFont* AddFont(const std::filesystem::path& fontsFolder, const std::string& font, float fontSize);
-    static ResizableGLImagePtr GetRedditSpriteSubimage(int x, int y, int width, int height);
+    //static ResizableGLImagePtr GetRedditSpriteSubimage(int x, int y, int width, int height);
 private:
-    static ResizableGLImagePtr redditDefaultSprites;
+    static ResizableGLImageSharedPtr redditDefaultSprites;
 };
 
 #endif // UTILS_H

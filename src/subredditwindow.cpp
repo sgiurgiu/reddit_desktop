@@ -273,8 +273,8 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
         p.updateShowContentText();
         if(!p.post->thumbnail.empty())
         {
-            p.thumbnailPicture = Utils::GetRedditThumbnail(p.post->thumbnail);
-            if(!p.thumbnailPicture)
+            p.standardThumbnail = Utils::GetRedditThumbnail(p.post->thumbnail);
+            if(!p.standardThumbnail)
             {
                 resourceConnection->getResource(p.post->thumbnail,p.post->name);
             }
@@ -449,6 +449,15 @@ float SubredditWindow::renderPostThumbnail(PostDisplay& p)
         {
             p.shouldShowUnblurredImage = false;
         }
+        ImGui::SameLine();
+    }
+    else if(p.standardThumbnail)
+    {
+        auto redditSprites = Utils::GetRedditDefaultSprites();
+
+        ImGui::Image((void*)(intptr_t)redditSprites->textureId,
+                     p.standardThumbnail->size, p.standardThumbnail->uv0, p.standardThumbnail->uv1);
+        height = std::max(height,ImGui::GetCursorPosY());
         ImGui::SameLine();
     }
     return height;

@@ -67,6 +67,7 @@ private:
             post(std::move(p))
         {}
         post_ptr post;
+        std::optional<StandardRedditThumbnail> standardThumbnail;
         ResizableGLImagePtr thumbnailPicture;
         ResizableGLImagePtr blurredThumbnailPicture;
         bool shouldShowUnblurredImage = false;

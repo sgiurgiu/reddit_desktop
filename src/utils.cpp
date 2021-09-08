@@ -56,13 +56,13 @@
 #endif
 
 namespace {
-    std::map<std::string, std::tuple<int,int,int,int>> thumbnailsCoordinates = {
-        {"image",   {0,310      ,140,105}},
-        {"default", {0,310+(148),140,105}},
-        {"nsfw",    {0,310+(290),140,105}},
-        {"spoiler", {0,310+(440),140,105}},
-        {"self",    {0,310+(585),140,105}},
-        {"reddit",  {0,310+(445),140,105}}, //same as "spoiler"
+    std::map<std::string, std::tuple<float,float,float,float>> thumbnailsCoordinates = {
+        {"image",   {0.f,310.f          ,140.f,105.f}},
+        {"default", {0.f,310.f+(148.f)  ,140.f,105.f}},
+        {"nsfw",    {0.f,310.f+(290.f)  ,140.f,105.f}},
+        {"spoiler", {0.f,310.f+(440.f)  ,140.f,105.f}},
+        {"self",    {0.f,310.f+(585.f)  ,140.f,105.f}},
+        {"reddit",  {0.f,310.f+(445.f)  ,140.f,105.f}}, //same as "spoiler"
     };
 
     struct STBImageDeleter
@@ -77,7 +77,7 @@ namespace {
     };
 }
 
-ResizableGLImagePtr Utils::redditDefaultSprites;
+ResizableGLImageSharedPtr Utils::redditDefaultSprites;
 
 ImFont* Utils::AddFont(const std::filesystem::path& fontsFolder, const std::string& font, float fontSize)
 {
@@ -231,13 +231,18 @@ void Utils::LoadRedditImages()
 {
     int width, height, channels;    
     auto data = decodeImageData(sprite_reddit_png,sprite_reddit_png_len,&width,&height,&channels);
-    redditDefaultSprites = Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
+    auto sprites = Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
+    redditDefaultSprites.reset(sprites.release());
 }
 void Utils::ReleaseRedditImages()
 {
     redditDefaultSprites.reset();
 }
-ResizableGLImagePtr Utils::GetRedditSpriteSubimage(int x, int y, int width, int height)
+ResizableGLImageSharedPtr Utils::GetRedditDefaultSprites()
+{
+    return redditDefaultSprites;
+}
+/*ResizableGLImagePtr Utils::GetRedditSpriteSubimage(int x, int y, int width, int height)
 {
     if(!redditDefaultSprites || redditDefaultSprites->textureId == 0) return ResizableGLImagePtr();
 
@@ -268,35 +273,43 @@ ResizableGLImagePtr Utils::GetRedditSpriteSubimage(int x, int y, int width, int 
     image->textureId = image_texture;
 
     return image;
-}
+}*/
 ResizableGLImagePtr Utils::GetApplicationIcon()
 {
     int width, height, channels;
     auto data = decodeImageData(_reddit_icon_256_png,_reddit_icon_256_png_len,&width,&height,&channels);
     return Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
 }
-ResizableGLImagePtr Utils::GetRedditHeader()
+StandardRedditThumbnail Utils::GetRedditHeader()
 {
-    int x = 0;
-    int y = 1323;
-    int width = 120;
-    int height = 40;
-    return GetRedditSpriteSubimage(x,y,width,height);
+    float x = 0.f;
+    float y = 1323.f;
+    float width = 120.f;
+    float height = 40.f;
+    return StandardRedditThumbnail(
+                ImVec2(x/redditDefaultSprites->width, y/redditDefaultSprites->height),
+                ImVec2((x+width)/redditDefaultSprites->width, (y+height)/redditDefaultSprites->height),
+                ImVec2(width,height)
+                );
 }
-ResizableGLImagePtr Utils::GetRedditThumbnail(const std::string& kind)
+std::optional<StandardRedditThumbnail> Utils::GetRedditThumbnail(const std::string& kind)
 {
     auto thumbnailIt = thumbnailsCoordinates.find(kind);
     if(thumbnailIt == thumbnailsCoordinates.end())
     {
-        return ResizableGLImagePtr();
+        return std::optional<StandardRedditThumbnail>();
     }
 
-    int x = std::get<0>(thumbnailIt->second);
-    int y = std::get<1>(thumbnailIt->second);
-    int width = std::get<2>(thumbnailIt->second);
-    int height = std::get<3>(thumbnailIt->second);
+    float x = std::get<0>(thumbnailIt->second);
+    float y = std::get<1>(thumbnailIt->second);
+    float width = std::get<2>(thumbnailIt->second);
+    float height = std::get<3>(thumbnailIt->second);
 
-    return GetRedditSpriteSubimage(x,y,width,height);
+    return std::make_optional<StandardRedditThumbnail>(
+                ImVec2(x/redditDefaultSprites->width, y/redditDefaultSprites->height),
+                ImVec2((x+width)/redditDefaultSprites->width, (y+height)/redditDefaultSprites->height),
+                ImVec2(width,height)
+                );
 }
 Utils::STBImagePtr Utils::decodeImageData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file)
 {

@@ -24,5 +24,6 @@ public:
 };
 
 using ResizableGLImagePtr = std::unique_ptr<ResizableGLImage>;
+using ResizableGLImageSharedPtr = std::shared_ptr<ResizableGLImage>;
 
 #endif // RESIZABLEGLIMAGE_H
