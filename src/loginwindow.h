@@ -42,6 +42,8 @@ private:
     RedditClientProducer::RedditLoginClientConnection loginConnection;
     const boost::asio::any_io_executor& uiExecutor;
     MarkdownNodeBlockParagraph helpParagraph;
+    bool maskClientId = true;
+    bool maskAppSecret = true;
 };
 
 #endif // LOGINWINDOW_H

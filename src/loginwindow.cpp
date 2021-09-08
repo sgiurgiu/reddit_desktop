@@ -18,7 +18,7 @@ constexpr std::string_view LINK_TEXT = "Reddit preferences";
 constexpr std::string_view HELP1_TEXT = "To obtain this information, go to";
 constexpr std::string_view HELP2_TEXT = "and add an app of type <script>. Then insert "
                                         "here the values that you obtain from reddit.";
-
+static ImVec2 maskSize = {200,0};
 }
 
 LoginWindow::LoginWindow(RedditClientProducer* client,
@@ -87,15 +87,28 @@ bool LoginWindow::showLoginWindow()
 
         ImGui::Text("Client Id:");
         ImGui::SameLine(fieldsPosition);
-        ImGui::PushItemWidth(ImGui::CalcTextSize(FIELD_TEMPLATE.data()).x);
-        ImGui::InputText("##login_clientid",clientId,IM_ARRAYSIZE(clientId),ImGuiInputTextFlags_None);
+        ImGui::PushItemWidth(ImGui::CalcTextSize(FIELD_TEMPLATE.data()).x - maskSize.x - ImGui::GetStyle().ItemSpacing.x * 2.f);
+        {
+            ImGuiInputTextFlags flag = ImGuiInputTextFlags_None;
+            if(maskClientId) flag |= ImGuiInputTextFlags_Password;
+            ImGui::InputText("##login_clientid",clientId,IM_ARRAYSIZE(clientId),flag);
+        }
         ImGui::PopItemWidth();
+        ImGui::SameLine();
+        ImGui::Checkbox("Mask##client",&maskClientId);
+        maskSize.x = ImGui::GetItemRectSize().x;
 
         ImGui::Text("Secret:");
         ImGui::SameLine(fieldsPosition);
-        ImGui::PushItemWidth(ImGui::CalcTextSize(FIELD_TEMPLATE.data()).x);
-        ImGui::InputText("##login_secret",secret,IM_ARRAYSIZE(secret),ImGuiInputTextFlags_None);
+        ImGui::PushItemWidth(ImGui::CalcTextSize(FIELD_TEMPLATE.data()).x - maskSize.x - ImGui::GetStyle().ItemSpacing.x * 2.f);
+        {
+            ImGuiInputTextFlags flag = ImGuiInputTextFlags_None;
+            if(maskAppSecret) flag |= ImGuiInputTextFlags_Password;
+            ImGui::InputText("##login_secret",secret,IM_ARRAYSIZE(secret),flag);
+        }
         ImGui::PopItemWidth();
+        ImGui::SameLine();
+        ImGui::Checkbox("Mask##secret",&maskAppSecret);
 
         ImGui::Text("Website:");
         ImGui::SameLine(fieldsPosition);
