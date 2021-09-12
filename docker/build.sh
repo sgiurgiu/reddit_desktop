@@ -26,7 +26,7 @@ fi
 
 for distro in "${distros[@]}"; do
     echo "Running podman to build for distribution ${distro}"
-    podman run --rm --name rd \
+    podman run --rm --privileged=true --name rd \
             -v "${root}":/tmp/reddit_desktop/:Z \
             -e REDDITDESKTOP_VERSION_MAJOR="${REDDITDESKTOP_VERSION_MAJOR}" \
             -e REDDITDESKTOP_VERSION_MINOR="${REDDITDESKTOP_VERSION_MINOR}" \
