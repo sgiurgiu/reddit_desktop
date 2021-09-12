@@ -20,6 +20,8 @@ stages:          # List of stages for jobs, and their order of execution
 
 build-job:       # This job runs in the build stage, which runs first.
   stage: build
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
   script:
     - echo "Compiling the code..."
     - docker/build.sh
