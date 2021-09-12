@@ -25,6 +25,7 @@ else
 fi
 
 for distro in "${distros[@]}"; do
+    echo "Running podman to build for distribution ${distro}"
     podman run --rm --name rd \
             -v "${root}":/tmp/reddit_desktop/:Z \
             -e REDDITDESKTOP_VERSION_MAJOR="${REDDITDESKTOP_VERSION_MAJOR}" \
