@@ -25,7 +25,7 @@ else
 fi
 
 for distro in "${distros[@]}"; do
-    podman run --rm --name rd \
+    podman run --tls-verify=false --rm --name rd \
             -v "${root}":/tmp/reddit_desktop/:Z \
             -e REDDITDESKTOP_VERSION_MAJOR="${REDDITDESKTOP_VERSION_MAJOR}" \
             -e REDDITDESKTOP_VERSION_MINOR="${REDDITDESKTOP_VERSION_MINOR}" \
