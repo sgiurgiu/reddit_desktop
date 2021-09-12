@@ -25,11 +25,11 @@ else
 fi
 
 for distro in "${distros[@]}"; do
-    podman run --tls-verify=false --rm --name rd \
+    podman run --rm --name rd \
             -v "${root}":/tmp/reddit_desktop/:Z \
             -e REDDITDESKTOP_VERSION_MAJOR="${REDDITDESKTOP_VERSION_MAJOR}" \
             -e REDDITDESKTOP_VERSION_MINOR="${REDDITDESKTOP_VERSION_MINOR}" \
             -e REDDITDESKTOP_VERSION_PATCH="${REDDITDESKTOP_VERSION_PATCH}" \
-            registry:5000/reddit_desktop_$distro:build
+            registry.zergiu.com:5000/reddit_desktop_$distro:build
 done
 
