@@ -111,6 +111,10 @@ if(VCPKG_TOOLCHAIN)
     list(APPEND REDDIT_DESKTOP_SRCS win/getopt.c)
 endif()
 
+if(MSVC)
+    list(APPEND REDDIT_DESKTOP_SRCS win/AppIcon.rc)
+endif()
+
 set(EXECUTABLE_SOURCES
     ${WIN32_APP_OPTIONS}
     ${REDDIT_DESKTOP_SRCS}
