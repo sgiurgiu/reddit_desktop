@@ -19,7 +19,7 @@ stages:          # List of stages for jobs, and their order of execution
 linux-job:       # This job runs in the build stage, which runs first.
   stage: build
   tags:
-    - gitlab
+    - linux
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
   artifacts:
