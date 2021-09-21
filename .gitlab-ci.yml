@@ -27,7 +27,7 @@ linux-job:       # This job runs in the build stage, which runs first.
       - packages/
   script:
     - echo "Compiling the code..."
-    - docker/build.sh
+    - scripts/build_linux.sh
     - echo "Compile complete."
 
 
@@ -39,7 +39,8 @@ windows-job:
         GIT_SUBMODULE_STRATEGY: recursive
     artifacts:
         paths:
-            - out/
+            - packages/
     script:
-        - echo "Bla bla bla %USERNAME%"
+        - scripts/build_windows.ps1
+
 
