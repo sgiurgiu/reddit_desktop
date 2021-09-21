@@ -4,19 +4,12 @@ set -e
 
 root=$(git rev-parse --show-toplevel)
 
-build_version_file="${root}/build_version"
-if [ ! -f "${build_version_file}" ]; then
-    echo "REDDITDESKTOP_VERSION_MAJOR=1" >  "${build_version_file}"
-    echo "REDDITDESKTOP_VERSION_MINOR=0" >> "${build_version_file}"
-    echo "REDDITDESKTOP_VERSION_PATCH=0" >> "${build_version_file}"
+if [ -z ${REDDITDESKTOP_VERSION_MAJOR+x} ]; then
+    REDDITDESKTOP_VERSION_MAJOR="1"
+    REDDITDESKTOP_VERSION_MINOR="0"
+    REDDITDESKTOP_VERSION_PATCH="dev"
 fi
 
-source "${build_version_file}"
-old_patch_line="REDDITDESKTOP_VERSION_PATCH=${REDDITDESKTOP_VERSION_PATCH}"
-REDDITDESKTOP_VERSION_PATCH=$((REDDITDESKTOP_VERSION_PATCH+1))
-echo "Building version ${REDDITDESKTOP_VERSION_MAJOR}.${REDDITDESKTOP_VERSION_MINOR}.${REDDITDESKTOP_VERSION_PATCH}"
-new_patch_line="REDDITDESKTOP_VERSION_PATCH=${REDDITDESKTOP_VERSION_PATCH}"
-sed -i "s/${old_patch_line}/${new_patch_line}/" "${build_version_file}"
 
 if [ -z $1 ]; then
     distros=("debian" "ubuntu" "fedora")
