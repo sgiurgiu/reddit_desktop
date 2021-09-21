@@ -26,7 +26,7 @@ cmake -B $buildDir -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE=E:/projects/vcpkg/script
 
 cmake --build $buildDir -- package
 
-Copy-Item "$($buildDir\*.msi)" -Destination $packagesDir
+Copy-Item "$buildDir\*.msi" -Destination $packagesDir
 
 
 
