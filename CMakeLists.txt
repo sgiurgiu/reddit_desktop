@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.19)
 project(reddit_desktop LANGUAGES C CXX
     VERSION 0.0.1
     DESCRIPTION "Reddit desktop"
@@ -60,7 +60,7 @@ endif()
 set(OpenGL_GL_PREFERENCE GLVND)
 find_package(OpenGL COMPONENTS OpenGL REQUIRED)
 find_package(Threads REQUIRED)
-find_package(SDL2 2.0 CONFIG REQUIRED)
+find_package(SDL2 CONFIG REQUIRED)
 find_package(Boost 1.74 REQUIRED system filesystem program_options)
 find_package(OpenSSL REQUIRED)
 
@@ -120,6 +120,7 @@ SET(CPACK_PACKAGE_VERSION_MAJOR ${REDDITDESKTOP_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${REDDITDESKTOP_VERSION_MINOR})
 SET(CPACK_PACKAGE_VERSION_PATCH ${REDDITDESKTOP_VERSION_PATCH})
 SET(CPACK_PACKAGE_CONTACT "Sergiu Giurgiu <sgiurgiu11@gmail.com>")
+SET(CPACK_PACKAGE_VENDOR "Sergiu Giurgiu <sgiurgiu11@gmail.com>")
 set (CPACK_DEBIAN_PACKAGE_DEPENDS "libmpv1, libssl1.1, libfreetype6")
 
 set(CPACK_RPM_RELOCATION_PATHS "/${CMAKE_INSTALL_SYSCONFDIR}" "${CMAKE_INSTALL_BINDIR}")
@@ -148,8 +149,9 @@ if(CPACK_GENERATOR STREQUAL "WIX")
     set(CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/icons/reddit_icon_48.png")
     set(CPACK_WIX_PROGRAM_MENU_FOLDER "Reddit Desktop")
     set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/gpl-3.0.rtf")
-    SET(CPACK_PACKAGE_NAME "Reddit Desktop")
-    set(CPACK_PACKAGE_INSTALL_DIRECTORY "${CPACK_PACKAGE_NAME}")
+    set(CPACK_PACKAGE_INSTALL_DIRECTORY "Reddit Desktop")	
 endif()
+
+
 
 INCLUDE(CPack)
