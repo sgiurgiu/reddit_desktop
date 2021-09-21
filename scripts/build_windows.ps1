@@ -1,3 +1,14 @@
+param(
+    [string]
+    $libMpvDir = "E:\projects\mpv",
+    [string]
+    $libMpvIncludeDir = "E:\projects\mpv\include",    
+    [string]
+    $youtubeDlExe = "E:\projects\mpv\youtube-dl.exe"
+    
+)
+
+
 # Invokes a Cmd.exe shell script and updates the environment.
 function Invoke-CmdScript {
   param(
@@ -22,7 +33,15 @@ Remove-Item -LiteralPath $packagesDir -Force -Recurse -ErrorAction Ignore
 New-Item -ItemType Directory -Force -Path $buildDir
 New-Item -ItemType Directory -Force -Path $packagesDir
 
-cmake -B $buildDir -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE=E:/projects/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DENABLE_TESTS=False -DCMAKE_BUILD_TYPE=Release -DCPACK_GENERATOR=WIX -DLIBMPV_DIR=E:\projects\mpv -DLIBMPV_INCLUDE=E:\projects\mpv\include -DYOUTUBE_DL=E:\projects\mpv\youtube-dl.exe 
+
+
+echo "Using lib mpv directory: $libMpvDir"
+echo "Using lib mpv include directory: $libMpvIncludeDir"
+echo "Using youtubeDlExe directory: $youtubeDlExe"
+
+    
+
+cmake -B $buildDir -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE=E:/projects/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DENABLE_TESTS=False -DCMAKE_BUILD_TYPE=Release -DCPACK_GENERATOR=WIX -DLIBMPV_DIR="$libMpvDir" -DLIBMPV_INCLUDE="$libMpvIncludeDir" -DYOUTUBE_DL="$youtubeDlExe"
 
 cmake --build $buildDir -- package
 
