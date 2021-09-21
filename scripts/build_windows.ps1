@@ -17,8 +17,8 @@ Invoke-CmdScript "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\
 $buildDir = ".\build"
 $packagesDir = ".\packages"
 
-Remove-Item -LiteralPath $buildDir -Force -Recurse
-Remove-Item -LiteralPath $packagesDir -Force -Recurse
+Remove-Item -LiteralPath $buildDir -Force -Recurse -ErrorAction Ignore
+Remove-Item -LiteralPath $packagesDir -Force -Recurse -ErrorAction Ignore
 New-Item -ItemType Directory -Force -Path $buildDir
 New-Item -ItemType Directory -Force -Path $packagesDir
 
