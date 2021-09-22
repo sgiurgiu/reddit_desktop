@@ -386,8 +386,18 @@ void Database::addRegisteredUser(const user& registeredUser)
 {
     sqlite3_exec(db.get(),"UPDATE USER SET LAST_LOGGEDIN=0",nullptr,nullptr,nullptr);
     std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
-    sqlite3_stmt *stmt_ptr;
-    int rc = sqlite3_prepare_v2(db.get(),"INSERT INTO USER(USERNAME,PASSWORD,CLIENT_ID,SECRET,WEBSITE,APP_NAME,LAST_LOGGEDIN) VALUES(?,?,?,?,?,?,?)",-1,&stmt_ptr, nullptr);
+    sqlite3_stmt *stmt_ptr = nullptr;
+    int rc = sqlite3_prepare_v2(db.get(),"DELETE FROM USER WHERE USERNAME=?",-1,&stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot delete existing user");
+    rc = sqlite3_bind_text(stmt.get(),1,registeredUser.username.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to user");
+    rc = sqlite3_step(stmt.get());
+    DB_ERR_CHECK("Cannot delete user");
+    stmt.reset();
+    stmt_ptr = nullptr;
+
+    rc = sqlite3_prepare_v2(db.get(),"INSERT INTO USER(USERNAME,PASSWORD,CLIENT_ID,SECRET,WEBSITE,APP_NAME,LAST_LOGGEDIN) VALUES(?,?,?,?,?,?,?)",-1,&stmt_ptr, nullptr);
     stmt.reset(stmt_ptr);
     DB_ERR_CHECK("Cannot insert user");
     rc = sqlite3_bind_text(stmt.get(),1,registeredUser.username.c_str(),-1,nullptr);
