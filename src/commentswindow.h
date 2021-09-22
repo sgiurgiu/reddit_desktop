@@ -85,9 +85,12 @@ private:
         std::vector<DisplayComment> replies;
         bool loadingUnloadedReplies = false;
         std::string postReplyTextBuffer;
-        bool postingReply = false;
+        bool postingReplyInProgress = false;
         bool showingReplyArea = false;
         bool showingPreview = false;
+        bool replyingToComment = false;
+        bool updatingComment = false;
+
         MarkdownRenderer previewRenderer;
         ImVec2 postReplyTextFieldSize;
         ImVec2 postReplyPreviewSize = {0,1};

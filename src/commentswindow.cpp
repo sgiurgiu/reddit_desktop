@@ -162,10 +162,12 @@ void CommentsWindow::loadCommentReply(const listing& listingResponse,std::any us
         auto c = getComment(std::move(commentData.commentName));
         if(c)
         {
-            c->postingReply = false;
+            c->postingReplyInProgress = false;
             c->postReplyTextBuffer.clear();
             c->showingPreview = false;
             c->previewRenderer.SetText(c->postReplyTextBuffer);
+            c->replyingToComment = false;
+            c->updatingComment = false;
             auto replies = std::move(std::get<0>(receivedComments));
             if (commentData.isUpdating)
             {
@@ -464,11 +466,13 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
         if(ImGui::Button(c.replyButtonText.c_str()))
         {
             c.showingReplyArea = true;
+            c.replyingToComment = true;
         }
         ImGui::SameLine();
         if(ImGui::Button(c.quoteButtonText.c_str()))
         {
             c.showingReplyArea = true;
+            c.replyingToComment = true;
             if(c.postReplyTextBuffer.empty())
             {
                 std::istringstream comment(c.commentData.body);
@@ -486,6 +490,7 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
             if (ImGui::Button(c.editButtonText.c_str()))
             {
                 c.showingReplyArea = true;
+                c.updatingComment = true;
                 if (c.postReplyTextBuffer.empty())
                 {
                     c.postReplyTextBuffer = c.commentData.body;
@@ -500,7 +505,7 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
             {
                 c.previewRenderer.SetText(c.postReplyTextBuffer);
             }
-            bool saveDisabled = (c.postingReply || c.postReplyTextBuffer.empty());
+            bool saveDisabled = (c.postingReplyInProgress || c.postReplyTextBuffer.empty());
             if(saveDisabled)
             {
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetColorU32(ImGuiCol_TextDisabled));
@@ -508,15 +513,15 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
                 ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_TextDisabled));
                 ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
             }
-            if(ImGui::Button(c.saveReplyButtonText.c_str()) && !c.postingReply)
+            if(ImGui::Button(c.saveReplyButtonText.c_str()) && !c.postingReplyInProgress)
             {
                 c.showingReplyArea = false;
-                c.postingReply = true;
-                if (!c.commentData.isSubmitter)
+                c.postingReplyInProgress = true;
+                if (c.replyingToComment)
                 {
                     createCommentConnection->createComment(c.commentData.name, c.postReplyTextBuffer, token, CommentUserData{ c.commentData.name, false });
                 }
-                else
+                else if (c.updatingComment)
                 {
                     createCommentConnection->updateComment(c.commentData.name, c.postReplyTextBuffer, token, CommentUserData{ c.commentData.name, true });
                 }
