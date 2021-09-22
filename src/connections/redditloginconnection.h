@@ -4,6 +4,7 @@
 #include "redditconnection.h"
 #include "entities.h"
 
+#include <boost/system/error_code.hpp>
 #include <boost/asio/ip/resolver_base.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/signals2.hpp>
@@ -19,6 +20,29 @@ public:
 protected:
     virtual void responseReceivedComplete() override;
 
+};
+
+class login_error_category : public boost::system::error_category
+{
+public:
+    login_error_category(std::string errorMessage):
+        errorMessage(std::move(errorMessage))
+    {
+    }
+    const char *name() const noexcept
+    {
+        return "LoginErrorCategory";
+    }
+    std::string message(int) const
+    {
+        return errorMessage;
+    }
+    virtual bool failed( int ev ) const BOOST_NOEXCEPT
+    {
+        return ev != 200;
+    }
+private:
+    std::string errorMessage;
 };
 
 #endif // REDDITLOGINCONNECTION_H

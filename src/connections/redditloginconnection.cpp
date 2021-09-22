@@ -8,6 +8,7 @@
 #include "json.hpp"
 
 #include "utils.h"
+#include "htmlparser.h"
 
 RedditLoginConnection::RedditLoginConnection(const boost::asio::any_io_executor& executor,
                                              boost::asio::ssl::context& ssl_context,
@@ -19,7 +20,6 @@ RedditLoginConnection::RedditLoginConnection(const boost::asio::any_io_executor&
 
 void RedditLoginConnection::login(const user& user)
 {
-    boost::signals2::scoped_connection a;
     request_t request;
     request.version(11);
     request.method(boost::beast::http::verb::post);
@@ -30,7 +30,7 @@ void RedditLoginConnection::login(const user& user)
     request.set(boost::beast::http::field::user_agent, make_user_agent(user));
     auto authentication = Utils::encode64(fmt::format("{}:{}",user.client_id,user.secret));
     request.set(boost::beast::http::field::authorization,fmt::format("Basic {}",authentication));
-    request.body() = fmt::format("grant_type=password&username={}&password={}",user.username,user.password);
+    request.body() = fmt::format("grant_type=password&username={}&password={}",HtmlParser::escape(user.username),HtmlParser::escape(user.password));
     request.prepare_payload();
     responseParser.emplace();
     performRequest(std::move(request));
@@ -42,6 +42,7 @@ void RedditLoginConnection::responseReceivedComplete()
     auto body = responseParser->get().body();
     client_response<access_token> token;
     token.status = status;
+    boost::system::error_code ec = {};
     if(status == 200)
     {
         try
@@ -68,17 +69,24 @@ void RedditLoginConnection::responseReceivedComplete()
                 auto error = json["error"].get<std::string>();
                 token.body = error;
                 token.status = 500;
+                ec.assign(token.status,login_error_category(error));
+            }
+            else
+            {
+                ec.assign(status,login_error_category(""));
             }
         }
         catch(const std::exception& ex)
         {
             token.body = ex.what();
             if(status < 500) token.status = 500;
+            ec.assign(token.status,login_error_category(body));
         }
     }
     else
     {
         token.body = body;
+        ec.assign(status,login_error_category(body));
     }
-    signal({},std::move(token));
+    signal(ec,std::move(token));
 }

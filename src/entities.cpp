@@ -6,7 +6,7 @@
 
 std::string make_user_agent(const user& u)
 {
-    return fmt::format("{}:{}:v{} (by /u/{}",u.website,u.app_name,REDDITDESKTOP_VERSION,u.username);
+    return fmt::format("{}:{}:v{} (by /u/{})",u.website,u.app_name,REDDITDESKTOP_VERSION,u.username);
 }
 
 namespace {
