@@ -116,7 +116,35 @@ void SubredditWindow::lookAndDestroyPostsContents()
 
 void SubredditWindow::loadSubredditListings(const std::string& target,const access_token& token)
 {
-
+    setupConnections();
+    listingConnection->list(target,token);
+    //sidebarConnection->list(target+"/api/widgets",token);
+}
+void SubredditWindow::setupConnections()
+{
+    if(!sidebarConnection)
+    {
+        sidebarConnection = client->makeListingClientConnection();
+        sidebarConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
+                                    client_response<listing> response)
+        {
+            auto self = weak.lock();
+            if(!self) return;
+            if(ec)
+            {
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,ec.message()));
+            }
+            else if(response.status >= 400)
+            {
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,std::move(response.body)));
+            }
+            else
+            {
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::loadSidebar,
+                                                            self,std::move(response.data)));
+            }
+        });
+    }
     if(!listingConnection)
     {
         listingConnection = client->makeListingClientConnection();
@@ -203,8 +231,6 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
             }
         });
     }
-
-    listingConnection->list(target,token);
 }
 void SubredditWindow::changeSubreddit(std::string newSubreddit)
 {
@@ -224,6 +250,11 @@ void SubredditWindow::changeSubreddit(std::string newSubreddit)
 void SubredditWindow::setErrorMessage(std::string errorMessage)
 {
     listingErrorMessage = std::move(errorMessage);
+}
+void SubredditWindow::loadSidebar(listing sidebarData)
+{
+    UNUSED(sidebarData);
+    //TODO: load sidebar data
 }
 void SubredditWindow::loadListingsFromConnection(listing listingResponse)
 {

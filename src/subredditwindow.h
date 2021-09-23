@@ -86,6 +86,7 @@ private:
     using posts_list = std::vector<PostDisplay>;
 
     void showWindowMenu();
+    void setupConnections();
     void loadSubredditListings(const std::string& target,const access_token& token);
     void loadListingsFromConnection(listing listingResponse);
     void setListings(posts_list receivedPosts, nlohmann::json beforeJson,nlohmann::json afterJson);
@@ -108,6 +109,7 @@ private:
     void renderPostShowContentButton(PostDisplay& p);
     void renderPostCommentsButton(PostDisplay& p);
     void renderPostOpenLinkButton(PostDisplay& p);
+    void loadSidebar(listing sidebarData);
 private:    
     using CommentsSignal = boost::signals2::signal<void(std::string id,std::string title)>;
     using SubredditSignal = boost::signals2::signal<void(std::string)>;
@@ -124,6 +126,7 @@ private:
     std::string target;
     const boost::asio::any_io_executor& uiExecutor;
     RedditClientProducer::RedditListingClientConnection listingConnection;
+    RedditClientProducer::RedditListingClientConnection sidebarConnection;
     RedditClientProducer::RedditResourceClientConnection resourceConnection;
     RedditClientProducer::RedditVoteClientConnection voteConnection;
     float maxScoreWidth = 0.f;
