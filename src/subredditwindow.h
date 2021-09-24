@@ -35,11 +35,17 @@ public:
     {
         subredditSignal.connect(slot);
     }
+    template<typename S>
+    void subscriptionChangedListener(S slot)
+    {
+        subscriptionChangedSignal.connect(slot);
+    }
+
     void setFocused();
     ~SubredditWindow();
     std::string getSubreddit() const
     {
-        return subreddit;
+        return subredditTarget;
     }
     std::string getTitle() const
     {
@@ -109,12 +115,14 @@ private:
     void renderPostShowContentButton(PostDisplay& p);
     void renderPostCommentsButton(PostDisplay& p);
     void renderPostOpenLinkButton(PostDisplay& p);
-    void loadSidebar(listing sidebarData);
+    void loadAbout(listing aboutData);
 private:    
     using CommentsSignal = boost::signals2::signal<void(std::string id,std::string title)>;
     using SubredditSignal = boost::signals2::signal<void(std::string)>;
+    using SubscriptionChangedSignal = boost::signals2::signal<void(void)>;
     int id;
-    std::string subreddit;
+    std::unique_ptr<subreddit> subredditAbout;
+    std::string subredditTarget;
     std::string subredditName;
     bool windowOpen = true;
     access_token token;
@@ -123,16 +131,18 @@ private:
     std::string title;
     std::string listingErrorMessage;
     posts_list posts;
-    std::string target;
+    std::string target;    
     const boost::asio::any_io_executor& uiExecutor;
     RedditClientProducer::RedditListingClientConnection listingConnection;
-    RedditClientProducer::RedditListingClientConnection sidebarConnection;
+    RedditClientProducer::RedditListingClientConnection aboutConnection;
     RedditClientProducer::RedditResourceClientConnection resourceConnection;
     RedditClientProducer::RedditVoteClientConnection voteConnection;
+    RedditClientProducer::RedditSRSubscriptionClientConnection srSubscriptionConnection;
     float maxScoreWidth = 0.f;
     float upvotesButtonsIdent = 0.f;
     CommentsSignal commentsSignal;
     SubredditSignal subredditSignal;
+    SubscriptionChangedSignal subscriptionChangedSignal;
     bool willBeFocused = false;
     std::optional<std::string> after;
     std::optional<std::string> before;
@@ -151,7 +161,7 @@ private:
     ImVec2 windowSize;
     boost::asio::steady_timer postsContentDestroyerTimer;
     boost::asio::steady_timer refreshTimer;
-    bool refreshEnabled = false;
+    bool autoRefreshEnabled = false;
     std::shared_ptr<SubredditStylesheet> subredditStylesheet;
 };
 

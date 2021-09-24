@@ -182,6 +182,11 @@ void RedditDesktop::addSubredditWindow(std::string title)
         subredditWindow->showSubredditListener([this](std::string title){
             boost::asio::post(this->uiExecutor, std::bind(&RedditDesktop::addSubredditWindow, this, std::move(title)));
         });
+        subredditWindow->subscriptionChangedListener([this]() {
+            boost::asio::post(this->uiExecutor,[this](){
+                subredditsListWindow->loadSubredditsList();
+            });
+        });
         subredditWindow->loadSubreddit();
         subredditWindow->setFocused();
         subredditWindows.push_back(std::move(subredditWindow));

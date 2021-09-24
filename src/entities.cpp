@@ -608,6 +608,22 @@ subreddit::subreddit(const nlohmann::json& json)
     {
         title =json["title"].get<std::string>();
     }
+    if(json.contains("submit_text") && json["submit_text"].is_string())
+    {
+        submitText = json["submit_text"].get<std::string>();
+    }
+    if(json.contains("url") && json["url"].is_string())
+    {
+        url = json["url"].get<std::string>();
+    }
+    if(json.contains("icon_img") && json["icon_img"].is_string())
+    {
+        iconImage = json["icon_img"].get<std::string>();
+    }
+    if(json.contains("header_img") && json["header_img"].is_string())
+    {
+        headerImage = json["header_img"].get<std::string>();
+    }
     if(json.contains("subscribers") && json["subscribers"].is_number())
     {
         subscribers = json["subscribers"].get<int64_t>();
@@ -615,6 +631,10 @@ subreddit::subreddit(const nlohmann::json& json)
     if(json.contains("over18") && json["over18"].is_boolean())
     {
         over18 = json["over18"].get<bool>();
+    }
+    if(json.contains("quarantine") && json["quarantine"].is_boolean())
+    {
+        quarantine = json["quarantine"].get<bool>();
     }
     if(json.contains("user_is_banned") && json["user_is_banned"].is_boolean())
     {
@@ -632,7 +652,18 @@ subreddit::subreddit(const nlohmann::json& json)
     {
         userIsSubscriber = json["user_is_subscriber"].get<bool>();
     }
-
+    if(json.contains("header_size") && json["header_size"].is_array() &&
+           json["header_size"].size() == 2 )
+    {
+        headerSize.first = json["header_size"][0].get<int>();
+        headerSize.second = json["header_size"][1].get<int>();
+    }
+    if(json.contains("icon_size") && json["icon_size"].is_array() &&
+           json["icon_size"].size() == 2 )
+    {
+        iconSize.first = json["icon_size"][0].get<int>();
+        iconSize.second = json["icon_size"][1].get<int>();
+    }
 }
 
 multireddit::multireddit(const nlohmann::json& json)

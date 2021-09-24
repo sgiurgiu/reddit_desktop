@@ -12,6 +12,7 @@
 #include "utils.h"
 #include "macros.h"
 #include "cssparser.h"
+#include <spdlog/spdlog.h>
 
 namespace
 {
@@ -22,7 +23,7 @@ SubredditWindow::SubredditWindow(int id, const std::string& subreddit,
                                  const access_token& token,
                                  RedditClientProducer* client,
                                  const boost::asio::any_io_executor& executor):
-    id(id),subreddit(subreddit),token(token),client(client),
+    id(id),subredditTarget(subreddit),token(token),client(client),
     uiExecutor(executor),postsContentDestroyerTimer(uiExecutor),refreshTimer(uiExecutor),
     subredditStylesheet(std::make_shared<SubredditStylesheet>(token,client,uiExecutor))
 {
@@ -68,15 +69,15 @@ void SubredditWindow::clearExistingPostsData()
 }
 void SubredditWindow::loadSubreddit()
 {
-    target = subreddit;
-    if(subreddit.empty())
+    target = subredditTarget;
+    if(subredditTarget.empty())
     {
         title = "Front Page";
         target = "/";
     }
     else
     {
-        title = subreddit;
+        title = subredditTarget;
         if(!target.starts_with("r/") && !target.starts_with("/r/") &&
             (!target.starts_with("/user/") && target.find("/m/") == target.npos))
         {
@@ -118,30 +119,43 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
 {
     setupConnections();
     listingConnection->list(target,token);
-    //sidebarConnection->list(target+"/api/widgets",token);
+    spdlog::debug("Loading about data of : {} ", target );
+    if(target != "/r/random" && target != "/r/randnsfw")
+    {
+        aboutConnection->list(target+"/about",token);
+    }
 }
 void SubredditWindow::setupConnections()
 {
-    if(!sidebarConnection)
+    if(!aboutConnection)
     {
-        sidebarConnection = client->makeListingClientConnection();
-        sidebarConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
+        aboutConnection = client->makeListingClientConnection();
+        aboutConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
                                     client_response<listing> response)
         {
             auto self = weak.lock();
             if(!self) return;
-            if(ec)
+            spdlog::debug("Loaded about data : {} ", response.body);
+            if(!ec)
             {
-                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,ec.message()));
-            }
-            else if(response.status >= 400)
-            {
-                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setErrorMessage,self,std::move(response.body)));
-            }
-            else
-            {
-                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::loadSidebar,
+                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::loadAbout,
                                                             self,std::move(response.data)));
+            }
+        });
+    }
+    if(!srSubscriptionConnection)
+    {
+        srSubscriptionConnection = client->makeRedditRedditSRSubscriptionClientConnection();
+        srSubscriptionConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
+                                                            client_response<bool> response)
+        {
+            auto self = weak.lock();
+            if(!self) return;
+            if(!ec && response.data)
+            {
+
+                self->aboutConnection->list(self->target+"/about",self->token);
+                self->subscriptionChangedSignal();
             }
         });
     }
@@ -244,17 +258,26 @@ void SubredditWindow::changeSubreddit(std::string newSubreddit)
         newSubreddit.erase(newSubreddit.begin());
     }
 
-    this->subreddit = std::move(newSubreddit);
+    this->subredditTarget = std::move(newSubreddit);
     loadSubreddit();
 }
 void SubredditWindow::setErrorMessage(std::string errorMessage)
 {
     listingErrorMessage = std::move(errorMessage);
 }
-void SubredditWindow::loadSidebar(listing sidebarData)
+void SubredditWindow::loadAbout(listing aboutData)
 {
-    UNUSED(sidebarData);
-    //TODO: load sidebar data
+    if(!aboutData.json.contains("kind") ||
+       !aboutData.json["kind"].is_string() ||
+        aboutData.json["kind"].get<std::string>() != "t5" ||
+       !aboutData.json.contains("data") ||
+       !aboutData.json["data"].is_object())
+    {
+        return;
+    }
+
+    subredditAbout = std::make_unique<subreddit>(aboutData.json["data"]);
+    windowName = fmt::format("{}##{}",subredditAbout->title,id);
 }
 void SubredditWindow::loadListingsFromConnection(listing listingResponse)
 {
@@ -376,7 +399,7 @@ void SubredditWindow::refreshPosts()
 }
 void SubredditWindow::rearmRefreshTimer()
 {
-    if(refreshEnabled)
+    if(autoRefreshEnabled)
     {
         refreshTimer.expires_after(std::chrono::seconds(Database::getInstance()->getAutoRefreshTimeout()));
         refreshTimer.async_wait([weak=weak_from_this()](const boost::system::error_code& ec){
@@ -577,7 +600,6 @@ void SubredditWindow::renderPostOpenLinkButton(PostDisplay& p)
             }  catch (const std::exception& ex) {
                 p.errorMessageText = ex.what();
             }
-
         }
         if(ImGui::IsItemHovered())
         {
@@ -655,11 +677,11 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         newLinkPostDialog = true;
     }
     ImGui::SameLine();
-    if(ImGui::Checkbox("Auto Refresh",&refreshEnabled))
+    if(ImGui::Checkbox("Auto Refresh",&autoRefreshEnabled))
     {
         rearmRefreshTimer();
     }
-    if(refreshEnabled)
+    if(autoRefreshEnabled)
     {
         ImGui::SameLine();
         auto diff = std::chrono::duration_cast<std::chrono::seconds>(refreshTimer.expiry() - std::chrono::steady_clock::now());
@@ -669,24 +691,39 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::PopFont();
     }
     {
-        bool refreshButtonDisabled = posts.empty();
-        if(refreshButtonDisabled)
+        if (ImGui::BeginPopupContextItem("aboutsubredditpopup"))
         {
-            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImGui::GetColorU32(ImGuiCol_TextDisabled));
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetColorU32(ImGuiCol_TextDisabled));
-            ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetColorU32(ImGuiCol_TextDisabled));
-            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+            bool refreshButtonDisabled = posts.empty();
+            if (ImGui::Selectable(reinterpret_cast<const char*>(ICON_FA_REFRESH " Refresh")) && !refreshButtonDisabled)
+            {
+                refreshPosts();
+            }
+            if (subredditAbout && !subredditAbout->userIsSubscriber &&
+                    ImGui::Selectable("Subscribe"))
+            {
+                srSubscriptionConnection->updateSrSubscription({subredditAbout->name},RedditSRSubscriptionConnection::SubscriptionAction::Subscribe,token);
+            }
+            if (subredditAbout && subredditAbout->userIsSubscriber &&
+                    ImGui::Selectable("Unsubscribe"))
+            {
+                srSubscriptionConnection->updateSrSubscription({subredditAbout->name},RedditSRSubscriptionConnection::SubscriptionAction::Unsubscribe,token);
+            }
+            if (subredditAbout && ImGui::Selectable("About"))
+            {
+
+            }
+
+            ImGui::EndPopup();
         }
+
+
         ImGui::SameLine(ImGui::GetWindowContentRegionMax().x-(ImGui::GetStyle().FramePadding.x)-ImGui::GetFontSize());
-        if(ImGui::Button(reinterpret_cast<const char*>(ICON_FA_REFRESH)))
+        ImGui::PushStyleColor(ImGuiCol_Button,ImVec4(1.0f,1.0f,1.0f,0.0f));
+        if(ImGui::Button(reinterpret_cast<const char*>(ICON_FA_ELLIPSIS_V)))
         {
-            refreshPosts();
+            ImGui::OpenPopup("aboutsubredditpopup");
         }
-        if(refreshButtonDisabled)
-        {
-            ImGui::PopStyleColor(3);
-            ImGui::PopStyleVar();
-        }
+        ImGui::PopStyleColor();
     }
 
     if(maxScoreWidth == 0.f)
@@ -724,11 +761,11 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             rectMin.y = rectMax.y;
             ImGui::SetCursorScreenPos(p0);
             auto subredditTextSize = ImGui::GetItemRectSize();
-            if (ImGui::InvisibleButton(p.subredditLinkText.c_str(), subredditTextSize) && p.post->subreddit != subreddit)
+            if (ImGui::InvisibleButton(p.subredditLinkText.c_str(), subredditTextSize) && p.post->subreddit != subredditTarget)
             {
                 subredditSignal(p.post->subreddit);
             }
-            if (ImGui::IsItemHovered() && p.post->subreddit != subreddit)
+            if (ImGui::IsItemHovered() && p.post->subreddit != subredditTarget)
             {
                 ImGui::GetWindowDrawList()->AddLine(rectMin, rectMax, ImGui::GetColorU32(ImGuiCol_Text));
                 ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);

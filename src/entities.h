@@ -248,6 +248,8 @@ struct subreddit
     std::string description;
     std::string displayName;
     std::string displayNamePrefixed;
+    std::string submitText;
+    std::string url;
     bool over18 = false;
     int64_t subscribers = 0;
     std::string title;
@@ -255,6 +257,11 @@ struct subreddit
     bool userIsModerator = false;
     bool userIsSubscriber = false;
     bool userIsMuted = false;
+    bool quarantine = false;
+    std::string iconImage;
+    std::string headerImage;
+    std::pair<int,int> iconSize;
+    std::pair<int,int> headerSize;
 };
 struct multireddit
 {

@@ -79,6 +79,7 @@ set(REDDIT_CONNECTIONS_SRCS
     connections/redditmorechildrenconnection.cpp
     connections/redditcreatecommentconnection.cpp
     connections/redditmarkreplyreadconnection.cpp
+    connections/redditsrsubscriptionconnection.cpp
     )
 
 set(REDDIT_DESKTOP_LOG_SRCS
