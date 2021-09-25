@@ -31,7 +31,8 @@ for distro in "${distros[@]}"; do
             registry.zergiu.com:5000/reddit_desktop_$distro:build
 done
 
-podman rmi -f reddit_desktop_runtime:latest
+podman rmi -f reddit_desktop_runtime:latest || true
+
 buildah bud --build-arg RDRPM=/tmp/reddit_desktop/packages/reddit_desktop-${REDDITDESKTOP_VERSION_MAJOR}.${REDDITDESKTOP_VERSION_MINOR}.${REDDITDESKTOP_VERSION_PATCH}-fedora.rpm \
             -v "${root}":/tmp/reddit_desktop/:Z \
             -f  ${root}/docker/Dockerfile.fedora.runtime -t reddit_desktop_runtime
