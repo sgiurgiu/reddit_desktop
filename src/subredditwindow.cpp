@@ -84,8 +84,8 @@ void SubredditWindow::loadSubreddit()
             target = "/r/" + target;
         }
     }
-    windowName = fmt::format("{}##{}",title,id);
-    aboutSubredditWindowName = fmt::format("About {}##{}_about", title, id);
+    windowName = fmt::format("{}###{}",title,id);
+    aboutSubredditWindowName = fmt::format("About {}###{}_about", title, id);
 
     if(!target.starts_with("/")) target = "/" + target;
     loadSubredditListings(target,token);
@@ -285,8 +285,8 @@ void SubredditWindow::loadAbout(listing aboutData)
 
     subredditAbout = std::make_optional<subreddit>(aboutData.json["data"]);
     subredditAboutDisplay = std::make_optional<AboutDisplay>(subredditAbout.value());
-    windowName = fmt::format("{}##{}",subredditAbout->title,id);
-    aboutSubredditWindowName = fmt::format("About {}##{}_about", subredditAbout->displayNamePrefixed, id);
+    windowName = fmt::format("{}###{}",subredditAbout->title,id);
+    aboutSubredditWindowName = fmt::format("About {}###{}_about", subredditAbout->displayNamePrefixed, id);
 }
 void SubredditWindow::loadListingsFromConnection(listing listingResponse)
 {

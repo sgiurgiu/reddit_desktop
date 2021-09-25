@@ -282,6 +282,12 @@ void RedditDesktop::showDesktop()
     }
     showMainMenuBar();    
 
+    if(subredditsListWindow)
+    {
+        ImGui::SetNextWindowPos(ImVec2(0,topPosAfterMenuBar));
+        subredditsListWindow->showWindow(appFrameWidth,appFrameHeight);
+    }
+
     int haveRemovedWindows = 0;
     for(const auto& srw : subredditWindows)
     {
@@ -315,11 +321,6 @@ void RedditDesktop::showDesktop()
         });
     }
 
-    if(subredditsListWindow)
-    {
-        ImGui::SetNextWindowPos(ImVec2(0,topPosAfterMenuBar));
-        subredditsListWindow->showWindow(appFrameWidth,appFrameHeight);
-    }
     showOpenSubredditWindow();
 
     if(loginWindow.showLoginWindow())
