@@ -85,6 +85,7 @@ void SubredditWindow::loadSubreddit()
         }
     }
     windowName = fmt::format("{}##{}",title,id);
+    aboutSubredditWindowName = fmt::format("About {}##{}_about", title, id);
 
     if(!target.starts_with("/")) target = "/" + target;
     loadSubredditListings(target,token);
@@ -120,7 +121,13 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
     setupConnections();
     listingConnection->list(target,token);
     spdlog::debug("Loading about data of : {} ", target );
-    if(target != "/r/random" && target != "/r/randnsfw")
+    if( target != "/r/random" && 
+        target != "/r/randnsfw" && 
+        target != "/" &&
+        target != "/r/all" &&
+        target.find("/m/") == target.npos &&
+        target.find("/user/") == target.npos
+        )
     {
         aboutConnection->list(target+"/about",token);
     }
@@ -276,8 +283,10 @@ void SubredditWindow::loadAbout(listing aboutData)
         return;
     }
 
-    subredditAbout = std::make_unique<subreddit>(aboutData.json["data"]);
+    subredditAbout = std::make_optional<subreddit>(aboutData.json["data"]);
+    subredditAboutDisplay = std::make_optional<AboutDisplay>(subredditAbout.value());
     windowName = fmt::format("{}##{}",subredditAbout->title,id);
+    aboutSubredditWindowName = fmt::format("About {}##{}_about", subredditAbout->displayNamePrefixed, id);
 }
 void SubredditWindow::loadListingsFromConnection(listing listingResponse)
 {
@@ -710,7 +719,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             }
             if (subredditAbout && ImGui::Selectable("About"))
             {
-
+                aboutSubredditWindowOpen = true;
             }
 
             ImGui::EndPopup();
@@ -894,7 +903,25 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
     showNewLinkPostDialog();
 
     ImGui::End();
+
+    showAboutWindow();
 }
+
+void SubredditWindow::showAboutWindow()
+{
+    if (!subredditAbout || !subredditAboutDisplay || !aboutSubredditWindowOpen) return;
+
+    ImGui::SetNextWindowSize(ImVec2(400, 400), ImGuiCond_FirstUseEver);
+
+    if (ImGui::Begin(aboutSubredditWindowName.c_str(), &aboutSubredditWindowOpen, ImGuiWindowFlags_None))
+    {
+        ImGui::Text("%s", subredditAbout->title.c_str());
+        subredditAboutDisplay->description.RenderMarkdown();
+        subredditAboutDisplay->submit.RenderMarkdown();
+    }
+    ImGui::End();
+}
+
 void SubredditWindow::showNewLinkPostDialog()
 {
     auto windowWidth = ImGui::GetWindowWidth();

@@ -45,6 +45,7 @@ void MarkdownNodeLink::componentLinkHandling()
         auto fixedHref = href;
         if (href.starts_with("/r/"))
         {
+            // TODO: open the thing in our window
             fixedHref = "https://reddit.com"+href;
         }
         Utils::openInBrowser(fixedHref);

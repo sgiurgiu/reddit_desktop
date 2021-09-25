@@ -14,6 +14,7 @@
 #include "postcontentviewer.h"
 #include "utils.h"
 #include "subredditstylesheet.h"
+#include "markdownrenderer.h"
 
 class SubredditWindow : public std::enable_shared_from_this<SubredditWindow>
 {
@@ -91,6 +92,16 @@ private:
     };
     using posts_list = std::vector<PostDisplay>;
 
+    struct AboutDisplay
+    {
+        AboutDisplay(subreddit& about):
+            description(about.description),
+            submit(about.submitText)
+        {}
+        MarkdownRenderer description;
+        MarkdownRenderer submit;
+    };
+
     void showWindowMenu();
     void setupConnections();
     void loadSubredditListings(const std::string& target,const access_token& token);
@@ -116,12 +127,15 @@ private:
     void renderPostCommentsButton(PostDisplay& p);
     void renderPostOpenLinkButton(PostDisplay& p);
     void loadAbout(listing aboutData);
+    void showAboutWindow();
 private:    
     using CommentsSignal = boost::signals2::signal<void(std::string id,std::string title)>;
     using SubredditSignal = boost::signals2::signal<void(std::string)>;
     using SubscriptionChangedSignal = boost::signals2::signal<void(void)>;
     int id;
-    std::unique_ptr<subreddit> subredditAbout;
+    std::optional<subreddit> subredditAbout;
+    std::optional<AboutDisplay> subredditAboutDisplay;
+
     std::string subredditTarget;
     std::string subredditName;
     bool windowOpen = true;
@@ -163,6 +177,8 @@ private:
     boost::asio::steady_timer refreshTimer;
     bool autoRefreshEnabled = false;
     std::shared_ptr<SubredditStylesheet> subredditStylesheet;
+    bool aboutSubredditWindowOpen = false;
+    std::string aboutSubredditWindowName;
 };
 
 using SubredditWindowPtr = std::shared_ptr<SubredditWindow>;
