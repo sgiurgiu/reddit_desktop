@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "images/sprite_reddit.h"
 #include "images/reddit_icon_256.h"
 #include "fonts/fonts.h"
@@ -75,15 +76,25 @@ namespace {
             }
         }
     };
+
+    size_t seguiemjFileDataSize = 0;
+    void* seguiemjFileData = nullptr;
+    //size_t notoColorEmojiFileDataSize = 0;
+    //void* notoColorEmojiFileData = nullptr;
+    size_t fontAwesomeFileDataSize = 0;
+    void* fontAwesomeFileData = nullptr;
 }
 
 ResizableGLImageSharedPtr Utils::redditDefaultSprites;
 
-ImFont* Utils::AddFont(const std::filesystem::path& fontsFolder, const std::string& font, float fontSize)
+ImFont* Utils::AddFont(const std::filesystem::path& fontsFolder,
+                       const std::string& font,
+                       float fontSize)
 {
     ImFontConfig fontAwesomeConfig;
     fontAwesomeConfig.MergeMode = true;
     fontAwesomeConfig.GlyphMinAdvanceX = fontSize; // Use if you want to make the icon monospaced
+    fontAwesomeConfig.FontDataOwnedByAtlas = false;
     static const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
     static const ImWchar romanian_ranges[] = { 0x0100, 0x017F,
                                                0x0180, 0x024F,
@@ -117,6 +128,7 @@ ImFont* Utils::AddFont(const std::filesystem::path& fontsFolder, const std::stri
     emojiConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
     emojiConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_Bitmap;
     emojiConfig.OversampleH = emojiConfig.OversampleV = 1;
+    emojiConfig.FontDataOwnedByAtlas = false;
     //emojiConfig.GlyphMinAdvanceX = fontSize;
     static const ImWchar emoji_icon_ranges[] = { 0x1, 0x1FFFF,
                                                  0 };
@@ -124,11 +136,11 @@ ImFont* Utils::AddFont(const std::filesystem::path& fontsFolder, const std::stri
     auto notoColorEmojiFile = (fontsFolder / "NotoColorEmoji.ttf").string();
     auto fontAwesomeFile = (fontsFolder / FONT_ICON_FILE_NAME_FA).string();
 
-    ImGui::GetIO().Fonts->AddFontFromFileTTF(seguiemjFile.c_str(), fontSize,
+    ImGui::GetIO().Fonts->AddFontFromMemoryTTF(seguiemjFileData,seguiemjFileDataSize, fontSize,
                                                          &emojiConfig,emoji_icon_ranges);
-    ImGui::GetIO().Fonts->AddFontFromFileTTF(notoColorEmojiFile.c_str(), fontSize,
-                                                         &emojiConfig,emoji_icon_ranges);
-    return ImGui::GetIO().Fonts->AddFontFromFileTTF(fontAwesomeFile.c_str(), fontSize,
+    /*ImGui::GetIO().Fonts->AddFontFromMemoryTTF(notoColorEmojiFileData, notoColorEmojiFileDataSize, fontSize,
+                                                         &emojiConfig,emoji_icon_ranges);*/
+    return ImGui::GetIO().Fonts->AddFontFromMemoryTTF(fontAwesomeFileData, fontAwesomeFileDataSize, fontSize,
                                                          &fontAwesomeConfig, icon_ranges);
 }
 
@@ -151,6 +163,14 @@ void Utils::LoadFonts(const std::filesystem::path& executablePath)
     if(!std::filesystem::exists(fontsFolder)) throw std::runtime_error(
                 fmt::format("Fonts folder does not exists ({})",fontsFolder.string()));
 
+    auto seguiemjFile = (fontsFolder / "seguiemj.ttf").string();
+    auto notoColorEmojiFile = (fontsFolder / "NotoColorEmoji.ttf").string();
+    auto fontAwesomeFile = (fontsFolder / FONT_ICON_FILE_NAME_FA).string();
+
+    seguiemjFileData = ImFileLoadToMemory(seguiemjFile.c_str(), "rb", &seguiemjFileDataSize, 0);
+    //notoColorEmojiFileData = ImFileLoadToMemory(notoColorEmojiFile.c_str(), "rb", &notoColorEmojiFileDataSize, 0);
+    fontAwesomeFileData = ImFileLoadToMemory(fontAwesomeFile.c_str(), "rb", &fontAwesomeFileDataSize, 0);
+
     AddFont(fontsFolder, "NotoSans-Black.ttf", normalFontSize);
     AddFont(fontsFolder, "NotoSans-BlackItalic.ttf", normalFontSize);
     AddFont(fontsFolder, "NotoSans-Bold.ttf", normalFontSize);
@@ -171,6 +191,9 @@ void Utils::LoadFonts(const std::filesystem::path& executablePath)
 }
 void Utils::DeleteFonts()
 {
+    free(seguiemjFileData);
+    //free(notoColorEmojiFileData);
+    free(fontAwesomeFileData);
 //    delete[] NotoSans_Black_ttf_compressed_data;
 //    delete[] NotoSans_BlackItalic_ttf_compressed_data;
 //    delete[] NotoSans_BoldItalic_ttf_compressed_data;

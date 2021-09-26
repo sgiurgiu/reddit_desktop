@@ -85,7 +85,9 @@ public:
     static std::filesystem::path GetAppConfigFolder();
     static ResizableGLImageSharedPtr GetRedditDefaultSprites();
 private:
-    static ImFont* AddFont(const std::filesystem::path& fontsFolder, const std::string& font, float fontSize);
+    static ImFont* AddFont(const std::filesystem::path& fontsFolder,
+                           const std::string& font,
+                           float fontSize);
     //static ResizableGLImagePtr GetRedditSpriteSubimage(int x, int y, int width, int height);
 private:
     static ResizableGLImageSharedPtr redditDefaultSprites;

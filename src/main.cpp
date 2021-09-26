@@ -283,6 +283,7 @@ void ShowMarkdownWindow(bool *open)
     }
 
     if(body.empty()) return;
+    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Medium)]);
 
 //    ImVec2 min(150,150);
 //    ImVec2 max(1000,1000);
@@ -293,11 +294,13 @@ void ShowMarkdownWindow(bool *open)
         ImGui::End();
         return;
     }
-    //ImGui::SetWindowFocus();
+    ImGui::SetWindowFocus();
+    ImGui::TextUnformatted(reinterpret_cast<const char*>("Bla"  u8"\u1F004" u8"\uFE0F"));
 
-    MarkdownRenderer markdown(body);
-    markdown.RenderMarkdown();
-
+    //MarkdownRenderer markdown(body);
+    //markdown.RenderMarkdown();
     ImGui::End();
+
+    ImGui::PopFont();
 }
 #endif
