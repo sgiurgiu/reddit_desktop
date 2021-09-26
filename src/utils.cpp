@@ -91,7 +91,7 @@ ImFont* Utils::AddFont(const std::filesystem::path& fontsFolder,
                        const std::string& font,
                        float fontSize)
 {
-    ImFontConfig fontAwesomeConfig;
+    static ImFontConfig fontAwesomeConfig;
     fontAwesomeConfig.MergeMode = true;
     fontAwesomeConfig.GlyphMinAdvanceX = fontSize; // Use if you want to make the icon monospaced
     fontAwesomeConfig.FontDataOwnedByAtlas = false;
@@ -123,7 +123,7 @@ ImFont* Utils::AddFont(const std::filesystem::path& fontsFolder,
     ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFilename, fontSize,&config,ImGui::GetIO().Fonts->GetGlyphRangesVietnamese());
     ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFilename, fontSize,&config,romanian_ranges);
 
-    ImFontConfig emojiConfig;
+    static ImFontConfig emojiConfig;
     emojiConfig.MergeMode = true;
     emojiConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
     emojiConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_Bitmap;

@@ -16,8 +16,6 @@ SET(IMGUI_SRCS
     imgui/misc/freetype/imgui_freetype.cpp
     spinner/spinner.cpp)
 
-SET(GLAD_SRCS glad/glad.c)
-
 set(BOOST_URL_SRC ../external/url/src/src.cpp)
 
 set(SQLITE_SRC sqlite/sqlite3.c)
@@ -120,7 +118,6 @@ set(EXECUTABLE_SOURCES
     ${WIN32_APP_OPTIONS}
     ${REDDIT_DESKTOP_SRCS}
     ${IMGUI_SRCS}
-    ${GLAD_SRCS}
     ${SQLITE_SRC}
     ${BOOST_URL_SRC}
     ${GUMBO_PARSER_SRCS}
@@ -193,7 +190,7 @@ if(ENABLE_CMARK)
 endif()
 
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE SPDLOG_FMT_EXTERNAL_HO SPDLOG_FMT_EXTERNAL)
-target_compile_definitions(${EXECUTABLE_NAME} PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLAD BOOST_ASIO_NO_DEPRECATED)
+target_compile_definitions(${EXECUTABLE_NAME} PRIVATE GL_GLEXT_PROTOTYPES BOOST_ASIO_NO_DEPRECATED)
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "$<$<CONFIG:Debug>:REDDIT_DESKTOP_DEBUG>")
 if(ASAN_ENABLE)
     target_compile_options(${EXECUTABLE_NAME} PUBLIC $<$<AND:$<CONFIG:Debug>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-Wall -pedantic -Wextra -fsanitize=undefined,address -fno-omit-frame-pointer>)

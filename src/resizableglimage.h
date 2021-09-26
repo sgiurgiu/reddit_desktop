@@ -2,7 +2,7 @@
 #define RESIZABLEGLIMAGE_H
 
 #include <memory>
-#include <glad/glad.h>
+#include <SDL_opengl.h>
 
 class ResizableGLImage
 {

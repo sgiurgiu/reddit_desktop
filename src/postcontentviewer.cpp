@@ -14,6 +14,7 @@
 #include <fmt/format.h>
 #include "fonts/IconsFontAwesome4.h"
 #include <SDL.h>
+#include <SDL_opengl_glext.h>
 #include "macros.h"
 #include "utils.h"
 #include <iostream>
