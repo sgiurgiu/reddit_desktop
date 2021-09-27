@@ -283,8 +283,8 @@ void Database::getMainWindowDimensions(int *x, int *y, int *width,int *height)
     DB_ERR_CHECK("Cannot find window dimensions");
     SDL_DisplayMode displayMode;
     SDL_GetDesktopDisplayMode(0, &displayMode);
-    *width = 1280;
-    *height = 720;
+    *width = 1024;
+    *height = 728;
 
     *x = (displayMode.w - *width) / 2;
     *y = (displayMode.h - *height) / 2;
