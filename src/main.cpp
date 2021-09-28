@@ -1,4 +1,7 @@
 #include "imgui.h"
+
+#include <GL/glew.h>    // Initialize with glewInit()
+
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
 
@@ -17,7 +20,9 @@
 #include <filesystem>
 
 #if defined(_MSC_VER)
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <Windows.h>
 #endif
 
@@ -109,6 +114,9 @@ int main(int /*argc*/, char** argv)
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, gl_context);
     SDL_GL_SetSwapInterval(1); // Enable vsync
+    
+    glewInit();
+
 
     Database* db = Database::getInstance();
     {

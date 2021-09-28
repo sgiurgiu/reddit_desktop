@@ -20,6 +20,7 @@
 
 #ifdef RD_WINDOWS
 #include <windows.h>
+#include <shellapi.h>
 #include <shlobj.h>
 #include <shlwapi.h>
 #include <objbase.h>
