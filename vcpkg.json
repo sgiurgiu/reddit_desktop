@@ -4,17 +4,18 @@
   "version-string": "0.0.1",
   "dependencies": [
     "boost-asio",
-	"boost-algorithm",	
-	"boost-beast",
-    "boost-system",
-	"boost-filesystem",
-	"boost-program-options",
-	"boost-serialization",
-	"boost-signals2",	
-	"boost-spirit",
-	"sdl2",
-	"freetype",
-	"openssl",
-	"zlib"
+		"boost-algorithm",	
+		"boost-beast",
+		"boost-system",
+		"boost-filesystem",
+		"boost-program-options",
+		"boost-serialization",
+		"boost-signals2",
+		"boost-spirit",
+		"glew",
+		"sdl2",
+		"freetype",
+		"openssl",
+		"zlib"
   ]
 }
