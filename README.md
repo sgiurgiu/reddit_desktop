@@ -4,7 +4,7 @@
 
 **Reddit Desktop** is a desktop client for [reddit](https://reddit.com).
 
-To download the latest release for your OS, please visit the [releases](releases/latest) page.
+To download the latest release for your OS, please visit the [releases](https://github.com/sgiurgiu/reddit_desktop/releases/latest) page.
 
 For Windows, download the .msi executable, which will provide you with a package, ready to be installed.
 
