@@ -9,7 +9,7 @@ COPY build_reddit_desktop.sh /tmp/workdir/
 
 RUN apt update && \
     apt install -y dpkg build-essential cmake gcc g++ libboost-all-dev libdrm-dev \
-                libgbm-dev libmpv-dev libsdl2-dev libssl-dev \
+                libgbm-dev libmpv-dev libsdl2-dev libssl-dev libglew-dev \
                 libfreetype-dev pkg-config ninja-build && \
     apt clean && \
     chmod 777 /tmp/workdir/build_reddit_desktop.sh

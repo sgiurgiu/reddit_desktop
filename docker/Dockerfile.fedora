@@ -16,7 +16,7 @@ RUN dnf install -yq \
 RUN dnf -yq install cmake gcc g++ pkgconf-pkg-config \
         tar rpm-build ninja-build boost-devel boost-static \
         openssl-devel SDL2-devel SDL2-static ibus-devel \
-        freetype-devel mpv-libs-devel && \
+        freetype-devel mpv-libs-devel glew-devel && \
         dnf clean all
 
 
