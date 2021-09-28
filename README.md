@@ -98,7 +98,7 @@ The `docker/run_container.sh` script provides an example.
  - Linux Debian 11 (and Debian based distributions)
     ```
     apt install -y dpkg build-essential cmake gcc g++ libboost-all-dev libdrm-dev \
-            libgbm-dev libmpv-dev libsdl2-dev libssl-dev \
+            libgbm-dev libmpv-dev libsdl2-dev libssl-dev libglew-dev \
             libfreetype-dev pkg-config generate-ninja ninja-build && \
     ```
   - Linux Fedora (34+) 
@@ -113,7 +113,7 @@ The `docker/run_container.sh` script provides an example.
     dnf -yq install cmake gcc g++ pkgconf-pkg-config \
         tar rpm-build ninja-build boost-devel boost-static \
         openssl-devel SDL2-devel SDL2-static ibus-devel \
-        freetype-devel mpv-libs-devel
+        freetype-devel mpv-libs-devel glew-devel
     ```
 
 ### Actually building the executable
