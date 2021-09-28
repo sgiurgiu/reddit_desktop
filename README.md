@@ -11,6 +11,15 @@ For Windows, download the .msi executable, which will provide you with a package
 For Linux, download the `*-debian.deb` package for Debian based distributions or the `*-fedora.rpm` package
 for Fedora, and install them with your package manager (`sudo apt install <deb file>` or `sudo dnf install <rpm file>`).
 
+For Fedora you will also need to install a repository that provides libmpv, such as rpmfusion. For example:
+```
+dnf install -yq \
+    http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-stable.noarch.rpm \
+    http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-stable.noarch.rpm && \
+    rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-latest && \
+    rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-latest
+```
+
 If you would rather run the container image (docker or podman), download the `reddit_desktop_runtime.tar` file from the releases page. Load it for your container (e.g. `podman load -i reddit_desktop_runtime.tar`) then run it with
 ```
 mkdir -p ~/.config/reddit_desktop
