@@ -139,3 +139,7 @@ The `docker/run_container.sh` script provides an example.
 
 The scripts that build it on windows and linux can be found in the `scripts` folder, as well in the `docker` folder. Those scripts are the authority when it comes to the process of building a package for a particular OS.
 
+
+---
+
+This application uses the [Dear ImGui](https://github.com/ocornut/imgui) library for its UI. Big thanks to [ocornut](https://github.com/ocornut) and all the other contributors for their amazing work.
