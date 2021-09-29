@@ -119,7 +119,7 @@ The `docker/run_container.sh` script provides an example.
 ### Actually building the executable
 `cd <projects folder>`
 
-`git clone https://github.com/sgiurgiu/reddit_desktop.git`
+`git clone --recurse-submodules https://github.com/sgiurgiu/reddit_desktop.git`
 
 - Linux
 
