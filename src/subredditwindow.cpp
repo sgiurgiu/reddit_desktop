@@ -297,7 +297,7 @@ void SubredditWindow::loadListingsFromConnection(listing listingResponse)
         auto kind = child["kind"].get<std::string>();
         if(kind == "t3")
         {
-            tmpPosts.emplace_back(std::make_shared<post>(child["data"]));
+            tmpPosts.emplace_back(std::make_shared<post>(child["data"]), token, client, uiExecutor);
         }
     }    
     setListings(std::move(tmpPosts),
@@ -784,9 +784,14 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             }
         }
 
-        ImGui::SameLine();        
+        ImGui::SameLine();
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Light)]);
         ImGui::Text("Posted by %s %s",p.post->author.c_str(),p.post->humanReadableTimeDifference.c_str());
+
+        //Awards
+        ImGui::SameLine();
+        p.awardsRenderer->Render();
+
         if(p.post->over18)
         {
             ImGui::SameLine();

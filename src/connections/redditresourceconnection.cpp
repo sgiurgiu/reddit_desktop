@@ -19,7 +19,7 @@ RedditResourceConnection::RedditResourceConnection(const boost::asio::any_io_exe
 {    
 }
 
-void RedditResourceConnection::getResource(const std::string& url,std::any userData)
+RedditResourceConnection::request_t RedditResourceConnection::createRequest(const std::string& url)
 {
     boost::url_view urlParts(url);
 
@@ -46,7 +46,19 @@ void RedditResourceConnection::getResource(const std::string& url,std::any userD
     request.set(boost::beast::http::field::connection, "keep-alive");
     request.set(boost::beast::http::field::host, newHost);
     request.set(boost::beast::http::field::accept, "*/*");
-    request.set(boost::beast::http::field::user_agent, userAgent);    
+    request.set(boost::beast::http::field::user_agent, userAgent);
+    return request;
+}
+void RedditResourceConnection::getResourceAuth(const std::string& url, const access_token& token, std::any userData)
+{
+    auto request = createRequest(url);
+    request.set(boost::beast::http::field::authorization,fmt::format("Bearer {}",token.token));
+    request.prepare_payload();
+    enqueueRequest(std::move(request),std::move(userData));
+}
+void RedditResourceConnection::getResource(const std::string& url,std::any userData)
+{
+    auto request = createRequest(url);
     request.prepare_payload();
     enqueueRequest(std::move(request),std::move(userData));
 }
@@ -70,6 +82,8 @@ void RedditResourceConnection::handleLocationChange(const std::string& location)
             queuedRequests.pop_front();
         }
     }
+    // we cannot handle auth request with a location change
+    // hopefully that will never happen
     getResource(location);
 }
 void RedditResourceConnection::sendRequest(request_t request)

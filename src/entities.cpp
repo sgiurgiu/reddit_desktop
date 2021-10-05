@@ -121,6 +121,80 @@ namespace {
         return m;
     }
 }
+image_target::image_target(const nlohmann::json& json)
+{
+    if(json.contains("url") && json["url"].is_string())
+    {
+        url = json["url"].get<std::string>();
+    }
+    if(json.contains("width") && json["width"].is_number())
+    {
+        width = json["width"].get<int>();
+    }
+    if(json.contains("height") && json["height"].is_number())
+    {
+        height = json["height"].get<int>();
+    }
+}
+award::award(const nlohmann::json& json)
+{
+    id = json["id"].get<std::string>();
+    name = json["name"].get<std::string>();
+    icon.url = json["icon_url"].get<std::string>();
+    icon.width = json["icon_width"].get<int>();
+    icon.height = json["icon_height"].get<int>();
+    staticIcon.url = json["static_icon_url"].get<std::string>();
+    staticIcon.width = json["static_icon_width"].get<int>();
+    staticIcon.height = json["static_icon_height"].get<int>();
+
+    if(json.contains("is_new") && json["is_new"].is_boolean())
+    {
+        isNew = json["is_new"].get<bool>();
+    }
+    if(json.contains("days_of_premium") && json["days_of_premium"].is_number())
+    {
+        daysOfPremium = json["days_of_premium"].get<int>();
+    }
+    if(json.contains("description") && json["description"].is_string())
+    {
+        description = json["description"].get<std::string>();
+    }
+    if(json.contains("count") && json["count"].is_number())
+    {
+        count = json["count"].get<int>();
+    }
+    if(json.contains("coin_price") && json["coin_price"].is_number())
+    {
+        coinPrice = json["coin_price"].get<int>();
+    }
+    if(json.contains("award_sub_type") && json["award_sub_type"].is_string())
+    {
+        awardSubType = json["award_sub_type"].get<std::string>();
+    }
+    if(json.contains("award_type") && json["award_type"].is_string())
+    {
+        awardType = json["award_type"].get<std::string>();
+    }
+    if(json.contains("resized_icons") && json["resized_icons"].is_array())
+    {
+        for(const auto& ri : json["resized_icons"])
+        {
+            resizedIcons.emplace_back(ri);
+        }
+    }
+    if(json.contains("resized_static_icons") && json["resized_static_icons"].is_array())
+    {
+        for(const auto& ri : json["resized_static_icons"])
+        {
+            resizedStaticIcons.emplace_back(ri);
+        }
+    }
+    const auto images_less = [](const image_target& i1,const image_target& i2){
+        return std::tie(i1.width, i1.height) < std::tie(i2.width, i2.height);
+    };
+    std::sort(resizedIcons.begin(),resizedIcons.end(),images_less);
+    std::sort(resizedStaticIcons.begin(),resizedStaticIcons.end(),images_less);
+}
 
 post::post(const nlohmann::json& json)
 {
@@ -278,18 +352,12 @@ post::post(const nlohmann::json& json)
             images_preview preview;
             if(img["source"].is_object())
             {
-                preview.source.url = img["source"]["url"].get<std::string>();
-                preview.source.width = img["source"]["width"].get<int>();
-                preview.source.height = img["source"]["height"].get<int>();
+                preview.source = image_target(img["source"]);
             }
             if(img["resolutions"].is_array())
             {
                 for(const auto& res : img["resolutions"]) {
-                    image_target img_target;
-                    img_target.url = res["url"].get<std::string>();
-                    img_target.width = res["width"].get<int>();
-                    img_target.height = res["height"].get<int>();
-                    preview.resolutions.push_back(img_target);
+                    preview.resolutions.emplace_back(res);
                 }
             }
             if (img.contains("variants") && img["variants"].is_object())
@@ -300,18 +368,12 @@ post::post(const nlohmann::json& json)
                     variant.kind = it.key();
                     if (it.value().contains("source") && it.value()["source"].is_object())
                     {
-                        variant.source.url = it.value()["source"]["url"].get<std::string>();
-                        variant.source.width = it.value()["source"]["width"].get<int>();
-                        variant.source.height = it.value()["source"]["height"].get<int>();
+                        variant.source = image_target(it.value()["source"]);
                     }
                     if (it.value().contains("resolutions") && it.value()["resolutions"].is_array())
                     {
                         for (const auto& res : it.value()["resolutions"]) {
-                            image_target img_target;
-                            img_target.url = res["url"].get<std::string>();
-                            img_target.width = res["width"].get<int>();
-                            img_target.height = res["height"].get<int>();
-                            variant.resolutions.push_back(img_target);
+                            variant.resolutions.emplace_back(res);
                         }
                     }
                     preview.variants.push_back(variant);
@@ -364,6 +426,31 @@ post::post(const nlohmann::json& json)
     {
         auto likes = json["likes"].get<bool>();
         voted = likes ? Voted::UpVoted : Voted::DownVoted;
+    }
+    if(json.contains("gilded") && json["gilded"].is_number())
+    {
+        gilded = json["gilded"].get<int>();
+    }
+    if(json.contains("total_awards_received") && json["total_awards_received"].is_number())
+    {
+        totalAwardsReceived = json["total_awards_received"].get<int>();
+    }
+    if(json.contains("all_awardings") && json["all_awardings"].is_array())
+    {
+        for(const auto& postAward : json["all_awardings"])
+        {
+            allAwardings.emplace_back(postAward);
+        }
+    }
+    std::sort(allAwardings.begin(),allAwardings.end(),[](const award& a1,const award& a2){
+        return std::tie(a1.coinPrice,a1.count) > std::tie(a2.coinPrice,a2.count);
+    });
+    if(json.contains("gildings"))
+    {
+        for(const auto& gilding : json["gildings"].items())
+        {
+            gildings[gilding.key()] = gilding.value().get<int>();
+        }
     }
 
     //if(isVideo || (postHint != "self" && postHint!="link" && !postHint.empty()))

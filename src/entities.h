@@ -8,6 +8,7 @@
 #include <chrono>
 #include <optional>
 #include <any>
+#include <queue>
 
 struct user
 {
@@ -58,9 +59,11 @@ struct client_response
 };
 struct image_target
 {
+    image_target(){}
+    image_target(const nlohmann::json& json);
     std::string url;
-    int width;
-    int height;
+    int width = 0;
+    int height = 0;
 };
 struct preview_variant
 {
@@ -125,6 +128,25 @@ enum class Voted
     NotVoted = 0,
     UpVoted = 1
 };
+struct award
+{
+    award(){}
+    award(const nlohmann::json& json);
+    std::string id;
+    std::string name;
+    std::string subredditId;
+    bool isNew = false;
+    image_target icon;
+    image_target staticIcon;
+    int daysOfPremium;
+    std::vector<image_target> resizedIcons;
+    std::string description;
+    int count = 0;
+    std::vector<image_target> resizedStaticIcons;
+    std::string awardSubType;
+    std::string awardType;
+    int coinPrice = 0;
+};
 
 struct post
 {
@@ -167,6 +189,10 @@ struct post
     bool clicked = false;
     bool visited = false;
     Voted voted = Voted::NotVoted;
+    int gilded = 0;
+    int totalAwardsReceived = 0;
+    std::vector<award> allAwardings;
+    std::map<std::string,int> gildings;
 };
 using post_ptr = std::shared_ptr<post>;
 

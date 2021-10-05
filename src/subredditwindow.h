@@ -15,6 +15,7 @@
 #include "utils.h"
 #include "subredditstylesheet.h"
 #include "markdownrenderer.h"
+#include "awardsrenderer.h"
 
 class SubredditWindow : public std::enable_shared_from_this<SubredditWindow>
 {
@@ -70,9 +71,14 @@ public:
 private:
     struct PostDisplay
     {
-        PostDisplay(post_ptr p):
-            post(std::move(p))
-        {}
+        PostDisplay(post_ptr p,const access_token& token,
+                    RedditClientProducer* client,
+                    const boost::asio::any_io_executor& executor):
+            post(std::move(p)),
+            awardsRenderer(std::make_shared<AwardsRenderer>(post))
+        {
+            awardsRenderer->LoadAwards(token,client,executor);
+        }
         post_ptr post;
         std::optional<StandardRedditThumbnail> standardThumbnail;
         ResizableGLImagePtr thumbnailPicture;
@@ -88,6 +94,7 @@ private:
         std::string votesChildText;
         std::string subredditLinkText;
         std::chrono::steady_clock::time_point lastPostShowTime;
+        std::shared_ptr<AwardsRenderer> awardsRenderer;
         void updateShowContentText();
     };
     using posts_list = std::vector<PostDisplay>;

@@ -19,12 +19,14 @@ public:
                              boost::asio::ssl::context& ssl_context,                             
                              const std::string& userAgent);
     void getResource(const std::string& url, std::any userData = std::any());
+    void getResourceAuth(const std::string& url, const access_token& token, std::any userData = std::any());
 protected:
     virtual void sendRequest(request_t request) override;
     virtual void responseReceivedComplete(std::any userData) override;
     virtual void handleLocationChange(const std::string& location) override;
     virtual void performRequest(request_t request) override;
-
+private:
+    request_t createRequest(const std::string& url);
 private:
     std::string userAgent;
     std::string newHost;
