@@ -182,7 +182,7 @@ void CommentsWindow::loadCommentReply(const listing& listingResponse,std::any us
                 
                 for (auto&& reply : replies)
                 {
-                    c->replies.emplace(c->replies.begin(), std::move(reply));
+                    c->replies.emplace(c->replies.begin(), std::move(reply), token, client, uiExecutor);
                 }
             }
         }
@@ -196,7 +196,7 @@ void CommentsWindow::loadCommentReply(const listing& listingResponse,std::any us
         auto replies = std::move(std::get<0>(receivedComments));
         for(auto&& reply : replies)
         {
-            comments.emplace(comments.begin(),std::move(reply));
+            comments.emplace(comments.begin(),std::move(reply), token, client, uiExecutor);
         }
     }
 }
@@ -245,7 +245,7 @@ void CommentsWindow::loadMoreChildrenListing(const listing& listingResponse,std:
             auto replies = std::move(std::get<0>(receivedComments));
             for(auto&& reply : replies)
             {
-                c->replies.emplace_back(std::move(reply));
+                c->replies.emplace_back(std::move(reply), token, client, uiExecutor);
             }
         }
     }
@@ -256,7 +256,7 @@ void CommentsWindow::loadMoreChildrenListing(const listing& listingResponse,std:
         auto replies = std::move(std::get<0>(receivedComments));
         for(auto&& reply : replies)
         {
-            comments.emplace_back(std::move(reply));
+            comments.emplace_back(std::move(reply), token, client, uiExecutor);
         }
     }
 }
@@ -372,8 +372,10 @@ void CommentsWindow::setComments(comments_list receivedComments)
     loadingInitialComments = false;
     listingErrorMessage.clear();
     if(receivedComments.empty()) return;
-    comments.reserve(receivedComments.size());
-    std::move(receivedComments.begin(),receivedComments.end(),std::back_inserter(comments));
+
+    std::for_each(receivedComments.begin(),receivedComments.end(),[this](auto& comment){
+        comments.emplace_back(std::move(comment), token, client, uiExecutor);
+    });
 }
 template<typename T>
 void CommentsWindow::loadUnloadedChildren(const std::optional<unloaded_children>& children, T userData)
@@ -592,12 +594,16 @@ bool CommentsWindow::commentNode(DisplayComment& c)
     }
 
     ImGui::RenderText(scorePos,c.commentScoreText.c_str());
-    ImVec2 timeDiffPos(scorePos.x+c.commentScoreTextSize.x+g.Style.ItemInnerSpacing.x, scorePos.y);
+    ImVec2 timeDiffPos(scorePos.x+c.commentScoreTextSize.x, scorePos.y);
     ImGui::RenderText(timeDiffPos,c.commentData.humanReadableTimeDifference.c_str());
+
+    ImVec2 awardsPos(timeDiffPos.x+c.commentTimeDiffTextSize.x+g.Style.ItemInnerSpacing.x, scorePos.y);
+    float nextPos = c.awardsRenderer->RenderDirect(awardsPos);
 #ifdef REDDIT_DESKTOP_DEBUG
-    ImVec2 commentNamePos(timeDiffPos.x+c.commentTimeDiffTextSize.x+g.Style.ItemInnerSpacing.x + arrowSize, authorPos.y);
+    ImVec2 commentNamePos(nextPos+g.Style.ItemInnerSpacing.x + arrowSize, authorPos.y);
     ImGui::RenderText(commentNamePos,("("+c.commentData.name +")").c_str());
 #endif
+
     ImGui::ItemSize(bb, g.Style.FramePadding.y);
     ImGui::ItemAdd(bb,id);
 

@@ -11,7 +11,9 @@ class AwardsRenderer : public std::enable_shared_from_this<AwardsRenderer>
 {
 public:
     AwardsRenderer(post_ptr p);
+    AwardsRenderer(const comment& c);
     void Render();
+    float RenderDirect(const ImVec2& pos);
     void LoadAwards(const access_token& token,
                     RedditClientProducer* client,
                     const boost::asio::any_io_executor& uiExecutor);
@@ -24,12 +26,10 @@ private:
                     RedditClientProducer* client,
                     const boost::asio::any_io_executor& uiExecutor);
 private:
-    post_ptr awardedPost;
-    std::vector<award> postAwards;
+    int totalAwardsReceived = 0;
+    std::vector<award> awards;
     std::string totalAwardsText;
-   // access_token token;
-    //RedditClientProducer* client;
-    //const boost::asio::any_io_executor& uiExecutor;
+    ImVec2 totalAwardsTextSize;
 };
 
 #endif // AWARDSRENDERER_H

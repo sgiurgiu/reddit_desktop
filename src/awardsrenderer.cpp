@@ -1,5 +1,6 @@
 #include "awardsrenderer.h"
 #include <imgui.h>
+#include <imgui_internal.h>
 #include "resizableglimage.h"
 #include <vector>
 #include <unordered_map>
@@ -7,21 +8,35 @@
 #include <fmt/format.h>
 namespace
 {
-    static std::unordered_map<std::string,ResizableGLImagePtr> awards;
+    // all awards loaded so far.
+    // a future optimization would be to cache them on disk
+    static std::unordered_map<std::string,ResizableGLImagePtr> globalAwards;
 }
 
-AwardsRenderer::AwardsRenderer(post_ptr p):
-    awardedPost(std::move(p))
+AwardsRenderer::AwardsRenderer(post_ptr p) :
+    totalAwardsReceived(p->totalAwardsReceived)
 {
+    // The vector has been sorted by awards
+    // We only take the top 3
+    size_t count = std::min(p->allAwardings.size(), (size_t)3);
+    std::copy_n(p->allAwardings.begin(),count,std::back_insert_iterator(awards));
+
+}
+AwardsRenderer::AwardsRenderer(const comment& c) :
+    totalAwardsReceived(c.totalAwardsReceived)
+{
+    size_t count = std::min(c.allAwardings.size(), (size_t)3);
+    std::copy_n(c.allAwardings.begin(),count,std::back_insert_iterator(awards));
 }
 void AwardsRenderer::LoadAwards(const access_token& token,
                                 RedditClientProducer* client,
                                 const boost::asio::any_io_executor& uiExecutor)
 {
-    if(awardedPost->allAwardings.empty()) return;
-    if(awardedPost->totalAwardsReceived > 3)
+    if(awards.empty()) return;
+    if(totalAwardsReceived > 3)
     {
-        totalAwardsText = fmt::format("{}",awardedPost->totalAwardsReceived-3);
+        totalAwardsText = fmt::format("{}",totalAwardsReceived-3);
+        totalAwardsTextSize = ImGui::CalcTextSize(totalAwardsText.c_str());
     }
     boost::asio::post(uiExecutor,[weak = weak_from_this(),token,client,uiExecutor](){
         auto self = weak.lock();
@@ -54,17 +69,13 @@ void AwardsRenderer::loadAwards(const access_token& token,
         }
     });
 
-    // The vector has been sorted by awards
-    // We only take the top 3
-    size_t count = std::min(awardedPost->allAwardings.size(), (size_t)3);
-    std::copy_n(awardedPost->allAwardings.begin(),count,std::back_insert_iterator(postAwards));
-    for(const auto& award : postAwards)
+    for(const auto& award : awards)
     {
-        if(awards.find(award.id) != awards.end())
+        if(globalAwards.find(award.id) != globalAwards.end())
         {
             continue;
         }
-        awards[award.id] = nullptr;
+        globalAwards[award.id] = nullptr;
         if(award.resizedStaticIcons.size() > 1)
         {
             resourceConnection->getResourceAuth(award.resizedStaticIcons[1].url,token,award.id);
@@ -81,17 +92,40 @@ void AwardsRenderer::loadAwardImage(std::string id,
                           int channels)
 {
     ((void)channels);
-    awards[id] = Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
+    globalAwards[id] = Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
 }
 
+float AwardsRenderer::RenderDirect(const ImVec2& pos)
+{
+    ImGuiContext& g = *GImGui;
+    ImGuiWindow* window = g.CurrentWindow;
+    ImVec2 size(ImGui::GetFontSize(),ImGui::GetFontSize());
+    ImRect bb(pos, ImVec2(pos.x + size.x, pos.y+size.y));
+    ImVec2 uv0(0, 0);
+    ImVec2 uv1(1,1);
+    ImVec4 tint_col(1,1,1,1);
+    for(const auto& award : awards)
+    {
+        if(globalAwards.find(award.id) != globalAwards.end() && globalAwards[award.id])
+        {
+            window->DrawList->AddImage((void*)(intptr_t)globalAwards[award.id]->textureId, bb.Min,
+                    bb.Max, uv0, uv1, ImGui::GetColorU32(tint_col));
+            bb.TranslateX(size.x);
+        }
+    }
+
+    ImGui::RenderText(bb.Min,totalAwardsText.c_str());
+    bb.TranslateX(totalAwardsTextSize.x);
+    return bb.Max.x;
+}
 void AwardsRenderer::Render()
 {
     ImVec2 size(ImGui::GetFontSize(),ImGui::GetFontSize());
-    for(const auto& award : postAwards)
+    for(const auto& award : awards)
     {
-        if(awards.find(award.id) != awards.end() && awards[award.id])
+        if(globalAwards.find(award.id) != globalAwards.end() && globalAwards[award.id])
         {
-            ImGui::Image((void*)(intptr_t)awards[award.id]->textureId,size);
+            ImGui::Image((void*)(intptr_t)globalAwards[award.id]->textureId,size);
             ImGui::SameLine();
         }
     }
@@ -100,5 +134,5 @@ void AwardsRenderer::Render()
 
 void AwardsRenderer::ClearAwards()
 {
-    awards.clear();
+    globalAwards.clear();
 }

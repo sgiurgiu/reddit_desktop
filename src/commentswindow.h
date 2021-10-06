@@ -12,6 +12,7 @@
 #include "utils.h"
 #include "postcontentviewer.h"
 #include "markdownrenderer.h"
+#include "awardsrenderer.h"
 
 class CommentsWindow : public std::enable_shared_from_this<CommentsWindow>
 {
@@ -56,14 +57,18 @@ public:
 private:
     struct DisplayComment
     {
-        DisplayComment(comment cmt):
-        commentData(std::move(cmt)),renderer(this->commentData.body)
+        DisplayComment(comment cmt, const access_token& token,
+                       RedditClientProducer* client,
+                       const boost::asio::any_io_executor& executor):
+        commentData(std::move(cmt)),renderer(this->commentData.body),
+          awardsRenderer(std::make_shared<AwardsRenderer>(commentData))
         {
             for(auto&& c : this->commentData.replies)
             {
-                replies.emplace_back(c);
+                replies.emplace_back(c, token, client, executor);
             }
             updateButtonsText();
+            awardsRenderer->LoadAwards(token,client,executor);
         }
         comment commentData;
         MarkdownRenderer renderer;
@@ -98,6 +103,7 @@ private:
         ImVec2 commentScoreTextSize;
         ImVec2 commentTimeDiffTextSize;
         float markdownHeight = 10.f;
+        std::shared_ptr<AwardsRenderer> awardsRenderer;
         void updateButtonsText();
     };
     void loadMoreChildrenListing(const listing& listingResponse,std::any userData);

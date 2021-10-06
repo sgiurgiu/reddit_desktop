@@ -193,6 +193,11 @@ struct post
     int totalAwardsReceived = 0;
     std::vector<award> allAwardings;
     std::map<std::string,int> gildings;
+    std::string linkFlairType;
+    std::string linkFlairText;
+    //this is an object
+   // std::string link_rich_text;
+
 };
 using post_ptr = std::shared_ptr<post>;
 
@@ -236,6 +241,11 @@ struct comment
     bool removed = false;
     // set to true if this comment is a user's comment
     bool isUsersComment = false;
+    int gilded = 0;
+    int totalAwardsReceived = 0;
+    std::vector<award> allAwardings;
+    std::map<std::string,int> gildings;
+
 };
 
 struct user_info

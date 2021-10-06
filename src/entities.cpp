@@ -452,6 +452,15 @@ post::post(const nlohmann::json& json)
             gildings[gilding.key()] = gilding.value().get<int>();
         }
     }
+    if(json.contains("link_flair_type") && json["link_flair_type"].is_string())
+    {
+        linkFlairType = json["link_flair_type"].get<std::string>();
+    }
+    if(json.contains("link_flair_text") && json["link_flair_text"].is_string())
+    {
+        linkFlairText = json["link_flair_text"].get<std::string>();
+    }
+
 
     //if(isVideo || (postHint != "self" && postHint!="link" && !postHint.empty()))
     {
@@ -530,6 +539,31 @@ comment::comment(const nlohmann::json& json, const user& currentUser)
     if (json.contains("removed") && json["removed"].is_boolean())
     {
         removed = json["removed"].get<bool>();
+    }
+    if(json.contains("gilded") && json["gilded"].is_number())
+    {
+        gilded = json["gilded"].get<int>();
+    }
+    if(json.contains("total_awards_received") && json["total_awards_received"].is_number())
+    {
+        totalAwardsReceived = json["total_awards_received"].get<int>();
+    }
+    if(json.contains("all_awardings") && json["all_awardings"].is_array())
+    {
+        for(const auto& postAward : json["all_awardings"])
+        {
+            allAwardings.emplace_back(postAward);
+        }
+    }
+    std::sort(allAwardings.begin(),allAwardings.end(),[](const award& a1,const award& a2){
+        return std::tie(a1.coinPrice,a1.count) > std::tie(a2.coinPrice,a2.count);
+    });
+    if(json.contains("gildings"))
+    {
+        for(const auto& gilding : json["gildings"].items())
+        {
+            gildings[gilding.key()] = gilding.value().get<int>();
+        }
     }
 
     if(json.contains("replies") && json["replies"].is_object())
