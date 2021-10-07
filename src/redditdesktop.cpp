@@ -19,7 +19,7 @@ constexpr auto MEDIA_DOMAINS_POPUP_TITLE = "Media Domains Management";
 
 RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
     uiExecutor(uiContext.get_executor()),
-    client("api.reddit.com","oauth.reddit.com",3),
+    client("api.reddit.com","oauth.reddit.com",std::thread::hardware_concurrency()),
     loginWindow(&client,uiExecutor),loginTokenRefreshTimer(uiExecutor),
     loggingWindow(std::make_shared<LoggingWindow>(uiExecutor))
 {
