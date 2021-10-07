@@ -16,7 +16,7 @@ fi
 
 
 if [ -z $1 ]; then
-    distros=("debian" "ubuntu" "fedora")
+    distros=("debian" "fedora")
 else
     distros=($1)
 fi

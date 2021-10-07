@@ -33,11 +33,9 @@ void AwardsRenderer::LoadAwards(const access_token& token,
                                 const boost::asio::any_io_executor& uiExecutor)
 {
     if(awards.empty()) return;
-    if(totalAwardsReceived > 3)
-    {
-        totalAwardsText = fmt::format("{}",totalAwardsReceived-3);
-        totalAwardsTextSize = ImGui::CalcTextSize(totalAwardsText.c_str());
-    }
+    totalAwardsText = fmt::format("{}",totalAwardsReceived);
+    totalAwardsTextSize = ImGui::CalcTextSize(totalAwardsText.c_str());
+
     boost::asio::post(uiExecutor,[weak = weak_from_this(),token,client,uiExecutor](){
         auto self = weak.lock();
         if(!self) return;
