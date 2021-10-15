@@ -10,6 +10,7 @@
 #include "database.h"
 #include "spinner/spinner.h"
 #include "resizableinputtextmultiline.h"
+#include <spdlog/spdlog.h>
 
 namespace
 {
@@ -563,7 +564,8 @@ bool CommentsWindow::commentNode(DisplayComment& c)
     ImGuiContext& g = *GImGui;
     ImGuiWindow* window = g.CurrentWindow;
 
-    ImU32 id = window->GetID((void*)&c);
+    ImU32 id = window->GetID(c.commentData.name.c_str());
+
     ImVec2 pos = window->DC.CursorPos;
     ImRect bb(pos, ImVec2(pos.x + ImGui::GetContentRegionAvail().x, pos.y + g.FontSize + g.Style.FramePadding.y*2));
     bool opened = ImGui::TreeNodeBehaviorIsOpen(id, ImGuiTreeNodeFlags_DefaultOpen);
