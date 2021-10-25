@@ -24,39 +24,14 @@ class Utils
 public:
     enum class Fonts: int
     {
-        Noto_Black = 0,
-        Noto_BlackItalic,
-        Noto_Bold,
-        Noto_BoldItalic,
+        Noto_Bold = 0,
         Noto_Italic,
         Noto_Light,
         Noto_LightItalic,
         Noto_Medium,
-        Noto_MediumItalic,
         Noto_Regular,
-        Noto_Thin,
-        Noto_ThinItalic,
         Noto_Medium_Big,
-        Noto_MediumItalic_Big,
         NotoMono_Regular
-
-        /*Roboto_Black = 0,
-        Roboto_BlackItalic,
-        Roboto_Bold,
-        Roboto_BoldItalic,
-        Roboto_Italic,
-        Roboto_Light,
-        Roboto_LightItalic,
-        Roboto_Medium,
-        Roboto_MediumItalic,
-        Roboto_Regular,
-        Roboto_Thin,
-        Roboto_ThinItalic,
-        Roboto_Medium_Big,
-        Roboto_MediumItalic_Big,
-        RobotoMono_Regular,
-        RobotoMono_Medium,
-        RobotoMono_Bold*/
     };
 
     using STBImagePtr = std::shared_ptr<stbi_uc>;

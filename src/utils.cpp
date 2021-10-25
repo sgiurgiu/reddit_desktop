@@ -172,22 +172,13 @@ void Utils::LoadFonts(const std::filesystem::path& executablePath)
     //notoColorEmojiFileData = ImFileLoadToMemory(notoColorEmojiFile.c_str(), "rb", &notoColorEmojiFileDataSize, 0);
     fontAwesomeFileData = ImFileLoadToMemory(fontAwesomeFile.c_str(), "rb", &fontAwesomeFileDataSize, 0);
 
-    AddFont(fontsFolder, "NotoSans-Black.ttf", normalFontSize);
-    AddFont(fontsFolder, "NotoSans-BlackItalic.ttf", normalFontSize);
     AddFont(fontsFolder, "NotoSans-Bold.ttf", normalFontSize);
-    AddFont(fontsFolder, "NotoSans-BoldItalic.ttf", normalFontSize);
     AddFont(fontsFolder, "NotoSans-Italic.ttf", normalFontSize);
     AddFont(fontsFolder, "NotoSans-Light.ttf", normalFontSize);
     AddFont(fontsFolder, "NotoSans-LightItalic.ttf", normalFontSize);
     AddFont(fontsFolder, "NotoSans-Medium.ttf", normalFontSize);
-
-    AddFont(fontsFolder, "NotoSans-MediumItalic.ttf", normalFontSize);
     AddFont(fontsFolder, "NotoSans-Regular.ttf", normalFontSize);
-
-    AddFont(fontsFolder, "NotoSans-Thin.ttf", normalFontSize);
-    AddFont(fontsFolder, "NotoSans-ThinItalic.ttf", normalFontSize);
     AddFont(fontsFolder, "NotoSans-Medium.ttf", bigFontSize);
-    AddFont(fontsFolder, "NotoSans-MediumItalic.ttf", bigFontSize);
     AddFont(fontsFolder, "NotoMono-Regular.ttf", normalFontSize);
 }
 void Utils::DeleteFonts()
@@ -195,20 +186,6 @@ void Utils::DeleteFonts()
     free(seguiemjFileData);
     //free(notoColorEmojiFileData);
     free(fontAwesomeFileData);
-//    delete[] NotoSans_Black_ttf_compressed_data;
-//    delete[] NotoSans_BlackItalic_ttf_compressed_data;
-//    delete[] NotoSans_BoldItalic_ttf_compressed_data;
-//    delete[] NotoSans_Italic_ttf_compressed_data;
-//    delete[] NotoSans_Light_ttf_compressed_data;
-//    delete[] NotoSans_LightItalic_ttf_compressed_data;
-//    delete[] NotoSans_Medium_ttf_compressed_data;
-//    delete[] NotoSans_MediumItalic_ttf_compressed_data;
-//    delete[] NotoSans_Regular_ttf_compressed_data;
-//    delete[] NotoSans_Thin_ttf_compressed_data;
-//    delete[] NotoSans_ThinItalic_ttf_compressed_data;
-//    delete[] NotoMono_Regular_ttf_compressed_data;
-//    //delete[] NotoColorEmoji_ttf_compressed_data;
-//    delete[] FontAwesome_compressed_data;
 }
 int Utils::GetFontIndex(Fonts font)
 {
