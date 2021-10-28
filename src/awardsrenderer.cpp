@@ -3,15 +3,8 @@
 #include <imgui_internal.h>
 #include "resizableglimage.h"
 #include <vector>
-#include <unordered_map>
-#include <spdlog/spdlog.h>
 #include <fmt/format.h>
-namespace
-{
-    // all awards loaded so far.
-    // a future optimization would be to cache them on disk
-    static std::unordered_map<std::string,ResizableGLImagePtr> globalAwards;
-}
+#include "globalresourcescache.h"
 
 AwardsRenderer::AwardsRenderer(post_ptr p) :
     totalAwardsReceived(p->totalAwardsReceived)
@@ -46,51 +39,23 @@ void AwardsRenderer::LoadAwards(const access_token& token,
 void AwardsRenderer::loadAwards(const access_token& token,
                                 RedditClientProducer* client,
                                 const boost::asio::any_io_executor& uiExecutor)
-{
-    auto resourceConnection = client->makeResourceClientConnection();
-    resourceConnection->connectionCompleteHandler(
-                [uiExecutor](const boost::system::error_code& ec,
-                             resource_response response){
-        std::string id = std::any_cast<std::string>(response.userData);
-        if(!ec)
-        {
-            int width, height, channels;
-            auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
-
-            boost::asio::post(uiExecutor,std::bind(AwardsRenderer::loadAwardImage,
-                                                   std::move(id),
-                                                   std::move(data),width,height,channels));
-        }
-        else
-        {
-            spdlog::error("Cannot load award for id {}: ", id, ec.message());
-        }
-    });
+{    
 
     for(const auto& award : awards)
     {
-        if(globalAwards.find(award.id) != globalAwards.end())
+        if(GlobalResourcesCache::ContainsResource(award.id))
         {
             continue;
         }
-        globalAwards[award.id] = nullptr;
         if(award.resizedStaticIcons.size() > 1)
         {
-            resourceConnection->getResourceAuth(award.resizedStaticIcons[1].url,token,award.id);
+            GlobalResourcesCache::LoadResource(token,client,uiExecutor,award.resizedStaticIcons[1].url,award.id);
         }
         else if(award.resizedIcons.size() > 1)
         {
-            resourceConnection->getResourceAuth(award.resizedIcons[1].url,token,award.id);
+            GlobalResourcesCache::LoadResource(token,client,uiExecutor,award.resizedIcons[1].url,award.id);
         }
     }
-}
-
-void AwardsRenderer::loadAwardImage(std::string id,
-                          Utils::STBImagePtr data, int width, int height,
-                          int channels)
-{
-    ((void)channels);
-    globalAwards[id] = Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
 }
 
 float AwardsRenderer::RenderDirect(const ImVec2& pos)
@@ -104,9 +69,9 @@ float AwardsRenderer::RenderDirect(const ImVec2& pos)
     ImVec4 tint_col(1,1,1,1);
     for(const auto& award : awards)
     {
-        if(globalAwards.find(award.id) != globalAwards.end() && globalAwards[award.id])
+        if(GlobalResourcesCache::ResourceLoaded(award.id))
         {
-            window->DrawList->AddImage((void*)(intptr_t)globalAwards[award.id]->textureId, bb.Min,
+            window->DrawList->AddImage((void*)(intptr_t)GlobalResourcesCache::GetResource(award.id)->textureId, bb.Min,
                     bb.Max, uv0, uv1, ImGui::GetColorU32(tint_col));
             bb.TranslateX(size.x);
         }
@@ -121,16 +86,12 @@ void AwardsRenderer::Render()
     ImVec2 size(ImGui::GetFontSize(),ImGui::GetFontSize());
     for(const auto& award : awards)
     {
-        if(globalAwards.find(award.id) != globalAwards.end() && globalAwards[award.id])
+        if(GlobalResourcesCache::ResourceLoaded(award.id))
         {
-            ImGui::Image((void*)(intptr_t)globalAwards[award.id]->textureId,size);
+            ImGui::Image((void*)(intptr_t)GlobalResourcesCache::GetResource(award.id)->textureId,size);
             ImGui::SameLine();
         }
     }
     ImGui::TextUnformatted(totalAwardsText.c_str());
 }
 
-void AwardsRenderer::ClearAwards()
-{
-    globalAwards.clear();
-}

@@ -17,11 +17,8 @@ public:
     void LoadAwards(const access_token& token,
                     RedditClientProducer* client,
                     const boost::asio::any_io_executor& uiExecutor);
-    static void ClearAwards();
+
 private:
-    static void loadAwardImage(std::string id,
-                          Utils::STBImagePtr data, int width, int height,
-                          int channels);
     void loadAwards(const access_token& token,
                     RedditClientProducer* client,
                     const boost::asio::any_io_executor& uiExecutor);

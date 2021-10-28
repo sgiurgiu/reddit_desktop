@@ -105,6 +105,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         subredditstylesheet.cpp
         aboutwindow.cpp
         awardsrenderer.cpp
+        globalresourcescache.cpp
         )
 
 if(VCPKG_TOOLCHAIN)

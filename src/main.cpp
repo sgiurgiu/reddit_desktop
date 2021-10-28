@@ -32,7 +32,7 @@
 #include "redditdesktop.h"
 #include "log/loggingwindow.h"
 #include "images/reddit_icon_48.h"
-#include "awardsrenderer.h"
+#include "globalresourcescache.h"
 
 #ifdef REDDIT_DESKTOP_DEBUG
     #include "markdownrenderer.h"
@@ -163,7 +163,7 @@ int main(int /*argc*/, char** argv)
     }
     Utils::ReleaseRedditImages();
     Utils::DeleteFonts();
-    AwardsRenderer::ClearAwards();
+    GlobalResourcesCache::ClearResources();
 
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
