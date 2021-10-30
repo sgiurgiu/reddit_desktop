@@ -52,7 +52,7 @@ namespace
             ImGui::PushStyleColor(ImGuiCol_Text,textFlair.textColor);
             auto textSize = ImGui::CalcTextSize(textFlair.text.c_str());
             const ImVec2 text_pos(window->DC.CursorPos.x, window->DC.CursorPos.y + window->DC.CurrLineTextBaseOffset);
-            const float line_height = ImGui::GetTextLineHeight();
+            const float line_height = ImGui::GetTextLineHeight();            
             window->DrawList->AddRectFilled(text_pos,
                                             ImVec2(text_pos.x+textSize.x,text_pos.y+line_height),
                                             ImGui::GetColorU32(textFlair.backgroundColor));
@@ -171,4 +171,8 @@ void FlairRenderer::Render()
     {
         render(f);
     }
+    //ImGuiContext& g = *GImGui;
+    //const auto padding = g.Style.FramePadding.x*2.f;
+    //ImGui::Dummy(ImVec2(padding,ImGui::GetTextLineHeight()));
+    ImGui::SameLine();
 }
