@@ -460,12 +460,55 @@ post::post(const nlohmann::json& json)
     {
         linkFlairText = json["link_flair_text"].get<std::string>();
     }
-
+    if(json.contains("link_flair_template_id") && json["link_flair_template_id"].is_string())
+    {
+        linkFlairTemplateId = json["link_flair_template_id"].get<std::string>();
+    }
+    if(json.contains("link_flair_richtext") && json["link_flair_richtext"].is_array())
+    {
+        for(const auto& linkFlair : json["link_flair_richtext"])
+        {
+            linkFlairsRichText.emplace_back(linkFlair);
+        }
+    }
+    if(json.contains("link_flair_background_color") && json["link_flair_background_color"].is_string())
+    {
+        linkFlairBackgroundColor = json["link_flair_background_color"].get<std::string>();
+    }
+    if(json.contains("link_flair_css_class") && json["link_flair_css_class"].is_string())
+    {
+        linkFlairCSSClass = json["link_flair_css_class"].get<std::string>();
+    }
+    if(json.contains("link_flair_text_color") && json["link_flair_text_color"].is_string())
+    {
+        linkFlairTextColor = json["link_flair_text_color"].get<std::string>();
+    }
 
     //if(isVideo || (postHint != "self" && postHint!="link" && !postHint.empty()))
     {
         spdlog::debug("{}, is_video: {}, hint: {}, url: {}",title,isVideo,postHint,url);
     }
+}
+
+link_flair_richtext::link_flair_richtext(const nlohmann::json& json)
+{
+    if(json.contains("a") && json["a"].is_string())
+    {
+        a = json["a"].get<std::string>();
+    }
+    if(json.contains("e") && json["e"].is_string())
+    {
+        e = json["e"].get<std::string>();
+    }
+    if(json.contains("t") && json["t"].is_string())
+    {
+        t = json["t"].get<std::string>();
+    }
+    if(json.contains("u") && json["u"].is_string())
+    {
+        u = json["u"].get<std::string>();
+    }
+
 }
 
 comment::comment(const nlohmann::json& json, const user& currentUser)

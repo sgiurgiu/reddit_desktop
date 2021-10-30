@@ -1,6 +1,7 @@
 #ifndef AWARDSRENDERER_H
 #define AWARDSRENDERER_H
 
+#include <memory>
 
 #include "entities.h"
 #include "redditclientproducer.h"

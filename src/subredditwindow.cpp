@@ -815,6 +815,10 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             ImGui::TextWrapped("<No Title>");
         }
         ImGui::PopFont();
+
+
+        p.flairRenderer->Render();
+
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Light)]);
         ImGui::Text("(%s)",p.post->domain.c_str());
         ImGui::PopFont();

@@ -16,6 +16,7 @@
 #include "subredditstylesheet.h"
 #include "markdownrenderer.h"
 #include "awardsrenderer.h"
+#include "flairrenderer.h"
 
 class SubredditWindow : public std::enable_shared_from_this<SubredditWindow>
 {
@@ -75,9 +76,11 @@ private:
                     RedditClientProducer* client,
                     const boost::asio::any_io_executor& executor):
             post(std::move(p)),
-            awardsRenderer(std::make_shared<AwardsRenderer>(post))
+            awardsRenderer(std::make_shared<AwardsRenderer>(post)),
+            flairRenderer(std::make_shared<FlairRenderer>(post))
         {
             awardsRenderer->LoadAwards(token,client,executor);
+            flairRenderer->LoadFlair(token,client,executor);
         }
         post_ptr post;
         std::optional<StandardRedditThumbnail> standardThumbnail;
@@ -95,6 +98,7 @@ private:
         std::string subredditLinkText;
         std::chrono::steady_clock::time_point lastPostShowTime;
         std::shared_ptr<AwardsRenderer> awardsRenderer;
+        std::shared_ptr<FlairRenderer> flairRenderer;
         void updateShowContentText();
     };
     using posts_list = std::vector<PostDisplay>;

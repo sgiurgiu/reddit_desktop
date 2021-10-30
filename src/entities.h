@@ -148,6 +148,16 @@ struct award
     int coinPrice = 0;
 };
 
+struct link_flair_richtext
+{
+    link_flair_richtext(){}
+    link_flair_richtext(const nlohmann::json& json);
+    std::string e; // this looks to be the type
+    std::string t; //this looks to be the text
+    std::string a; // looks to be the emoji id
+    std::string u; //url for the emoji
+};
+
 struct post
 {
     post(){}
@@ -195,6 +205,11 @@ struct post
     std::map<std::string,int> gildings;
     std::string linkFlairType;
     std::string linkFlairText;
+    std::string linkFlairTemplateId;
+    std::vector<link_flair_richtext> linkFlairsRichText;
+    std::string linkFlairBackgroundColor;
+    std::string linkFlairCSSClass;
+    std::string linkFlairTextColor;
     //this is an object
    // std::string link_rich_text;
 

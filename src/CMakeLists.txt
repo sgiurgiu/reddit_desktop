@@ -106,6 +106,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         aboutwindow.cpp
         awardsrenderer.cpp
         globalresourcescache.cpp
+        flairrenderer.cpp
         )
 
 if(VCPKG_TOOLCHAIN)

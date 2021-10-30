@@ -1,7 +1,6 @@
 #include "awardsrenderer.h"
 #include <imgui.h>
 #include <imgui_internal.h>
-#include "resizableglimage.h"
 #include <vector>
 #include <fmt/format.h>
 #include "globalresourcescache.h"

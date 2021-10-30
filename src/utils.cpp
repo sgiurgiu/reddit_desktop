@@ -562,3 +562,34 @@ std::filesystem::path Utils::GetAppConfigFolder()
     return configFolder;
 }
 
+ImVec4 Utils::GetHTMLColor(const std::string& strColor)
+{
+    ImVec4 color{5.f,5.f,5.f,1.f};
+    auto copiedColor = boost::trim_copy(strColor);
+    if(copiedColor.empty()) return color;
+    if(copiedColor[0] == '#')
+    {
+        copiedColor.erase(0,1);
+    }
+
+    if(copiedColor.length() < 6)
+    {
+        copiedColor.append(6-copiedColor.length(),'0');
+    }
+    if(copiedColor.length() < 8)
+    {
+        copiedColor.append(8-copiedColor.length(),'F');
+    }
+    copiedColor = copiedColor.substr(0,8);
+    BOOST_ASSERT_MSG(copiedColor.length() == 8, "HTML Color is parsed wrong");
+    try
+    {
+        color.x = std::stoi(copiedColor.substr(0,2), nullptr, 16) / 255.f;
+        color.y = std::stoi(copiedColor.substr(2,2), nullptr, 16) / 255.f;
+        color.z = std::stoi(copiedColor.substr(4,2), nullptr, 16) / 255.f;
+        color.w = std::stoi(copiedColor.substr(5,2), nullptr, 16) / 255.f;
+    }
+    catch(const std::exception& ex)
+    {}
+    return color;
+}
