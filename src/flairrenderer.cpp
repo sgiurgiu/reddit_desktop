@@ -12,6 +12,14 @@ namespace
     {
         //by default we're not painting anything
     }
+    template<typename T>
+    void retrieve_data(const T&,
+                       const access_token& ,
+                       RedditClientProducer* ,
+                       const boost::asio::any_io_executor& )
+    {
+        //by default we're not retrieving anything
+    }
 
 
     struct TextFlair
@@ -57,13 +65,46 @@ namespace
 
     struct EmojiFlair
     {
-        EmojiFlair(std::string id, std::string url):
+        EmojiFlair(std::string id, std::string url,
+                   std::string backgroundColor):
             id(std::move(id)),url(std::move(url))
-        {}
+        {
+            this->backgroundColor = Utils::GetHTMLColor(backgroundColor);
+        }
         std::string id;
         std::string url;
-
+        ImVec4 backgroundColor;
     };
+    void retrieve_data(const EmojiFlair& emojiFlair,
+                       const access_token& token,
+                       RedditClientProducer* client,
+                       const boost::asio::any_io_executor& uiExecutor)
+    {
+        auto id = emojiFlair.id+emojiFlair.url;
+        if(!emojiFlair.url.empty() && !GlobalResourcesCache::ContainsResource(id))
+        {
+            GlobalResourcesCache::LoadResource(token,client,uiExecutor,
+                                               emojiFlair.url,id);
+        }
+    }
+    void render(const EmojiFlair& emojiFlair)
+    {
+        ImGuiContext& g = *GImGui;
+        ImGuiWindow* window = g.CurrentWindow;
+        auto id = emojiFlair.id+emojiFlair.url;
+        if(!emojiFlair.url.empty() && GlobalResourcesCache::ResourceLoaded(id))
+        {
+            ImVec2 size(ImGui::GetFontSize(),ImGui::GetFontSize());
+            const ImVec2 text_pos(window->DC.CursorPos.x, window->DC.CursorPos.y + window->DC.CurrLineTextBaseOffset);
+            const float line_height = ImGui::GetTextLineHeight();
+            window->DrawList->AddRectFilled(text_pos,
+                                            ImVec2(text_pos.x+size.x,text_pos.y+line_height),
+                                            ImGui::GetColorU32(emojiFlair.backgroundColor));
+
+            ImGui::Image((void*)(intptr_t)GlobalResourcesCache::GetResource(id)->textureId,size);
+            ImGui::SameLine(0.f,0.f);
+        }
+    }
 
 } // anonymous namespace
 
@@ -84,6 +125,7 @@ FlairRenderer::FlairRenderer(post_ptr p)
             else if(f.e == "emoji")
             {
                 //TODO: add emoji loading support
+                flairs.emplace_back(EmojiFlair(f.a,f.u,p->linkFlairBackgroundColor));
             }
         }
     }
@@ -104,13 +146,23 @@ void FlairRenderer::loadFlair(const access_token& token,
                 RedditClientProducer* client,
                 const boost::asio::any_io_executor& uiExecutor)
 {
-
+    for(const auto& f : flairs)
+    {
+        retrieve_data(f,token,client,uiExecutor);
+    }
 }
 
 template<typename T>
 void FlairRenderer::flair::flair_model<T>::render_() const
 {
     render(data);
+}
+template<typename T>
+void FlairRenderer::flair::flair_model<T>::retrieve_data_(const access_token& token,
+                                                          RedditClientProducer* client,
+                                                          const boost::asio::any_io_executor& uiExecutor) const
+{
+    retrieve_data(data,token,client,uiExecutor);
 }
 
 void FlairRenderer::Render()

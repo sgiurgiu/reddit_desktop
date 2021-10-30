@@ -29,16 +29,29 @@ private:
         {
             f.self->render_();
         }
+        friend void retrieve_data(const flair& f,
+                                  const access_token& token,
+                                  RedditClientProducer* client,
+                                  const boost::asio::any_io_executor& uiExecutor)
+        {
+            f.self->retrieve_data_(token,client,uiExecutor);
+        }
     private:
         struct flair_concept {
             virtual ~flair_concept() = default;
             virtual void render_() const = 0;
+            virtual void retrieve_data_(const access_token& token,
+                                        RedditClientProducer* client,
+                                        const boost::asio::any_io_executor& uiExecutor) const = 0;
         };
 
         template<typename T>
         struct flair_model : flair_concept {
             flair_model(T t) : data(std::move(t)) {}
             void render_() const override;
+            void retrieve_data_(const access_token& token,
+                                RedditClientProducer* client,
+                                const boost::asio::any_io_executor& uiExecutor) const override;
             T data;
         };
         std::shared_ptr<const flair_concept> self;
