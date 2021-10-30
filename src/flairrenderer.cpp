@@ -171,8 +171,8 @@ void FlairRenderer::Render()
     {
         render(f);
     }
-    //ImGuiContext& g = *GImGui;
-    //const auto padding = g.Style.FramePadding.x*2.f;
-    //ImGui::Dummy(ImVec2(padding,ImGui::GetTextLineHeight()));
-    ImGui::SameLine();
+    if(!flairs.empty())
+    {
+        ImGui::SameLine();
+    }
 }
