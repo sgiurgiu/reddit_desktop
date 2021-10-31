@@ -110,19 +110,19 @@ namespace
 
 FlairRenderer::FlairRenderer(post_ptr p)
 {
-    if(p->linkFlairType == "text")
+    if(p->linkFlairType == "text" && !p->linkFlairText.empty())
     {
         flairs.emplace_back(TextFlair(p->linkFlairText,p->linkFlairTextColor,p->linkFlairBackgroundColor));
     }
-    else if(p->linkFlairType == "richtext")
+    else if(p->linkFlairType == "richtext" && !p->linkFlairsRichText.empty())
     {
         for(const auto& f : p->linkFlairsRichText)
         {
-            if(f.e == "text")
+            if(f.e == "text" && !f.t.empty())
             {
                 flairs.emplace_back(TextFlair(f.t,p->linkFlairTextColor,p->linkFlairBackgroundColor));
             }
-            else if(f.e == "emoji")
+            else if(f.e == "emoji" && !f.u.empty())
             {
                 //TODO: add emoji loading support
                 flairs.emplace_back(EmojiFlair(f.a,f.u,p->linkFlairBackgroundColor));
