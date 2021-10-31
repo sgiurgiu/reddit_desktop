@@ -59,7 +59,7 @@ namespace
             ImGui::Text("%s",textFlair.text.c_str());
             ImGui::PopStyleColor();
             ImGui::PopFont();
-            ImGui::SameLine();
+            ImGui::SameLine(0.f,0.f);
         }
     }
 
