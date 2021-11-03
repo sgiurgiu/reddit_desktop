@@ -4,10 +4,10 @@ LABEL maintainer="Sergiu Giurgiu <sgiurgiu11@gmail.com>"
 
 ARG RDRPM=/tmp/reddit_desktop/packages/reddit_desktop-0.0.1-fedora.rpm
 
-RUN curl -s http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-34.noarch.rpm -o /tmp/rpmfusion-free-release-stable.noarch.rpm && \
-    curl -s http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-34.noarch.rpm -o /tmp/rpmfusion-nonfree-release-stable.noarch.rpm && \
-    rpm -i /tmp/rpmfusion-free-release-stable.noarch.rpm && \
-    rpm -i /tmp/rpmfusion-nonfree-release-stable.noarch.rpm && \
+RUN curl -s http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-35.noarch.rpm -o /tmp/rpmfusion-free-release-stable.noarch.rpm && \
+    curl -s http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-35.noarch.rpm -o /tmp/rpmfusion-nonfree-release-stable.noarch.rpm && \
+    rpm -iv /tmp/rpmfusion-free-release-stable.noarch.rpm && \
+    rpm -iv /tmp/rpmfusion-nonfree-release-stable.noarch.rpm && \
     rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-latest && \
     rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-latest
 
