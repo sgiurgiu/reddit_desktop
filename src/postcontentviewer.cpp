@@ -329,6 +329,7 @@ void PostContentViewer::setupMediaContext(std::string file, bool useProvidedFile
     {
         file = "ytdl://"+currentPost->url;
         mpv_set_option_string(mpv, "ytdl", "yes");
+        mpv_set_option_string(mpv, "ytdl-format", "webm[height<720]/bestvideo[height<720]+bestaudio/best[height<720]");
     }
 
     mpv_set_option_string(mpv, "cache", "yes");
@@ -339,10 +340,12 @@ void PostContentViewer::setupMediaContext(std::string file, bool useProvidedFile
     int64_t cacheDefault = 150000;
     int64_t cacheBackBuffer = 150000;
     int64_t cacheSecs = 30;
-    mpv_set_property(mpv, "cache-default", MPV_FORMAT_INT64, &cacheDefault);
-    mpv_set_property(mpv, "cache-backbuffer", MPV_FORMAT_INT64, &cacheBackBuffer);
+   // mpv_set_property(mpv, "cache-default", MPV_FORMAT_INT64, &cacheDefault);
+   // mpv_set_property(mpv, "cache-backbuffer", MPV_FORMAT_INT64, &cacheBackBuffer);
     mpv_set_property(mpv, "cache-secs", MPV_FORMAT_INT64, &cacheSecs);
     mpv_set_property(mpv, "demuxer-readahead-secs", MPV_FORMAT_INT64, &cacheSecs);
+    //mpv_set_property_string(mpv, "demuxer-cache-wait", "yes");
+
     //demuxer-cache-wait="yes|no
 
     //char* voProp = "libmpv";
