@@ -33,6 +33,7 @@ for distro in "${distros[@]}"; do
 done
 
 podman rmi -f reddit_desktop_runtime:latest || true
+podman rmi -f registry.fedoraproject.org/fedora-minimal:latest || true
 
 buildah bud --build-arg RDRPM=/tmp/reddit_desktop/packages/reddit_desktop-${REDDITDESKTOP_VERSION_MAJOR}.${REDDITDESKTOP_VERSION_MINOR}.${REDDITDESKTOP_VERSION_PATCH}-fedora.rpm \
             -v "${root}":/tmp/reddit_desktop/:Z \
