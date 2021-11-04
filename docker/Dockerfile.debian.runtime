@@ -1,0 +1,12 @@
+FROM docker.io/debian:11
+
+LABEL maintainer="Sergiu Giurgiu <sgiurgiu11@gmail.com>"
+
+ARG RDDEB=/tmp/reddit_desktop/packages/reddit_desktop-0.0.1-debian.deb
+
+RUN apt update && \
+    apt install -y ${RDDEB} firefox-esr mesa-utils \
+    libgl1-mesa-glx dbus dbus-x11 && \
+    apt clean && mkdir -p /root/.config/reddit_desktop
+
+ENTRYPOINT ["/usr/bin/reddit_desktop"]
