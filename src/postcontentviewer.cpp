@@ -329,7 +329,7 @@ void PostContentViewer::setupMediaContext(std::string file, bool useProvidedFile
     {
         file = "ytdl://"+currentPost->url;
         mpv_set_option_string(mpv, "ytdl", "yes");
-        mpv_set_option_string(mpv, "ytdl-format", "webm[height<720]/bestvideo[height<720]+bestaudio/best[height<720]/best");
+        mpv_set_option_string(mpv, "ytdl-format", "webm[height<720]+bestaudio/bestvideo[height<720]+bestaudio/best[height<720]/best");
     }
 
     mpv_set_option_string(mpv, "cache", "yes");
