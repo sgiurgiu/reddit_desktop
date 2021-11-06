@@ -148,10 +148,10 @@ struct award
     int coinPrice = 0;
 };
 
-struct link_flair_richtext
+struct flair_richtext
 {
-    link_flair_richtext(){}
-    link_flair_richtext(const nlohmann::json& json);
+    flair_richtext(){}
+    flair_richtext(const nlohmann::json& json);
     std::string e; // this looks to be the type
     std::string t; //this looks to be the text
     std::string a; // looks to be the emoji id
@@ -206,7 +206,7 @@ struct post
     std::string linkFlairType;
     std::string linkFlairText;
     std::string linkFlairTemplateId;
-    std::vector<link_flair_richtext> linkFlairsRichText;
+    std::vector<flair_richtext> linkFlairsRichText;
     std::string linkFlairBackgroundColor;
     std::string linkFlairCSSClass;
     std::string linkFlairTextColor;
@@ -254,13 +254,19 @@ struct comment
     bool edited = false;
     bool locked = false;
     bool removed = false;
-    // set to true if this comment is a user's comment
+    // set to true if this comment is the current logged in user's comment
     bool isUsersComment = false;
     int gilded = 0;
     int totalAwardsReceived = 0;
     std::vector<award> allAwardings;
     std::map<std::string,int> gildings;
-
+    std::string authorFlairType;
+    std::string authorFlairText;
+    std::string authorFlairTemplateId;
+    std::vector<flair_richtext> authorFlairsRichText;
+    std::string authorFlairBackgroundColor;
+    std::string authorFlairCSSClass;
+    std::string authorFlairTextColor;
 };
 
 struct user_info

@@ -579,7 +579,8 @@ bool CommentsWindow::commentNode(DisplayComment& c)
                       reinterpret_cast<const char*>( opened ? ICON_FA_CHEVRON_CIRCLE_DOWN :ICON_FA_CHEVRON_CIRCLE_RIGHT));
 
     float arrowSize = g.FontSize + g.Style.FramePadding.y * 2;
-    ImVec2 authorPos(pos.x + arrowSize + g.Style.ItemInnerSpacing.x, pos.y + g.Style.FramePadding.y);
+    float flairRenderedNewPos = c.flairRenderer->RenderDirect(ImVec2(pos.x + arrowSize + g.Style.ItemInnerSpacing.x, pos.y + g.Style.FramePadding.y));
+    ImVec2 authorPos(flairRenderedNewPos+g.Style.ItemInnerSpacing.x, pos.y + g.Style.FramePadding.y);
     ImVec2 scorePos(authorPos.x+c.authorNameTextSize.x+g.Style.ItemInnerSpacing.x, authorPos.y);
     if(c.commentData.isSubmitter)
     {

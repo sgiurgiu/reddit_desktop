@@ -490,7 +490,7 @@ post::post(const nlohmann::json& json)
     }
 }
 
-link_flair_richtext::link_flair_richtext(const nlohmann::json& json)
+flair_richtext::flair_richtext(const nlohmann::json& json)
 {
     if(json.contains("a") && json["a"].is_string())
     {
@@ -607,6 +607,38 @@ comment::comment(const nlohmann::json& json, const user& currentUser)
         {
             gildings[gilding.key()] = gilding.value().get<int>();
         }
+    }
+
+    if(json.contains("author_flair_type") && json["author_flair_type"].is_string())
+    {
+        authorFlairType = json["author_flair_type"].get<std::string>();
+    }
+    if(json.contains("author_flair_text") && json["author_flair_text"].is_string())
+    {
+        authorFlairText = json["author_flair_text"].get<std::string>();
+    }
+    if(json.contains("author_flair_template_id") && json["author_flair_template_id"].is_string())
+    {
+        authorFlairTemplateId = json["author_flair_template_id"].get<std::string>();
+    }
+    if(json.contains("author_flair_richtext") && json["author_flair_richtext"].is_array())
+    {
+        for(const auto& linkFlair : json["author_flair_richtext"])
+        {
+            authorFlairsRichText.emplace_back(linkFlair);
+        }
+    }
+    if(json.contains("author_flair_background_color") && json["author_flair_background_color"].is_string())
+    {
+        authorFlairBackgroundColor = json["author_flair_background_color"].get<std::string>();
+    }
+    if(json.contains("author_flair_css_class") && json["author_flair_css_class"].is_string())
+    {
+        authorFlairCSSClass = json["author_flair_css_class"].get<std::string>();
+    }
+    if(json.contains("author_flair_text_color") && json["author_flair_text_color"].is_string())
+    {
+        authorFlairTextColor = json["author_flair_text_color"].get<std::string>();
     }
 
     if(json.contains("replies") && json["replies"].is_object())

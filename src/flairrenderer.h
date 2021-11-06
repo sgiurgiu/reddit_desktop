@@ -12,7 +12,9 @@ class FlairRenderer : public std::enable_shared_from_this<FlairRenderer>
 {
 public:
     FlairRenderer(post_ptr p);
+    FlairRenderer(const comment& c);
     void Render();
+    float RenderDirect(const ImVec2& pos);
     void LoadFlair(const access_token& token,
                     RedditClientProducer* client,
                     const boost::asio::any_io_executor& uiExecutor);
@@ -29,6 +31,10 @@ private:
         {
             f.self->render_();
         }
+        friend float render_direct(const flair& f, const ImVec2& pos)
+        {
+            return f.self->render_direct_(pos);
+        }
         friend void retrieve_data(const flair& f,
                                   const access_token& token,
                                   RedditClientProducer* client,
@@ -40,6 +46,7 @@ private:
         struct flair_concept {
             virtual ~flair_concept() = default;
             virtual void render_() const = 0;
+            virtual float render_direct_(const ImVec2& pos) const = 0;
             virtual void retrieve_data_(const access_token& token,
                                         RedditClientProducer* client,
                                         const boost::asio::any_io_executor& uiExecutor) const = 0;
@@ -49,6 +56,7 @@ private:
         struct flair_model : flair_concept {
             flair_model(T t) : data(std::move(t)) {}
             void render_() const override;
+            float render_direct_(const ImVec2& pos) const override;
             void retrieve_data_(const access_token& token,
                                 RedditClientProducer* client,
                                 const boost::asio::any_io_executor& uiExecutor) const override;
