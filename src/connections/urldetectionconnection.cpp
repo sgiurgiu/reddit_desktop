@@ -161,15 +161,13 @@ void UrlDetectionConnection::detectMediaUrl(post* mediaPost)
     if(currentPost->postMedia && currentPost->postMedia->redditVideo)
     {
         currentUrl = currentPost->postMedia->redditVideo->dashUrl;
-        HtmlParser::MediaLink link{currentUrl,HtmlParser::MediaType::Video};
+        HtmlParser::MediaLink link{currentUrl,HtmlParser::MediaType::Video, true};
         boost::asio::post(strand,std::bind(
                                &UrlDetectionConnection::urlDetected,
                                this->shared_from_base<UrlDetectionConnection>(),link));
     }
     else
     {
-        //'https://www.youtube.com/watch?v=BaW_jenozKc&gl=US&hl=en&has_verified=1&bpctr=9999999999'
-
         downloadUrl(currentUrl);
     }
 }

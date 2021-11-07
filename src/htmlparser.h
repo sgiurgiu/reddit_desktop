@@ -18,6 +18,7 @@ public:
     {
         std::string url;
         MediaType type;
+        bool useLink = false;
     };
 
     explicit HtmlParser(const std::filesystem::path& file);

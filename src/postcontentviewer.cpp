@@ -122,7 +122,7 @@ void PostContentViewer::loadContent(post_ptr currentPost)
                     {
                     case HtmlParser::MediaType::Video:
                         boost::asio::post(self->uiExecutor,
-                                          std::bind(&PostContentViewer::setupMediaContext,self,link.url, false));
+                                          std::bind(&PostContentViewer::setupMediaContext,self,link.url, link.useLink));
                         break;
                     case HtmlParser::MediaType::Image:
                         boost::asio::post(self->uiExecutor,
