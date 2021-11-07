@@ -17,3 +17,7 @@ podman tag localhost/reddit_desktop_fedora:build registry.zergiu.com:5000/reddit
 podman push registry.zergiu.com:5000/reddit_desktop_fedora:build
 podman rmi localhost/reddit_desktop_fedora:build
 
+buildah bud -f Dockerfile.fedora.base_runtime -t localhost/reddit_desktop_fedora:runtime
+podman tag localhost/reddit_desktop_fedora:runtime registry.zergiu.com:5000/reddit_desktop_fedora:runtime
+podman push registry.zergiu.com:5000/reddit_desktop_fedora:runtime
+podman rmi localhost/reddit_desktop_fedora:runtime
