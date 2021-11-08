@@ -382,6 +382,11 @@ void PostContentViewer::setupMediaContext(std::string file, bool useProvidedFile
     mpv_observe_property(mpv, 0, "height", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "width", MPV_FORMAT_DOUBLE);
     mpv_observe_property(mpv, 0, "pause", MPV_FORMAT_FLAG);
+   // mpv_observe_property(mpv, 0, "demuxer-cache-state", MPV_FORMAT_NODE);
+    mpv_observe_property(mpv, 0, "demuxer-cache-time", MPV_FORMAT_DOUBLE);
+    mpv_observe_property(mpv, 0, "demuxer-cache-duration", MPV_FORMAT_DOUBLE);
+
+
 
     mediaState.finished = false;
     double vol = mediaState.mediaAudioVolume;
@@ -451,7 +456,7 @@ void PostContentViewer::handleMpvEvents()
        case MPV_EVENT_PROPERTY_CHANGE:
        {
            mpv_event_property *prop = (mpv_event_property *)mp_event->data;
-          // std::cout << "prop change:"<<prop->name<<",format:"<<prop->format<<std::endl;
+           //std::cout << "prop change:"<<prop->name<<",format:"<<prop->format<<std::endl;
            std::string name(prop->name);
            if(prop->format == MPV_FORMAT_DOUBLE)
            {
@@ -480,6 +485,14 @@ void PostContentViewer::handleMpvEvents()
                    mediaState.mediaAudioVolume = value;
                    Database::getInstance()->setMediaAudioVolume(mediaState.mediaAudioVolume);
                }
+               else if( name == "demuxer-cache-time")
+               {
+                   mediaState.cachedTime = value;
+               }
+               else if( name == "demuxer-cache-duration")
+               {
+                   mediaState.cachedDuration = value;
+               }
            }
            else if(prop->format == MPV_FORMAT_FLAG)
            {
@@ -493,7 +506,9 @@ void PostContentViewer::handleMpvEvents()
            }
            else if(prop->format == MPV_FORMAT_INT64)
            {
-               //int64_t val = *(int64_t*)prop->data;
+              // int64_t val = *(int64_t*)prop->data;
+
+
                //boost::asio::post(this->uiExecutor,std::bind(&PostContentViewer::mpvInt64PropertyChanged,this,
                //                                             std::string(prop->name),val));
            }
@@ -899,8 +914,10 @@ void PostContentViewer::showGalleryControls(int width)
 void PostContentViewer::showMediaControls(int width)
 {
     auto progressHeight = ImGui::GetFontSize() * 0.5f;
-    auto newTimeSeek = MediaWidget::mediaProgressBar(mediaState.timePosition, mediaState.duration,
-                                                      ImVec2(width, progressHeight));
+    auto newTimeSeek = MediaWidget::mediaProgressBar(mediaState.timePosition,
+                                                     mediaState.duration,
+                                                     mediaState.cachedTime,
+                                                     ImVec2(width, progressHeight));
     if( newTimeSeek != 0)
     {
         auto seekStr = std::to_string(newTimeSeek);

@@ -2,11 +2,15 @@
 #define MEDIAWIDGET_H
 
 #include <imgui.h>
+#include <cstdint>
 
 class MediaWidget
 {
 public:
-    static int mediaProgressBar(float mediaPosition, float mediaDuration, const ImVec2& size);
+    static int mediaProgressBar(float mediaPosition,
+                                float mediaDuration,
+                                float cachedTime,
+                                const ImVec2& size);
 };
 
 #endif // MEDIAWIDGET_H

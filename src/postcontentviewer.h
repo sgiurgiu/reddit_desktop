@@ -68,7 +68,8 @@ private:
         double width = 0.0;
         double height = 0.0;
         bool finished = false;
-
+        float cachedTime = 0;
+        float cachedDuration = 0;
     };
     MediaState mediaState;
     struct gif_image
