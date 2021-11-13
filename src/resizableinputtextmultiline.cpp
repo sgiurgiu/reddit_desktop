@@ -45,12 +45,9 @@ bool ResizableInputTextMultiline::InputText(const char* label, std::string* buf,
     {
         g.MouseCursor = ImGuiMouseCursor_ResizeNWSE;
     }
+    *size = textSize;
     if(held)
     {
-        if(size->x <= 0 || size->y <= 0)
-        {
-            *size = textSize;
-        }
         *size += g.IO.MouseDelta;
         if(size->x < 50) size->x = 50;
         if(size->y < 50) size->y = 50;

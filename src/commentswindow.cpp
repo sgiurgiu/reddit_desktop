@@ -504,9 +504,16 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
         {
 
             if(ResizableInputTextMultiline::InputText(c.replyIdText.c_str(),&c.postReplyTextBuffer,
-                                      &c.postReplyTextFieldSize) && c.showingPreview)
+                                      &c.postReplyTextFieldSize))
             {
-                c.previewRenderer.SetText(c.postReplyTextBuffer);
+                if(c.showingPreview)
+                {
+                    c.previewRenderer.SetText(c.postReplyTextBuffer);
+                }
+                ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Light)]);
+                c.commentCharCountText = fmt::format("{0}",c.postReplyTextBuffer.size());
+                c.commentCharCountTextSize = ImGui::CalcTextSize(c.commentCharCountText.c_str());
+                ImGui::PopFont();
             }
             bool saveDisabled = (c.postingReplyInProgress || c.postReplyTextBuffer.empty());
             if(saveDisabled)
@@ -544,6 +551,16 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
             if(ImGui::Checkbox(c.postReplyPreviewCheckboxId.c_str(),&c.showingPreview))
             {
                 c.previewRenderer.SetText(c.postReplyTextBuffer);
+            }
+            if(!c.postReplyTextBuffer.empty())
+            {
+                auto window = ImGui::GetCurrentWindow();
+                auto minPosX = window->DC.CursorPosPrevLine.x + window->DC.GroupOffset.x + window->DC.ColumnsOffset.x;
+                auto spacing = std::max(c.postReplyTextFieldSize.x + ImGui::GetCursorPosX() - c.commentCharCountTextSize.x, minPosX);
+                ImGui::SameLine(spacing);
+                ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Light)]);
+                ImGui::TextUnformatted(c.commentCharCountText.c_str());
+                ImGui::PopFont();
             }
             if(c.showingPreview)
             {
@@ -912,9 +929,16 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
         if(!parentPost->locked)
         {
             if(ResizableInputTextMultiline::InputText(postCommentTextFieldId.c_str(),&postCommentTextBuffer,
-                                      &postCommentTextFieldSize) && showingPostPreview)
+                                      &postCommentTextFieldSize))
             {
-                postPreviewRenderer.SetText(postCommentTextBuffer);
+                if(showingPostPreview)
+                {
+                    postPreviewRenderer.SetText(postCommentTextBuffer);
+                }
+                ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Light)]);
+                postReplyCharCountText = fmt::format("{0}",postCommentTextBuffer.size());
+                postReplyCharCountTextSize = ImGui::CalcTextSize(postReplyCharCountText.c_str());
+                ImGui::PopFont();
             }
             bool saveDisabled = (postingComment || postCommentTextBuffer.empty());
             if(saveDisabled)
@@ -945,6 +969,18 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
             {
                 postPreviewRenderer.SetText(postCommentTextBuffer);
             }
+
+            if(!postCommentTextBuffer.empty())
+            {
+                auto window = ImGui::GetCurrentWindow();
+                auto minPosX = window->DC.CursorPosPrevLine.x + window->DC.GroupOffset.x + window->DC.ColumnsOffset.x;
+                auto spacing = std::max(postCommentTextFieldSize.x + ImGui::GetCursorPosX() - postReplyCharCountTextSize.x, minPosX);
+                ImGui::SameLine(spacing);
+                ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Light)]);
+                ImGui::TextUnformatted(postReplyCharCountText.c_str());
+                ImGui::PopFont();
+            }
+
             if(showingPostPreview)
             {
                 if(ImGui::BeginChild("Live Preview##commentLivePreview",postCommentPreviewSize,true))

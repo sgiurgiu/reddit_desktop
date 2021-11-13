@@ -105,6 +105,8 @@ private:
         ImVec2 authorNameTextSize;
         ImVec2 commentScoreTextSize;
         ImVec2 commentTimeDiffTextSize;
+        ImVec2 commentCharCountTextSize;
+        std::string commentCharCountText;
         float markdownHeight = 10.f;
         std::shared_ptr<AwardsRenderer> awardsRenderer;
         std::shared_ptr<FlairRenderer> flairRenderer;
@@ -176,6 +178,9 @@ private:
     bool windowPositionAndSizeSet = false;
     ImVec2 windowPos;
     ImVec2 windowSize;
+    ImVec2 postReplyCharCountTextSize;
+    std::string postReplyCharCountText;
+
     struct PostUserData {};
     struct CommentUserData
     {
