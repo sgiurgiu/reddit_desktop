@@ -1,6 +1,6 @@
-ARG CONTAINER_REGISTRY=localhost
+ARG BASE_CONTAINER=localhost/reddit_desktop_fedora:runtime
 
-FROM ${CONTAINER_REGISTRY}/reddit_desktop_fedora:runtime
+FROM ${BASE_CONTAINER}
 
 LABEL maintainer="Sergiu Giurgiu <sgiurgiu11@gmail.com>"
 
