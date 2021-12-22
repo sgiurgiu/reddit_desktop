@@ -21,20 +21,26 @@ else
     distros=($1)
 fi
 
+if [ -z $CONTAINER_REGISTRY ]; then
+    echo "FATAL: Please set the CONTAINER_REGISTRY environment variable to point to where the containers are located."
+    exit 1
+fi
+
 for distro in "${distros[@]}"; do
     echo "Running podman to build for distribution ${distro}"
-    podman pull registry.zergiu.com:5000/reddit_desktop_$distro:build
+    podman pull $CONTAINER_REGISTRY/reddit_desktop_$distro:build
     podman run --rm --privileged=true --name rd \
             -v "${root}":/tmp/reddit_desktop/:Z \
             -e REDDITDESKTOP_VERSION_MAJOR="${REDDITDESKTOP_VERSION_MAJOR}" \
             -e REDDITDESKTOP_VERSION_MINOR="${REDDITDESKTOP_VERSION_MINOR}" \
             -e REDDITDESKTOP_VERSION_PATCH="${REDDITDESKTOP_VERSION_PATCH}" \
-            registry.zergiu.com:5000/reddit_desktop_$distro:build
+            $CONTAINER_REGISTRY/reddit_desktop_$distro:build
 done
 
 podman rmi -f reddit_desktop_runtime:latest || true
 
 buildah bud --build-arg RDRPM=/tmp/reddit_desktop/packages/reddit_desktop-${REDDITDESKTOP_VERSION_MAJOR}.${REDDITDESKTOP_VERSION_MINOR}.${REDDITDESKTOP_VERSION_PATCH}-fedora.rpm \
+            BASE_CONTAINER=$CONTAINER_REGISTRY/reddit_desktop_fedora:runtime \
             -v "${root}":/tmp/reddit_desktop/:Z \
             -f  ${root}/docker/Dockerfile.fedora.runtime -t reddit_desktop_runtime
 podman save reddit_desktop_runtime:latest | gzip -9 -n > ${root}/packages/reddit_desktop_runtime.tar.gz

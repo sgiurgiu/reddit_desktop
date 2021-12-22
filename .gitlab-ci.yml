@@ -17,6 +17,7 @@ variables:
   REDDITDESKTOP_VERSION_MAJOR : "1"
   REDDITDESKTOP_VERSION_MINOR : "0"
   REDDITDESKTOP_VERSION_PATCH : "${CI_PIPELINE_IID}"
+  CONTAINER_REGISTRY : $CONTAINER_REGISTRY
 
 stages:          # List of stages for jobs, and their order of execution
   - build

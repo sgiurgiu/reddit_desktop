@@ -1,4 +1,6 @@
-FROM registry.zergiu.com:5000/reddit_desktop_fedora:runtime
+ARG BASE_CONTAINER=localhost/reddit_desktop_fedora:runtime
+
+FROM ${BASE_CONTAINER}
 
 LABEL maintainer="Sergiu Giurgiu <sgiurgiu11@gmail.com>"
 
