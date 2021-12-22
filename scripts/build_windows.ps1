@@ -23,7 +23,7 @@ function Invoke-CmdScript {
   }
 }
 
-Invoke-CmdScript "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
+Invoke-CmdScript "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
 
 $buildDir = ".\build"
 $packagesDir = ".\packages"
@@ -43,7 +43,7 @@ echo "Using youtubeDlExe directory: $youtubeDlExe"
 
 cmake -B $buildDir -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE=E:/projects/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DENABLE_TESTS=False -DCMAKE_BUILD_TYPE=Release -DCPACK_GENERATOR=WIX -DLIBMPV_DIR="$libMpvDir" -DLIBMPV_INCLUDE="$libMpvIncludeDir" -DYOUTUBE_DL="$youtubeDlExe"
 
-cmake --build $buildDir -- package
+cmake --build $buildDir -- -j2 package
 
 Copy-Item "$buildDir\*.msi" -Destination $packagesDir
 
