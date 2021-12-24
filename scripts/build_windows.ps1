@@ -43,7 +43,7 @@ echo "Using youtubeDlExe directory: $youtubeDlExe"
 
 cmake -B $buildDir -S . -G Ninja -DCMAKE_TOOLCHAIN_FILE=E:/projects/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DENABLE_TESTS=False -DCMAKE_BUILD_TYPE=Release -DCPACK_GENERATOR=WIX -DLIBMPV_DIR="$libMpvDir" -DLIBMPV_INCLUDE="$libMpvIncludeDir" -DYOUTUBE_DL="$youtubeDlExe"
 
-cmake --build $buildDir -- -j2 package
+cmake --build $buildDir -- -j4 package
 
 Copy-Item "$buildDir\*.msi" -Destination $packagesDir
 
