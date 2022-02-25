@@ -78,6 +78,7 @@ set(REDDIT_CONNECTIONS_SRCS
     connections/redditcreatecommentconnection.cpp
     connections/redditmarkreplyreadconnection.cpp
     connections/redditsrsubscriptionconnection.cpp
+    connections/redditlivethreadconnection.cpp
     )
 
 set(REDDIT_DESKTOP_LOG_SRCS
@@ -107,6 +108,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         awardsrenderer.cpp
         globalresourcescache.cpp
         flairrenderer.cpp
+        livethreadviewer.cpp
         )
 
 if(VCPKG_TOOLCHAIN)

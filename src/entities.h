@@ -210,6 +210,7 @@ struct post
     std::string linkFlairBackgroundColor;
     std::string linkFlairCSSClass;
     std::string linkFlairTextColor;
+    bool allow_live_comments = false;
     //this is an object
    // std::string link_rich_text;
 
@@ -403,6 +404,66 @@ struct subreddit_stylesheet
     std::string subredditId;
     std::string stylesheet;
     std::vector<stylesheet_image> images;
+};
+
+struct live_update_event_about
+{
+    live_update_event_about(){}
+    live_update_event_about(const nlohmann::json& json);
+
+    std::string announcement_url;
+    std::string button_cta;
+    float created;
+    float created_utc;
+    std::string description;
+    std::string icon;
+    std::string id;
+    bool is_announcement = false;
+    std::string name;
+    bool nsfw = false;
+    int num_times_dismissable = 0;
+    std::string resources;
+    std::string state;
+    std::string title;
+    int total_views = 0;
+    int viewer_count = 0;
+    bool viewer_count_fuzzed = false;
+    std::string websocket_url;
+};
+
+struct live_update_event_embed
+{
+    live_update_event_embed(){}
+    live_update_event_embed(const nlohmann::json& json);
+    std::string provider_url;
+    std::string description;
+    std::string original_url;
+    std::string url;
+    std::string title;
+    std::string thumbnail_url;
+    int thumbnail_width = 0;
+    int thumbnail_height = 0;
+    int width = 0;
+    std::string author_name;
+    std::string version;
+    std::string provider_name;
+    int64_t cache_age = 0;
+    std::string type;
+    std::string author_url;
+};
+
+struct live_update_event
+{
+    live_update_event(){}
+    live_update_event(const nlohmann::json& json);
+    std::string body;
+    std::string name;
+    std::string author;
+    int64_t created;
+    int64_t created_utc;
+    bool stricken = false;
+    std::string id;
+    std::vector<live_update_event_embed> embeds;
 };
 
 #endif // ENTITIES_H

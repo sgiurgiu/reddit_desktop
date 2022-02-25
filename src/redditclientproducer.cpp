@@ -102,3 +102,8 @@ RedditClientProducer::RedditSRSubscriptionClientConnection RedditClientProducer:
 {
     return std::make_shared<RedditSRSubscriptionConnection>(executor,ssl_context,server,service,userAgent);
 }
+
+RedditClientProducer::RedditLiveThreadClientConnection RedditClientProducer::makeRedditLiveThreadClientConnection()
+{
+    return std::make_shared<RedditLiveThreadConnection>(executor,ssl_context);
+}

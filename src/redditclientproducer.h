@@ -13,6 +13,7 @@
 #include "connections/redditcreatecommentconnection.h"
 #include "connections/redditmarkreplyreadconnection.h"
 #include "connections/redditsrsubscriptionconnection.h"
+#include "connections/redditlivethreadconnection.h"
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <thread>
@@ -37,6 +38,7 @@ public:
     using RedditCreateCommentClientConnection = std::shared_ptr<RedditCreateCommentConnection>;
     using RedditMarkReplyReadClientConnection = std::shared_ptr<RedditMarkReplyReadConnection>;
     using RedditSRSubscriptionClientConnection = std::shared_ptr<RedditSRSubscriptionConnection>;
+    using RedditLiveThreadClientConnection = std::shared_ptr<RedditLiveThreadConnection>;
     RedditLoginClientConnection makeLoginClientConnection();
     RedditListingClientConnection makeListingClientConnection();
     RedditResourceClientConnection makeResourceClientConnection();
@@ -48,6 +50,7 @@ public:
     RedditCreateCommentClientConnection makeRedditCreateCommentClientConnection();
     RedditMarkReplyReadClientConnection makeRedditMarkReplyReadClientConnection();
     RedditSRSubscriptionClientConnection makeRedditRedditSRSubscriptionClientConnection();
+    RedditLiveThreadClientConnection makeRedditLiveThreadClientConnection();
     void setUserAgent(const std::string& userAgent);
 
 private:

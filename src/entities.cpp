@@ -201,6 +201,10 @@ post::post(const nlohmann::json& json)
     title = json["title"].get<std::string>();
     id = json["id"].get<std::string>();
     name = json["name"].get<std::string>();
+    if(json.contains("allow_live_comments") && json["allow_live_comments"].is_boolean())
+    {
+        allow_live_comments = json["allow_live_comments"].get<bool>();
+    }
     if(json.contains("is_gallery") && json["is_gallery"].is_boolean())
     {
         isGallery = json["is_gallery"].get<bool>();
@@ -1076,5 +1080,183 @@ stylesheet_image::stylesheet_image(const nlohmann::json& json)
     if(json.contains("name") && json["name"].is_string())
     {
         name = json["name"].get<std::string>();
+    }
+}
+live_update_event_about::live_update_event_about(const nlohmann::json& json)
+{
+    if(json.contains("websocket_url") && json["websocket_url"].is_string())
+    {
+        websocket_url = json["websocket_url"].get<std::string>();
+    }
+    if(json.contains("announcement_url") && json["announcement_url"].is_string())
+    {
+        announcement_url = json["announcement_url"].get<std::string>();
+    }
+    if(json.contains("button_cta") && json["button_cta"].is_string())
+    {
+        button_cta = json["button_cta"].get<std::string>();
+    }
+    if(json.contains("description") && json["description"].is_string())
+    {
+        description = json["description"].get<std::string>();
+    }
+    if(json.contains("icon") && json["icon"].is_string())
+    {
+        icon = json["icon"].get<std::string>();
+    }
+    if(json.contains("id") && json["id"].is_string())
+    {
+        id = json["id"].get<std::string>();
+    }
+    if(json.contains("name") && json["name"].is_string())
+    {
+        name = json["name"].get<std::string>();
+    }
+    if(json.contains("resources") && json["resources"].is_string())
+    {
+        resources = json["resources"].get<std::string>();
+    }
+    if(json.contains("state") && json["state"].is_string())
+    {
+        state = json["state"].get<std::string>();
+    }
+    if(json.contains("title") && json["title"].is_string())
+    {
+        title = json["title"].get<std::string>();
+    }
+    if(json.contains("created") && json["created"].is_number_float())
+    {
+        created = json["created"].get<double>();
+    }
+    if(json.contains("created_utc") && json["created_utc"].is_number_float())
+    {
+        created_utc = json["created_utc"].get<double>();
+    }
+    if(json.contains("is_announcement") && json["is_announcement"].is_boolean())
+    {
+        is_announcement = json["is_announcement"].get<bool>();
+    }
+    if(json.contains("nsfw") && json["nsfw"].is_boolean())
+    {
+        nsfw = json["nsfw"].get<bool>();
+    }
+    if(json.contains("viewer_count_fuzzed") && json["viewer_count_fuzzed"].is_boolean())
+    {
+        viewer_count_fuzzed = json["viewer_count_fuzzed"].get<bool>();
+    }
+    if(json.contains("num_times_dismissable") && json["num_times_dismissable"].is_number())
+    {
+        num_times_dismissable = json["num_times_dismissable"].get<int>();
+    }
+    if(json.contains("total_views") && json["total_views"].is_number())
+    {
+        total_views = json["total_views"].get<int>();
+    }
+    if(json.contains("viewer_count") && json["viewer_count"].is_number())
+    {
+        viewer_count = json["viewer_count"].get<int>();
+    }
+}
+
+live_update_event::live_update_event(const nlohmann::json& json)
+{
+    if(json.contains("body") && json["body"].is_string())
+    {
+        body = json["body"].get<std::string>();
+    }
+    if(json.contains("name") && json["name"].is_string())
+    {
+        name = json["name"].get<std::string>();
+    }
+    if(json.contains("author") && json["author"].is_string())
+    {
+        author = json["author"].get<std::string>();
+    }
+    if(json.contains("id") && json["id"].is_string())
+    {
+        id = json["id"].get<std::string>();
+    }
+
+    if(json.contains("created") && json["created"].is_number())
+    {
+        created = json["created"].get<int64_t>();
+    }
+    if(json.contains("created_utc") && json["created_utc"].is_number())
+    {
+        created_utc = json["created_utc"].get<int64_t>();
+    }
+    if(json.contains("stricken") && json["stricken"].is_boolean())
+    {
+        stricken = json["stricken"].get<bool>();
+    }
+    if(json.contains("mobile_embeds") && json["mobile_embeds"].is_array())
+    {
+        for(const auto& embed:json["mobile_embeds"])
+        {
+            embeds.emplace_back(embed);
+        }
+    }
+}
+live_update_event_embed::live_update_event_embed(const nlohmann::json& json)
+{
+    if(json.contains("provider_url") && json["provider_url"].is_string())
+    {
+        provider_url = json["provider_url"].get<std::string>();
+    }
+    if(json.contains("description") && json["description"].is_string())
+    {
+        description = json["description"].get<std::string>();
+    }
+    if(json.contains("original_url") && json["original_url"].is_string())
+    {
+        original_url = json["original_url"].get<std::string>();
+    }
+    if(json.contains("url") && json["url"].is_string())
+    {
+        url = json["url"].get<std::string>();
+    }
+    if(json.contains("title") && json["title"].is_string())
+    {
+        title = json["title"].get<std::string>();
+    }
+    if(json.contains("thumbnail_url") && json["thumbnail_url"].is_string())
+    {
+        thumbnail_url = json["thumbnail_url"].get<std::string>();
+    }
+    if(json.contains("author_name") && json["author_name"].is_string())
+    {
+        author_name = json["author_name"].get<std::string>();
+    }
+    if(json.contains("version") && json["version"].is_string())
+    {
+        version = json["version"].get<std::string>();
+    }
+    if(json.contains("provider_name") && json["provider_name"].is_string())
+    {
+        provider_name = json["provider_name"].get<std::string>();
+    }
+    if(json.contains("type") && json["type"].is_string())
+    {
+        type = json["type"].get<std::string>();
+    }
+    if(json.contains("author_url") && json["author_url"].is_string())
+    {
+        author_url = json["author_url"].get<std::string>();
+    }
+    if(json.contains("cache_age") && json["cache_age"].is_number())
+    {
+        cache_age = json["cache_age"].get<int64_t>();
+    }
+    if(json.contains("thumbnail_width") && json["thumbnail_width"].is_number())
+    {
+        thumbnail_width = json["thumbnail_width"].get<int>();
+    }
+    if(json.contains("thumbnail_height") && json["thumbnail_height"].is_number())
+    {
+        thumbnail_height = json["thumbnail_height"].get<int>();
+    }
+    if(json.contains("width") && json["width"].is_number())
+    {
+        width = json["width"].get<int>();
     }
 }

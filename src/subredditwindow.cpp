@@ -840,7 +840,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             ImGui::Dummy(ImVec2(0.0f, ImGui::GetFontSize()/2.f));
             if(!p.postContentViewer)
             {
-                p.postContentViewer = std::make_shared<PostContentViewer>(client,uiExecutor);
+                p.postContentViewer = std::make_shared<PostContentViewer>(client,token,uiExecutor);
             }
             if(!p.postContentViewer->isCurrentPostSet())
             {

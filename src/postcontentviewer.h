@@ -10,6 +10,7 @@
 #include "resizableglimage.h"
 #include "markdownrenderer.h"
 #include "utils.h"
+#include "livethreadviewer.h"
 
 struct mpv_handle;
 struct mpv_render_context;
@@ -18,6 +19,7 @@ class PostContentViewer : public std::enable_shared_from_this<PostContentViewer>
 {
 public:
     PostContentViewer(RedditClientProducer* client,
+                      const access_token& token,
                       const boost::asio::any_io_executor& uiExecutor
                       );
     ~PostContentViewer();
@@ -52,6 +54,7 @@ private:
     void showGalleryControls(int width);
 private:
     RedditClientProducer* client;
+    access_token token;
     const boost::asio::any_io_executor& uiExecutor;
     post_ptr currentPost;    
     std::string errorMessage;
@@ -120,6 +123,8 @@ private:
     bool mediaLoop = false;
     bool useYoutubeDlder = false;
     std::vector<std::string> mediaDomains;
+    bool isLivePost = false;
+    std::shared_ptr<LiveThreadViewer> liveThreadViewer;
 };
 
 #endif // POSTCONTENTVIEWER_H

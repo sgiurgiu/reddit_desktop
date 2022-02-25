@@ -22,6 +22,7 @@
 #include <algorithm>
 #include "mediawidget.h"
 #include <spdlog/spdlog.h>
+#include <boost/url.hpp>
 
 namespace
 {
@@ -42,9 +43,10 @@ static void* get_proc_address_mpv(void *fn_ctx, const char *name)
 }
 
 PostContentViewer::PostContentViewer(RedditClientProducer* client,
+                                     const access_token& token,
                                      const boost::asio::any_io_executor& uiExecutor
                                      ):
-    client(client),uiExecutor(uiExecutor)
+    client(client),token(token),uiExecutor(uiExecutor)
 {
     SDL_GetDesktopDisplayMode(0, &displayMode);
     mediaState.mediaAudioVolume = Database::getInstance()->getMediaAudioVolume();
@@ -80,6 +82,16 @@ void PostContentViewer::loadContent(post_ptr currentPost)
     if(currentPost->isGallery && !currentPost->gallery.empty())
     {
         loadPostGalleryImages();
+        return;
+    }
+
+    if (this->currentPost->allow_live_comments &&
+            this->currentPost->postHint.empty()  &&
+            this->currentPost->url.starts_with("https://www.reddit.com/live/"))
+    {
+        isLivePost = true;
+        liveThreadViewer = std::make_shared<LiveThreadViewer>(client, token, uiExecutor);
+        liveThreadViewer->loadContent(this->currentPost->url);
         return;
     }
 
@@ -197,6 +209,7 @@ void PostContentViewer::setErrorMessage(std::string errorMessage)
     this->errorMessage = errorMessage;
     loadingPostContent = false;
 }
+
 void PostContentViewer::loadPostGalleryImages()
 {
     loadingPostContent = true;
@@ -880,6 +893,10 @@ void PostContentViewer::showPostContent()
         }
     }
 
+    if(isLivePost && liveThreadViewer)
+    {
+        liveThreadViewer->showLiveThread();
+    }
     if(markdown)
     {
         markdown->RenderMarkdown();
