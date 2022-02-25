@@ -33,15 +33,35 @@ void RedditLiveThreadConnection::messageReceived()
                 signal({},event);
             }
         }
-        if(type == "embeds_ready")
+        else if(type == "embeds_ready")
         {
-            live_update_event event;
-            event.name = payload["liveupdate_id"].get<std::string>();
+            std::vector<live_update_event_embed> embeds;
             for(const auto& embed:payload["mobile_embeds"])
             {
-                event.embeds.emplace_back(embed);
+                embeds.emplace_back(embed);
             }
-            signal({},event);
+            embedsReadySignal(payload["liveupdate_id"].get<std::string>(),std::move(embeds));
+        }
+        else if(type == "activity")
+        {
+            int64_t count = payload["count"].get<int64_t>();
+            countUpdateSignal(count);
+        }
+        else if(type == "settings")
+        {
+            settingsUpdateSignal(live_update_event_about(payload));
+        }
+        else if(type == "delete")
+        {
+            deleteSignal(payload["liveupdate_id"].get<std::string>());
+        }
+        else if(type == "strike")
+        {
+            strikeSignal(payload["liveupdate_id"].get<std::string>());
+        }
+        else if(type == "complete")
+        {
+            completeSignal();
         }
     }
 

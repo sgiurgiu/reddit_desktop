@@ -408,7 +408,7 @@ std::string Utils::getHumanReadableNumber(int number)
     }
     return fmt_num;
 }
-std::string Utils::getHumanReadableTimeAgo(uint64_t time)
+std::string Utils::getHumanReadableTimeAgo(uint64_t time, bool fuzzySeconds)
 {
     auto diff_time = std::time(nullptr) - time;
     std::chrono::seconds diff(diff_time);
@@ -437,6 +437,10 @@ std::string Utils::getHumanReadableTimeAgo(uint64_t time)
     {
         if(m.count() == 1) return "1 minute ago";
         return fmt::format("{} minutes ago", m.count());
+    }
+    if(fuzzySeconds)
+    {
+        return "just now";
     }
     const auto s = std::chrono::duration_cast<std::chrono::seconds>(diff);
     if(s.count() > 0)

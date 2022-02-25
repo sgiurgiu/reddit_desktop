@@ -43,7 +43,7 @@ public:
     static std::string encode64(const std::string &val);
     static ResizableGLImagePtr loadImage(unsigned char* data, int width, int height, int channels);
     static ResizableGLImagePtr loadBlurredImage(unsigned char* data, int width, int height, int channels);
-    static std::string getHumanReadableTimeAgo(uint64_t time);
+    static std::string getHumanReadableTimeAgo(uint64_t time, bool fuzzySeconds = false);
     static std::string getHumanReadableNumber(int number);
     static STBImagePtr decodeImageData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file);
     static STBImagePtr decodeGifData(stbi_uc const *buffer, int len, int *x, int *y, int *channels_in_file,int *count, int** delays);
