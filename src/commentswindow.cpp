@@ -587,7 +587,7 @@ bool CommentsWindow::commentNode(DisplayComment& c)
     ImRect bb(pos, ImVec2(pos.x + ImGui::GetContentRegionAvail().x, pos.y + g.FontSize + g.Style.FramePadding.y*2));
     bool opened = ImGui::TreeNodeBehaviorIsOpen(id, ImGuiTreeNodeFlags_DefaultOpen);
     bool hovered, held;
-    if (ImGui::ButtonBehavior(bb, id, &hovered, &held, true))
+    if (ImGui::ButtonBehavior(bb, id, &hovered, &held, 0))
         window->DC.StateStorage->SetInt(id, opened ? 0 : 1);
     if (hovered || held)
         window->DrawList->AddRectFilled(bb.Min, bb.Max, ImGui::GetColorU32(held ? ImGuiCol_HeaderActive : ImGuiCol_HeaderHovered));
