@@ -1,6 +1,7 @@
 #include "livethreadviewer.h"
 #include "spinner/spinner.h"
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <fmt/format.h>
 #include <boost/url.hpp>
 #include "utils.h"
@@ -79,6 +80,13 @@ void LiveThreadViewer::showLiveThread()
                 }
             }
         ImGui::EndGroup();
+        if(event->event.stricken)
+        {
+            auto rectMax = ImGui::GetItemRectMax();
+            auto rectMin = ImGui::GetItemRectMin();
+            ImGuiWindow* window = ImGui::GetCurrentWindow();
+            window->DrawList->AddLine(rectMin,rectMax, ImGui::GetColorU32(ImGuiCol_Text),5.f);
+        }
         ImGui::Separator();
     }
 }

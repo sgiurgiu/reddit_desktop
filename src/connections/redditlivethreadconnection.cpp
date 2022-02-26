@@ -53,11 +53,11 @@ void RedditLiveThreadConnection::messageReceived()
         }
         else if(type == "delete")
         {
-            deleteSignal(payload["liveupdate_id"].get<std::string>());
+            deleteSignal(payload.get<std::string>());
         }
         else if(type == "strike")
         {
-            strikeSignal(payload["liveupdate_id"].get<std::string>());
+            strikeSignal(payload.get<std::string>());
         }
         else if(type == "complete")
         {
