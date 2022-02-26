@@ -24,13 +24,11 @@ void MarkdownNodeLink::AddChild(std::unique_ptr<MarkdownNode> child)
 void MarkdownNodeLink::componentLinkHandling()
 {
     //Underline it
-    {
-        auto rectMax = ImGui::GetItemRectMax();
-        auto rectMin = ImGui::GetItemRectMin();
-        rectMin.y = rectMax.y;
-        ImGuiWindow* window = ImGui::GetCurrentWindow();
-        window->DrawList->AddLine(rectMin,rectMax, ImGui::GetColorU32(linkColor));
-    }
+    auto rectMax = ImGui::GetItemRectMax();
+    auto rectMin = ImGui::GetItemRectMin();
+    ImVec2 underlinePos(rectMin.x,rectMax.y);
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    window->DrawList->AddLine(underlinePos,rectMax, ImGui::GetColorU32(linkColor));
     if (ImGui::IsItemHovered())
     {
         ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
@@ -40,7 +38,11 @@ void MarkdownNodeLink::componentLinkHandling()
         ImGui::PopStyleColor();
         ImGui::EndTooltip();
     }
-    if(ImGui::IsItemClicked(ImGuiMouseButton_Left))
+
+    const ImRect bb (rectMin,rectMax);
+    const ImGuiID id = window->GetIDFromRectangle(bb);
+    bool hovered, held;
+    if(ImGui::ButtonBehavior(bb, id, &hovered, &held))
     {
         auto fixedHref = href;
         if (href.starts_with("/r/"))
