@@ -225,6 +225,7 @@ void LiveThreadViewer::strikeEvent(std::string id)
 
 void LiveThreadViewer::addLiveEvent(live_update_event event)
 {
+    deleteEvent(event.name);
     auto eventShared = std::make_shared<EventDisplay>(std::move(event));
     eventsMap[eventShared->event.name] = eventShared;
     liveEvents.insert(liveEvents.begin(),eventShared);
