@@ -10,7 +10,7 @@
 #include "connections/redditlivethreadconnection.h"
 #include "markdownrenderer.h"
 #include "markdown/markdownnodelink.h"
-
+#include "resizableglimage.h"
 #include <boost/asio/steady_timer.hpp>
 
 class LiveThreadViewer : public std::enable_shared_from_this<LiveThreadViewer>
@@ -60,6 +60,7 @@ private:
     boost::asio::steady_timer refreshEventsTimeTimer;
     float timeTextWidth = 0.f;
     int64_t activityCount = 0;
+    ResizableGLImagePtr strickenImage;
 };
 
 #endif // LIVETHREADVIEWER_H

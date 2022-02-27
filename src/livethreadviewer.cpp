@@ -82,10 +82,13 @@ void LiveThreadViewer::showLiveThread()
         ImGui::EndGroup();
         if(event->event.stricken)
         {
-            auto rectMax = ImGui::GetItemRectMax();
-            auto rectMin = ImGui::GetItemRectMin();
-            ImGuiWindow* window = ImGui::GetCurrentWindow();
-            window->DrawList->AddLine(rectMin,rectMax, ImGui::GetColorU32(ImGuiCol_Text),5.f);
+            const auto rectMax = ImGui::GetItemRectMax();
+            const auto rectMin = ImGui::GetItemRectMin();
+            const ImGuiWindow* window = ImGui::GetCurrentWindow();
+            const ImVec2 uv0(0, 0);
+            const ImVec2 uv1(1,1);
+            const ImVec4 tint_col(1,1,1,0.35f);
+            window->DrawList->AddImage((void*)(intptr_t)strickenImage->textureId,rectMin,rectMax,uv0,uv1,ImGui::GetColorU32(tint_col));
         }
         ImGui::Separator();
     }
@@ -185,7 +188,7 @@ void LiveThreadViewer::loadContent(const std::string& url)
         if (!self) return;
         boost::asio::post(self->uiExecutor,std::bind(&LiveThreadViewer::strikeEvent,self,std::move(id)));
     });
-
+    strickenImage = Utils::GetStrickenImage();
 }
 void LiveThreadViewer::updateActivityCount(int64_t count)
 {

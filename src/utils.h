@@ -57,6 +57,7 @@ public:
     static std::string formatDuration(std::chrono::seconds diff);
     static StandardRedditThumbnail GetRedditHeader();
     static ResizableGLImagePtr GetApplicationIcon();
+    static ResizableGLImagePtr GetStrickenImage();
     static std::filesystem::path GetAppConfigFolder();
     static ResizableGLImageSharedPtr GetRedditDefaultSprites();
     static ImVec4 GetHTMLColor(const std::string& strColor);

@@ -82,7 +82,7 @@ namespace
         {
             ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::NotoMono_Regular)]);
             ImGui::PushStyleColor(ImGuiCol_Text,textFlair.textColor);
-            auto textSize = ImGui::CalcTextSize(textFlair.text.c_str());
+            const auto textSize = ImGui::CalcTextSize(textFlair.text.c_str());
             const float line_height = ImGui::GetTextLineHeight();
             window->DrawList->AddRectFilled(pos,
                                             ImVec2(pos.x+textSize.x,pos.y+line_height),
@@ -119,7 +119,7 @@ namespace
                        RedditClientProducer* client,
                        const boost::asio::any_io_executor& uiExecutor)
     {
-        auto id = emojiFlair.id+emojiFlair.url;
+        const auto id = emojiFlair.id+emojiFlair.url;
         if(!emojiFlair.url.empty() && !GlobalResourcesCache::ContainsResource(id))
         {
             GlobalResourcesCache::LoadResource(token,client,uiExecutor,
@@ -133,7 +133,7 @@ namespace
         auto id = emojiFlair.id+emojiFlair.url;
         if(!emojiFlair.url.empty() && GlobalResourcesCache::ResourceLoaded(id))
         {
-            ImVec2 size(ImGui::GetFontSize(),ImGui::GetFontSize());
+            const ImVec2 size(ImGui::GetFontSize(),ImGui::GetFontSize());
             const ImVec2 text_pos(window->DC.CursorPos.x, window->DC.CursorPos.y + window->DC.CurrLineTextBaseOffset);
             const float line_height = ImGui::GetTextLineHeight();
             window->DrawList->AddRectFilled(text_pos,
@@ -151,12 +151,12 @@ namespace
         auto id = emojiFlair.id+emojiFlair.url;
         if(!emojiFlair.url.empty() && GlobalResourcesCache::ResourceLoaded(id))
         {
-            ImVec2 size(ImGui::GetFontSize(),ImGui::GetFontSize());
+            const ImVec2 size(ImGui::GetFontSize(),ImGui::GetFontSize());
             const float line_height = ImGui::GetTextLineHeight();
-            ImRect bb(pos, ImVec2(pos.x+size.x,pos.y+line_height));
-            ImVec2 uv0(0, 0);
-            ImVec2 uv1(1,1);
-            ImVec4 tint_col(1,1,1,1);
+            const ImRect bb(pos, ImVec2(pos.x+size.x,pos.y+line_height));
+            const ImVec2 uv0(0, 0);
+            const ImVec2 uv1(1,1);
+            const ImVec4 tint_col(1,1,1,1);
             window->DrawList->AddRectFilled(bb.Min,
                                             bb.Max,
                                             ImGui::GetColorU32(emojiFlair.backgroundColor));

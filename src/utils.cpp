@@ -3,6 +3,7 @@
 #include "imgui_internal.h"
 #include "images/sprite_reddit.h"
 #include "images/reddit_icon_256.h"
+#include "images/stricken.h"
 #include "fonts/fonts.h"
 #include "macros.h"
 
@@ -277,8 +278,18 @@ ResizableGLImageSharedPtr Utils::GetRedditDefaultSprites()
 }*/
 ResizableGLImagePtr Utils::GetApplicationIcon()
 {
-    int width, height, channels;
+    int width =0;
+    int height = 0;
+    int channels = 0;
     auto data = decodeImageData(_reddit_icon_256_png,_reddit_icon_256_png_len,&width,&height,&channels);
+    return Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
+}
+ResizableGLImagePtr Utils::GetStrickenImage()
+{
+    int width =0;
+    int height = 0;
+    int channels = 0;
+    auto data = decodeImageData(_icons_stricken_png,_icons_stricken_png_len,&width,&height,&channels);
     return Utils::loadImage(data.get(),width,height,STBI_rgb_alpha);
 }
 StandardRedditThumbnail Utils::GetRedditHeader()
