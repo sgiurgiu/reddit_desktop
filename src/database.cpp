@@ -69,7 +69,7 @@ Database::Database():db(nullptr,connection_deleter())
         "www.redgifs.com",
         "giphy.com"});
         incrementSchemaVersion(version);
-    }
+    }    
 }
 
 
@@ -223,6 +223,47 @@ int Database::getIntProperty(const std::string& propName, int defaultValue) cons
     }
     return value;
 }
+void Database::setStringProperty(const std::string& value, const std::string& propName)
+{
+    std::string sql("DELETE FROM PROPERTIES WHERE NAME='");
+    sql+=propName;
+    sql+="'";
+    sqlite3_exec(db.get(),sql.c_str(),nullptr,nullptr,nullptr);
+    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
+    sqlite3_stmt *stmt_ptr;
+    int rc = sqlite3_prepare_v2(db.get(),"INSERT INTO PROPERTIES(NAME,PROP_VAL) VALUES(?,?)",-1,&stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot insert "+propName);
+    rc = sqlite3_bind_text(stmt.get(),1,propName.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to "+propName)
+    rc = sqlite3_bind_text(stmt.get(),2,value.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to "+propName);
+    rc = sqlite3_step(stmt.get());
+    DB_ERR_CHECK("Cannot insert "+propName);
+}
+std::optional<std::string> Database::getStringProperty(const std::string& propName) const
+{
+    std::optional<std::string> value;
+    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
+    sqlite3_stmt *stmt_ptr;
+    std::string sql="SELECT NAME,PROP_VAL FROM PROPERTIES WHERE NAME='";
+    sql+=propName;
+    sql+="'";
+    int rc = sqlite3_prepare_v2(db.get(),sql.c_str(),-1,&stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot find "+propName);
+    if(sqlite3_step(stmt.get()) == SQLITE_ROW)
+    {
+        auto name = sqlite3_column_text(stmt.get(),0);
+        if(propName == std::string(reinterpret_cast<const char*>(name)))
+        {
+             value = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(),1)),
+                                             sqlite3_column_bytes(stmt.get(),1));
+        }
+    }
+    return value;
+}
+
 void Database::setShowRandomNSFW(bool flag)
 {
     setBoolProperty(flag, "SHOW_RANDOM_NSFW");
@@ -272,7 +313,14 @@ bool Database::getAutoArangeWindowsGrid() const
 {
     return getBoolProperty("GRID_AUTO_ARRANGE", false);
 }
-
+void Database::setTwitterAuthBearer(const std::string& bearer)
+{
+    setStringProperty(bearer, "TWITTER_BEARER");
+}
+std::optional<std::string> Database::getTwitterAuthBearer()
+{
+    return getStringProperty("TWITTER_BEARER");
+}
 void Database::getMainWindowDimensions(int *x, int *y, int *width,int *height)
 {
     std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;

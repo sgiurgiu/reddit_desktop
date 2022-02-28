@@ -107,3 +107,7 @@ RedditClientProducer::RedditLiveThreadClientConnection RedditClientProducer::mak
 {
     return std::make_shared<RedditLiveThreadConnection>(executor,ssl_context);
 }
+RedditClientProducer::TwitterClientConnection RedditClientProducer::makeTwitterConnection(const std::string& twitterBearer)
+{
+    return std::make_shared<TwitterConnection>(executor,ssl_context,userAgent,twitterBearer);
+}

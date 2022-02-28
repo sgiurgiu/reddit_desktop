@@ -55,14 +55,19 @@ public:
     void addMediaDomains(const std::vector<std::string>& domains);
     void addMediaDomain(const std::string& domain);
     void removeMediaDomain(const std::string& domain);
+    void setTwitterAuthBearer(const std::string& bearer);
+    std::optional<std::string> getTwitterAuthBearer();
 private:
     void setBoolProperty(bool flag, const std::string& propName);
     bool getBoolProperty(const std::string& propName, bool defaultValue) const;
     void setIntProperty(int value, const std::string& propName);
     int getIntProperty(const std::string& propName, int defaultValue) const;
+    void setStringProperty(const std::string& value, const std::string& propName);
+    std::optional<std::string> getStringProperty(const std::string& propName) const;
     int getSchemaVersion();
     void incrementSchemaVersion(int version);
     std::filesystem::path getAppConfigFolder();
+
 private:
     std::unique_ptr<sqlite3,connection_deleter> db;
     static std::unique_ptr<Database> instance;

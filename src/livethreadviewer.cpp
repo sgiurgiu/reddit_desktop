@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "markdown/markdownnodetext.h"
 #include <cinttypes>
+#include "database.h"
 
 namespace
 {
@@ -56,27 +57,15 @@ void LiveThreadViewer::showLiveThread()
         ImGui::EndGroup();
         ImGui::SameLine();
         ImGui::BeginGroup();
-            if(event->event.embeds.empty())
+            if(event->embedsDisplay.empty())
             {
                 event->bodyRenderer.RenderMarkdown();
             }
             else
             {
-                for(const auto& live:event->event.embeds)
+                for(auto& live:event->embedsDisplay)
                 {
-                    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Medium_Big)]);
-                    ImGui::TextWrapped("%s",live.title.c_str());
-                    ImGui::PopFont();
-                    ImGui::TextWrapped("%s",live.description.c_str());
-                    if(!event->urlRenderer && !live.url.empty())
-                    {
-                        event->urlRenderer = std::make_unique<MarkdownNodeLink>(live.url,live.url);
-                        event->urlRenderer->AddChild(std::make_unique<MarkdownNodeText>(live.url.c_str(),live.url.size()));
-                    }
-                    if(event->urlRenderer)
-                    {
-                        event->urlRenderer->Render();
-                    }
+                    live.Render();
                 }
             }
         ImGui::EndGroup();
@@ -226,7 +215,7 @@ void LiveThreadViewer::strikeEvent(std::string id)
 void LiveThreadViewer::addLiveEvent(live_update_event event)
 {
     deleteEvent(event.name);
-    auto eventShared = std::make_shared<EventDisplay>(std::move(event));
+    auto eventShared = std::make_shared<EventDisplay>(std::move(event),client,uiExecutor);
     eventsMap[eventShared->event.name] = eventShared;
     liveEvents.insert(liveEvents.begin(),eventShared);
     while(liveEvents.size() > MAX_EVENTS_COUNT)
@@ -249,7 +238,7 @@ void LiveThreadViewer::loadLiveThreadContentsChildren(const nlohmann::json& chil
         {
             continue;
         }
-        auto eventShared = std::make_shared<EventDisplay>(child["data"]);
+        auto eventShared = std::make_shared<EventDisplay>(child["data"],client,uiExecutor);
         eventsMap[eventShared->event.name] = eventShared;
         liveEvents.push_back(eventShared);
         loadingPostContent = false;
@@ -282,4 +271,43 @@ void LiveThreadViewer::setErrorMessage(std::string errorMessage)
 void LiveThreadViewer::EventDisplay::updateHumanTime()
 {
     humanTime = Utils::getHumanReadableTimeAgo(event.created_utc, true);
+}
+LiveThreadViewer::EventEmbedDisplay::EventEmbedDisplay(live_update_event_embed embed,
+                                                       RedditClientProducer* client,
+                                                       const boost::asio::any_io_executor& uiExecutor):
+    embed(std::move(embed))
+{
+    if(!this->embed.url.empty())
+    {
+        urlRenderer = std::make_unique<MarkdownNodeLink>(this->embed.url,this->embed.url);
+        urlRenderer->AddChild(std::make_unique<MarkdownNodeText>(this->embed.url.c_str(),this->embed.url.size()));
+    }
+    if(this->embed.provider_name == "Twitter")
+    {
+        auto twitterBearerOpt = Database::getInstance()->getTwitterAuthBearer();
+        if(twitterBearerOpt)
+        {
+            twitterRenderer = std::make_shared<TwitterRenderer>(client,uiExecutor,twitterBearerOpt.value());
+            twitterRenderer->LoadTweet(this->embed.url);
+            twitterRenderer->SetThumbnail(this->embed.thumbnail_url);
+        }
+    }
+}
+void LiveThreadViewer::EventEmbedDisplay::Render()
+{
+    if(twitterRenderer)
+    {
+        twitterRenderer->Render();
+    }
+    else
+    {
+        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Medium_Big)]);
+        ImGui::TextWrapped("%s",embed.title.c_str());
+        ImGui::PopFont();
+        ImGui::TextWrapped("%s",embed.description.c_str());
+    }
+    if(urlRenderer)
+    {
+        urlRenderer->Render();
+    }
 }

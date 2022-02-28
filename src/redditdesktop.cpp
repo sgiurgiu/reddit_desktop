@@ -15,6 +15,7 @@ namespace
 constexpr auto OPENSUBREDDIT_WINDOW_POPUP_TITLE = "Open Subreddit";
 constexpr auto ERROR_WINDOW_POPUP_TITLE = "Error Occurred";
 constexpr auto MEDIA_DOMAINS_POPUP_TITLE = "Media Domains Management";
+constexpr auto TWITTER_API_BEARER_TITLE = "Twitter API Auth Bearer";
 }
 
 RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
@@ -354,11 +355,47 @@ void RedditDesktop::showDesktop()
         loggingWindow->showWindow(appFrameWidth,appFrameHeight);
     }
     showMediaDomainsManagementDialog();
+    showTwitterAPIAuthBearerDialog();
     aboutWindow.showAboutWindow(appFrameWidth,appFrameHeight);
 
     ImGui::PopFont();
 }
+void RedditDesktop::showTwitterAPIAuthBearerDialog()
+{
+    if(twitterAPIAuthBearerDialog)
+    {
+        twitterAPIAuthBearerDialog = false;
+        ImGui::OpenPopup(TWITTER_API_BEARER_TITLE);
+        auto twitterBearerOpt = Database::getInstance()->getTwitterAuthBearer();
+        if(twitterBearerOpt)
+        {
+            twitterBearer = twitterBearerOpt.value();
+        }
+    }
+    if(ImGui::BeginPopupModal(TWITTER_API_BEARER_TITLE,nullptr,ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::TextWrapped(
+            "Enter the Bearer Authorization token for Twitter API."
+            "Get yours from https://developer.twitter.com");
 
+        ImGui::Separator();
+        ImGui::InputText("Twitter API Bearer",&twitterBearer);
+
+        if (ImGui::Button("Save", ImVec2(120, 0)))
+        {
+            Database::getInstance()->setTwitterAuthBearer(twitterBearer);
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0)) ||
+                ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+}
 void RedditDesktop::showMediaDomainsManagementDialog()
 {
     if(mediaDomainsManagementDialog)
@@ -553,7 +590,10 @@ void RedditDesktop::showMainMenuBar()
             {
                 mediaDomainsManagementDialog = true;
             }
-
+            if(ImGui::MenuItem(TWITTER_API_BEARER_TITLE))
+            {
+                twitterAPIAuthBearerDialog = true;
+            }
             ImGui::EndMenu();
         }
         if(ImGui::BeginMenu("Windows"))

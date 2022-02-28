@@ -14,6 +14,7 @@
 #include "connections/redditmarkreplyreadconnection.h"
 #include "connections/redditsrsubscriptionconnection.h"
 #include "connections/redditlivethreadconnection.h"
+#include "connections/twitterconnection.h"
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <thread>
@@ -39,6 +40,7 @@ public:
     using RedditMarkReplyReadClientConnection = std::shared_ptr<RedditMarkReplyReadConnection>;
     using RedditSRSubscriptionClientConnection = std::shared_ptr<RedditSRSubscriptionConnection>;
     using RedditLiveThreadClientConnection = std::shared_ptr<RedditLiveThreadConnection>;
+    using TwitterClientConnection = std::shared_ptr<TwitterConnection>;
     RedditLoginClientConnection makeLoginClientConnection();
     RedditListingClientConnection makeListingClientConnection();
     RedditResourceClientConnection makeResourceClientConnection();
@@ -51,6 +53,7 @@ public:
     RedditMarkReplyReadClientConnection makeRedditMarkReplyReadClientConnection();
     RedditSRSubscriptionClientConnection makeRedditRedditSRSubscriptionClientConnection();
     RedditLiveThreadClientConnection makeRedditLiveThreadClientConnection();
+    TwitterClientConnection makeTwitterConnection(const std::string& twitterBearer);
     void setUserAgent(const std::string& userAgent);
 
 private:

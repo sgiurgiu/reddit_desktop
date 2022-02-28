@@ -466,4 +466,97 @@ struct live_update_event
     std::vector<live_update_event_embed> embeds;
 };
 
+struct tweet_public_metrics
+{
+    tweet_public_metrics(){}
+    tweet_public_metrics(const nlohmann::json& json);
+    int retweet_count = 0;
+    int reply_count = 0;
+    int like_count = 0;
+    int quote_count = 0;
+};
+struct tweet_attachments
+{
+    tweet_attachments(){}
+    tweet_attachments(const nlohmann::json& json);
+    std::vector<std::string> media_keys;
+};
+struct tweet_entities_url
+{
+    tweet_entities_url(){}
+    tweet_entities_url(const nlohmann::json& json);
+    int start = 0;
+    int end = 0;
+    std::string url;
+    std::string expanded_url;
+    std::string display_url;
+    std::vector<image_target> images;
+    int status = 0;
+    std::string title;
+    std::string description;
+    std::string unwound_url;
+};
+struct tweet_entities_annotation
+{
+    tweet_entities_annotation(){}
+    tweet_entities_annotation(const nlohmann::json& json);
+    int start = 0;
+    int end = 0;
+    double probability = 0.0;
+    std::string type;
+    std::string normalized_text;
+};
+
+struct tweet_entities
+{
+    tweet_entities(){}
+    tweet_entities(const nlohmann::json& json);
+    std::vector<tweet_entities_url> urls;
+    std::vector<tweet_entities_annotation> annotations;
+};
+struct tweet_media
+{
+    tweet_media(){}
+    tweet_media(const nlohmann::json& json);
+    int width = 0;
+    int height = 0;
+    std::string type;
+    std::string preview_image_url;
+    std::string url;
+    std::string media_key;
+};
+struct tweet_user
+{
+    tweet_user(){}
+    tweet_user(const nlohmann::json& json);
+    std::string id;
+    std::string name;
+    std::string username;
+    bool verified = false;
+};
+
+struct tweet_includes
+{
+    tweet_includes(){}
+    tweet_includes(const nlohmann::json& json);
+    std::vector<tweet_media> media;
+    std::vector<tweet_user> users;
+};
+
+struct tweet
+{
+    tweet(){}
+    tweet(const nlohmann::json& json);
+    std::string id;
+    bool possibly_sensitive = false;
+    std::string created_at;
+    std::string text;
+    std::string author_id;
+    std::string lang;
+    tweet_public_metrics public_metrics;
+    tweet_attachments attachments;
+    tweet_entities entities;
+    tweet_includes includes;
+};
+
 #endif // ENTITIES_H

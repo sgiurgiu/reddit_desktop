@@ -301,7 +301,7 @@ protected:
         }
     }
 
-    virtual void responseReceivedComplete() {};    
+    virtual void responseReceivedComplete() {};
     virtual void responseReceivedComplete(typename ClientResponse::user_type userData) {
         boost::ignore_unused(userData);
     };

@@ -79,6 +79,7 @@ set(REDDIT_CONNECTIONS_SRCS
     connections/redditmarkreplyreadconnection.cpp
     connections/redditsrsubscriptionconnection.cpp
     connections/redditlivethreadconnection.cpp
+    connections/twitterconnection.cpp
     )
 
 set(REDDIT_DESKTOP_LOG_SRCS
@@ -109,6 +110,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         globalresourcescache.cpp
         flairrenderer.cpp
         livethreadviewer.cpp
+        twitterrenderer.cpp
         )
 
 if(VCPKG_TOOLCHAIN)

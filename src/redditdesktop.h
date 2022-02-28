@@ -54,6 +54,7 @@ private:
     void addMessageContextWindow(std::string context);
     void arrangeWindowsGrid();
     void showMediaDomainsManagementDialog();
+    void showTwitterAPIAuthBearerDialog();
 private:
     boost::asio::any_io_executor uiExecutor;
     RedditClientProducer client;
@@ -98,6 +99,8 @@ private:
     std::string newMediaDomain;
     std::string selectedMediaDomain;
     AboutWindow aboutWindow;
+    bool twitterAPIAuthBearerDialog = false;
+    std::string twitterBearer;
 };
 
 

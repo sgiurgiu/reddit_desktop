@@ -8,10 +8,12 @@
 #include <unordered_map>
 #include "entities.h"
 #include "connections/redditlivethreadconnection.h"
+#include "connections/twitterconnection.h"
 #include "markdownrenderer.h"
 #include "markdown/markdownnodelink.h"
 #include "resizableglimage.h"
 #include <boost/asio/steady_timer.hpp>
+#include "twitterrenderer.h"
 
 class LiveThreadViewer : public std::enable_shared_from_this<LiveThreadViewer>
 {
@@ -38,18 +40,36 @@ private:
     const boost::asio::any_io_executor& uiExecutor;
     std::string errorMessage;
     bool loadingPostContent = false;
+    struct EventEmbedDisplay
+    {
+        EventEmbedDisplay(live_update_event_embed embed,
+                          RedditClientProducer* client,
+                          const boost::asio::any_io_executor& uiExecutor);
+        std::unique_ptr<MarkdownNodeLink> urlRenderer;
+        live_update_event_embed embed;
+        std::shared_ptr<TwitterRenderer> twitterRenderer;
+        void Render();
+    };
+
     struct EventDisplay
     {
-        EventDisplay(live_update_event event):event(std::move(event)),
+        EventDisplay(live_update_event event,
+                     RedditClientProducer* client,
+                     const boost::asio::any_io_executor& uiExecutor):
+            event(std::move(event)),
             bodyRenderer(this->event.body)
         {
             updateHumanTime();
+            for(const auto& em : this->event.embeds)
+            {
+                embedsDisplay.emplace_back(em,client,uiExecutor);
+            }
         }
 
         std::string humanTime;
+        std::vector<EventEmbedDisplay> embedsDisplay;
         live_update_event event;
         MarkdownRenderer bodyRenderer;
-        std::unique_ptr<MarkdownNodeLink> urlRenderer;
         void updateHumanTime();
     };
 
@@ -61,6 +81,7 @@ private:
     float timeTextWidth = 0.f;
     int64_t activityCount = 0;
     ResizableGLImagePtr strickenImage;
+
 };
 
 #endif // LIVETHREADVIEWER_H
