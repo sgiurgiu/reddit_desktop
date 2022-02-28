@@ -187,6 +187,11 @@ void LiveThreadViewer::updateEventEmbeds(std::string id,std::vector<live_update_
 {
     if(eventsMap.contains(id))
     {
+        eventsMap[id]->embedsDisplay.clear();
+        for(const auto& em : embeds)
+        {
+            eventsMap[id]->embedsDisplay.emplace_back(em,client,uiExecutor);
+        }
         eventsMap[id]->event.embeds = std::move(embeds);
     }
 }
