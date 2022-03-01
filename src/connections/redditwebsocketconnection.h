@@ -158,27 +158,27 @@ protected:
             onError(ec);
             return;
         }
+        stream.text(true);
         readMessage();
     }
 
     virtual void readMessage()
-    {
-        readBuffer.clear();
+    {        
         stream.async_read(
             readBuffer,
             boost::beast::bind_front_handler(
                 &RedditWebSocketConnection::onRead,this->shared_from_this()));
     }
 
-    virtual void onRead(boost::beast::error_code ec,std::size_t bytesTransferred)
+    virtual void onRead(boost::beast::error_code ec,std::size_t)
     {
-        boost::ignore_unused(bytesTransferred);
         if(ec)
         {
             onError(ec);
             return;
         }
         messageReceived();
+        readBuffer = {};
         readMessage();
     }
 

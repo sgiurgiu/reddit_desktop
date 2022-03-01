@@ -8,6 +8,7 @@
 #include "markdown/markdownnodetext.h"
 #include <cinttypes>
 #include "database.h"
+#include <spdlog/spdlog.h>
 
 namespace
 {
@@ -185,8 +186,10 @@ void LiveThreadViewer::updateActivityCount(int64_t count)
 }
 void LiveThreadViewer::updateEventEmbeds(std::string id,std::vector<live_update_event_embed> embeds)
 {
+    spdlog::debug("updating event embeds on : {} ", id );
     if(eventsMap.contains(id))
     {
+        spdlog::debug("found event {}, updating embeds ", id );
         eventsMap[id]->embedsDisplay.clear();
         for(const auto& em : embeds)
         {
@@ -194,11 +197,17 @@ void LiveThreadViewer::updateEventEmbeds(std::string id,std::vector<live_update_
         }
         eventsMap[id]->event.embeds = std::move(embeds);
     }
+    else
+    {
+        spdlog::debug("NOT FOUND event {} to update embeds", id );
+    }
 }
 void LiveThreadViewer::deleteEvent(std::string id)
 {
+    spdlog::debug("deleting event : {} ", id );
     if(eventsMap.contains(id))
     {
+        spdlog::debug("found event {}, deleting ", id );
         eventsMap.erase(id);
         auto it = std::find_if(liveEvents.begin(),liveEvents.end(),[id](const auto& event){
             return event->event.name == id;
@@ -208,25 +217,41 @@ void LiveThreadViewer::deleteEvent(std::string id)
             liveEvents.erase(it);
         }
     }
+    else
+    {
+        spdlog::debug("NOT FOUND event to delete {}", id );
+    }
 }
 void LiveThreadViewer::strikeEvent(std::string id)
 {
+    spdlog::debug("striking event : {} ", id );
     if(eventsMap.contains(id))
     {
+        spdlog::debug("found event {}, striking ", id );
         eventsMap[id]->event.stricken = true;
+    }
+    else
+    {
+        spdlog::debug("NOT FOUND event to strike {}", id );
     }
 }
 
 void LiveThreadViewer::addLiveEvent(live_update_event event)
 {
-    deleteEvent(event.name);
-    auto eventShared = std::make_shared<EventDisplay>(std::move(event),client,uiExecutor);
-    eventsMap[eventShared->event.name] = eventShared;
-    liveEvents.insert(liveEvents.begin(),eventShared);
-    while(liveEvents.size() > MAX_EVENTS_COUNT)
+    spdlog::debug("adding event : {} ", event.name );
+    if(!eventsMap.contains(event.name))
     {
-        eventsMap.erase(liveEvents.back()->event.name);
-        liveEvents.pop_back();
+        auto eventShared = std::make_shared<EventDisplay>(std::move(event),client,uiExecutor);
+        eventsMap[eventShared->event.name] = eventShared;
+        liveEvents.insert(liveEvents.begin(),eventShared);
+        while(liveEvents.size() > MAX_EVENTS_COUNT)
+        {
+            deleteEvent(liveEvents.back()->event.name);
+        }
+    }
+    else
+    {
+        spdlog::debug("already have event: {} , not adding it again", event.name );
     }
 }
 void LiveThreadViewer::loadLiveThreadAbout(live_update_event_about liveEventAbout)
@@ -306,7 +331,7 @@ void LiveThreadViewer::EventEmbedDisplay::Render()
     }
     else
     {
-        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Medium_Big)]);
+        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Bold)]);
         ImGui::TextWrapped("%s",embed.title.c_str());
         ImGui::PopFont();
         ImGui::TextWrapped("%s",embed.description.c_str());

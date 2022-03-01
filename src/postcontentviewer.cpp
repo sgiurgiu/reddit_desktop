@@ -817,65 +817,17 @@ void PostContentViewer::showPostContent()
 
     if(display_image)
     {
-        if(!display_image->isResized)
-        {
-            float width = (float)display_image->width;
-            float height = (float)display_image->height;
-            auto availableWidth = ImGui::GetContentRegionAvail().x * 0.9f;
-            if(availableWidth > 100 && width > availableWidth)
-            {
-                //scale the picture
-                float scale = availableWidth / width;
-                width = availableWidth;
-                height = scale * height;
-            }
-            float maxPictureHeight = displayMode.h * 0.5f;
-            if(maxPictureHeight > 100 && height > maxPictureHeight)
-            {
-                float scale = maxPictureHeight / height;
-                height = maxPictureHeight;
-                width = scale * width;
-            }
-            width = std::max(100.f,width);
-            height = std::max(100.f,height);
-            display_image->resizedWidth = width;
-            display_image->resizedHeight = height;
-            display_image->pictureRatio = width / height;
-            display_image->isResized = true;
-            if(gif)
-            {
-                for(auto&& img:gif->images)
-                {
-                    img->img->resizedWidth = width;
-                    img->img->resizedHeight = height;
-                    img->img->pictureRatio = width / height;
-                    img->img->isResized = true;
-                }
-            }
-        }
+        ImGuiResizableGLImage(display_image,displayMode.h * 0.5f);
 
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-        ImGui::ImageButton((void*)(intptr_t)display_image->textureId,
-                           ImVec2(display_image->resizedWidth,display_image->resizedHeight),ImVec2(0, 0),ImVec2(1,1),0);
-        ImGui::PopStyleColor(3);
-
-        if(ImGui::IsWindowFocused(ImGuiFocusedFlags_RootWindow) &&
-                ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(),ImGui::GetItemRectMax()) &&
-                ImGui::IsMouseDragging(ImGuiMouseButton_Left)
-                )
+        if(gif && !display_image->isResized)
         {
-            //keep same aspect ratio
-            auto x = ImGui::GetIO().MouseDelta.x;
-            auto y = ImGui::GetIO().MouseDelta.y;
-            auto new_width = display_image->resizedWidth + x;
-            auto new_height = display_image->resizedHeight + y;
-            auto new_area = new_width * new_height;
-            new_width = std::sqrt(display_image->pictureRatio * new_area);
-            new_height = new_area / new_width;
-            display_image->resizedWidth = std::max(100.f,new_width);
-            display_image->resizedHeight = std::max(100.f,new_height);
+            for(auto&& img:gif->images)
+            {
+                img->img->resizedWidth = display_image->resizedWidth;
+                img->img->resizedHeight = display_image->resizedHeight;
+                img->img->pictureRatio = display_image->pictureRatio;
+                img->img->isResized = true;
+            }
         }
         if(gif)
         {

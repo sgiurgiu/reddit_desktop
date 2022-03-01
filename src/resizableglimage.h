@@ -26,4 +26,6 @@ public:
 using ResizableGLImagePtr = std::unique_ptr<ResizableGLImage>;
 using ResizableGLImageSharedPtr = std::shared_ptr<ResizableGLImage>;
 
+void ImGuiResizableGLImage(ResizableGLImage* img, float maxPictureHeight);
+
 #endif // RESIZABLEGLIMAGE_H

@@ -1358,6 +1358,22 @@ tweet_entities_annotation::tweet_entities_annotation(const nlohmann::json& json)
         normalized_text = json["normalized_text"].get<std::string>();
     }
 }
+tweet_entities_hashtag::tweet_entities_hashtag(const nlohmann::json& json)
+{
+    if(json.contains("start") && json["start"].is_number())
+    {
+        start = json["start"].get<int>();
+    }
+    if(json.contains("end") && json["end"].is_number())
+    {
+        end = json["end"].get<int>();
+    }
+    if(json.contains("tag") && json["tag"].is_string())
+    {
+        tag = json["tag"].get<std::string>();
+    }
+}
+
 tweet_entities::tweet_entities(const nlohmann::json& json)
 {
     if(json.contains("urls") && json["urls"].is_array())
@@ -1372,6 +1388,13 @@ tweet_entities::tweet_entities(const nlohmann::json& json)
         for(const auto& annotation:json["annotations"])
         {
             annotations.emplace_back(annotation);
+        }
+    }
+    if(json.contains("hashtags") && json["hashtags"].is_array())
+    {
+        for(const auto& hashtag:json["hashtags"])
+        {
+            hashtags.emplace_back(hashtag);
         }
     }
 }

@@ -506,6 +506,15 @@ struct tweet_entities_annotation
     std::string type;
     std::string normalized_text;
 };
+struct tweet_entities_hashtag
+{
+    tweet_entities_hashtag(){}
+    tweet_entities_hashtag(const nlohmann::json& json);
+    int start = 0;
+    int end = 0;
+    std::string tag;
+};
+
 
 struct tweet_entities
 {
@@ -513,6 +522,7 @@ struct tweet_entities
     tweet_entities(const nlohmann::json& json);
     std::vector<tweet_entities_url> urls;
     std::vector<tweet_entities_annotation> annotations;
+    std::vector<tweet_entities_hashtag> hashtags;
 };
 struct tweet_media
 {
