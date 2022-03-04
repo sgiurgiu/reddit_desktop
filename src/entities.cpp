@@ -1289,7 +1289,7 @@ tweet_attachments::tweet_attachments(const nlohmann::json& json)
         }
     }
 }
-tweet_entities_url::tweet_entities_url(const nlohmann::json& json)
+tweet_entity::tweet_entity(const nlohmann::json& json)
 {
     if(json.contains("start") && json["start"].is_number())
     {
@@ -1299,6 +1299,9 @@ tweet_entities_url::tweet_entities_url(const nlohmann::json& json)
     {
         end = json["end"].get<int>();
     }
+}
+tweet_entity_url::tweet_entity_url(const nlohmann::json& json):tweet_entity(json)
+{
     if(json.contains("url") && json["url"].is_string())
     {
         url = json["url"].get<std::string>();
@@ -1335,16 +1338,21 @@ tweet_entities_url::tweet_entities_url(const nlohmann::json& json)
         unwound_url = json["unwound_url"].get<std::string>();
     }
 }
-tweet_entities_annotation::tweet_entities_annotation(const nlohmann::json& json)
+std::string tweet_entity_url::GetMarkdown() const
 {
-    if(json.contains("start") && json["start"].is_number())
+    std::string display = display_url;
+    if(display.empty())
     {
-        start = json["start"].get<int>();
+        display = expanded_url;
     }
-    if(json.contains("end") && json["end"].is_number())
+    if(display.empty())
     {
-        end = json["end"].get<int>();
+        display = url;
     }
+    return "["+display+"]("+(expanded_url.empty() ? url : expanded_url)+")";
+}
+tweet_entity_annotation::tweet_entity_annotation(const nlohmann::json& json):tweet_entity(json)
+{
     if(json.contains("probability") && json["probability"].is_number())
     {
         probability = json["probability"].get<double>();
@@ -1358,20 +1366,20 @@ tweet_entities_annotation::tweet_entities_annotation(const nlohmann::json& json)
         normalized_text = json["normalized_text"].get<std::string>();
     }
 }
-tweet_entities_hashtag::tweet_entities_hashtag(const nlohmann::json& json)
+std::string tweet_entity_annotation::GetMarkdown() const
 {
-    if(json.contains("start") && json["start"].is_number())
-    {
-        start = json["start"].get<int>();
-    }
-    if(json.contains("end") && json["end"].is_number())
-    {
-        end = json["end"].get<int>();
-    }
+    return normalized_text;
+}
+tweet_entity_hashtag::tweet_entity_hashtag(const nlohmann::json& json):tweet_entity(json)
+{
     if(json.contains("tag") && json["tag"].is_string())
     {
         tag = json["tag"].get<std::string>();
     }
+}
+std::string tweet_entity_hashtag::GetMarkdown() const
+{
+    return "[#"+tag+"](https://twitter.com/hashtag/"+tag+")";
 }
 
 tweet_entities::tweet_entities(const nlohmann::json& json)
@@ -1461,48 +1469,78 @@ tweet_includes::tweet_includes(const nlohmann::json& json)
             users.emplace_back(m);
         }
     }
+    if(json.contains("tweets") && json["tweets"].is_array())
+    {
+        for(const auto& t:json["tweets"])
+        {
+            auto tw = std::make_shared<tweet>();
+            tw->load(t);
+            tweets.push_back(std::move(tw));
+        }
+    }
+}
+tweet_referenced_tweet::tweet_referenced_tweet(const nlohmann::json& json)
+{
+    if(json.contains("id") && json["id"].is_string())
+    {
+        id = json["id"].get<std::string>();
+    }
+    if(json.contains("type") && json["type"].is_string())
+    {
+        type = json["type"].get<std::string>();
+    }
+}
+void tweet::load(const nlohmann::json& data)
+{
+    if(data.contains("possibly_sensitive") && data["possibly_sensitive"].is_boolean())
+    {
+        possibly_sensitive = data["possibly_sensitive"].get<bool>();
+    }
+    if(data.contains("id") && data["id"].is_string())
+    {
+        id = data["id"].get<std::string>();
+    }
+    if(data.contains("created_at") && data["created_at"].is_string())
+    {
+        created_at = data["created_at"].get<std::string>();
+    }
+    if(data.contains("text") && data["text"].is_string())
+    {
+        text = data["text"].get<std::string>();
+    }
+    if(data.contains("author_id") && data["author_id"].is_string())
+    {
+        author_id = data["author_id"].get<std::string>();
+    }
+    if(data.contains("lang") && data["lang"].is_string())
+    {
+        lang = data["lang"].get<std::string>();
+    }
+    if(data.contains("public_metrics") && data["public_metrics"].is_object())
+    {
+        public_metrics = tweet_public_metrics{data["public_metrics"]};
+    }
+    if(data.contains("attachments") && data["attachments"].is_object())
+    {
+        attachments = tweet_attachments{data["attachments"]};
+    }
+    if(data.contains("entities") && data["entities"].is_object())
+    {
+        entities = tweet_entities{data["entities"]};
+    }
+    if(data.contains("referenced_tweets") && data["referenced_tweets"].is_array())
+    {
+        for(const auto& t : data["referenced_tweets"])
+        {
+            referenced_tweets.emplace_back(t);
+        }
+    }
 }
 tweet::tweet(const nlohmann::json& json)
 {
     if(json.contains("data") && json["data"].is_object())
     {
-        const auto& data = json["data"];
-        if(data.contains("possibly_sensitive") && data["possibly_sensitive"].is_boolean())
-        {
-            possibly_sensitive = data["possibly_sensitive"].get<bool>();
-        }
-        if(data.contains("id") && data["id"].is_string())
-        {
-            id = data["id"].get<std::string>();
-        }
-        if(data.contains("created_at") && data["created_at"].is_string())
-        {
-            created_at = data["created_at"].get<std::string>();
-        }
-        if(data.contains("text") && data["text"].is_string())
-        {
-            text = data["text"].get<std::string>();
-        }
-        if(data.contains("author_id") && data["author_id"].is_string())
-        {
-            author_id = data["author_id"].get<std::string>();
-        }
-        if(data.contains("lang") && data["lang"].is_string())
-        {
-            lang = data["lang"].get<std::string>();
-        }
-        if(data.contains("public_metrics") && data["public_metrics"].is_object())
-        {
-            public_metrics = tweet_public_metrics{data["public_metrics"]};
-        }
-        if(data.contains("attachments") && data["attachments"].is_object())
-        {
-            attachments = tweet_attachments{data["attachments"]};
-        }
-        if(data.contains("entities") && data["entities"].is_object())
-        {
-            entities = tweet_entities{data["entities"]};
-        }
+        load(json["data"]);
     }
     if(json.contains("includes") && json["includes"].is_object())
     {

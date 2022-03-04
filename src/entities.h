@@ -481,12 +481,21 @@ struct tweet_attachments
     tweet_attachments(const nlohmann::json& json);
     std::vector<std::string> media_keys;
 };
-struct tweet_entities_url
+struct tweet_entity
 {
-    tweet_entities_url(){}
-    tweet_entities_url(const nlohmann::json& json);
+    tweet_entity(){}
+    tweet_entity(const nlohmann::json& json);
+    virtual ~tweet_entity() = default;
+    virtual std::string GetMarkdown() const = 0;
     int start = 0;
     int end = 0;
+};
+
+struct tweet_entity_url : public tweet_entity
+{
+    tweet_entity_url(){}
+    tweet_entity_url(const nlohmann::json& json);
+    std::string GetMarkdown() const override;
     std::string url;
     std::string expanded_url;
     std::string display_url;
@@ -496,33 +505,30 @@ struct tweet_entities_url
     std::string description;
     std::string unwound_url;
 };
-struct tweet_entities_annotation
+struct tweet_entity_annotation: public tweet_entity
 {
-    tweet_entities_annotation(){}
-    tweet_entities_annotation(const nlohmann::json& json);
-    int start = 0;
-    int end = 0;
+    tweet_entity_annotation(){}
+    tweet_entity_annotation(const nlohmann::json& json);
+    std::string GetMarkdown() const override;
     double probability = 0.0;
     std::string type;
     std::string normalized_text;
 };
-struct tweet_entities_hashtag
+struct tweet_entity_hashtag: public tweet_entity
 {
-    tweet_entities_hashtag(){}
-    tweet_entities_hashtag(const nlohmann::json& json);
-    int start = 0;
-    int end = 0;
+    tweet_entity_hashtag(){}
+    tweet_entity_hashtag(const nlohmann::json& json);
+    std::string GetMarkdown() const override;
     std::string tag;
 };
-
 
 struct tweet_entities
 {
     tweet_entities(){}
     tweet_entities(const nlohmann::json& json);
-    std::vector<tweet_entities_url> urls;
-    std::vector<tweet_entities_annotation> annotations;
-    std::vector<tweet_entities_hashtag> hashtags;
+    std::vector<tweet_entity_url> urls;
+    std::vector<tweet_entity_annotation> annotations;
+    std::vector<tweet_entity_hashtag> hashtags;
 };
 struct tweet_media
 {
@@ -544,19 +550,28 @@ struct tweet_user
     std::string username;
     bool verified = false;
 };
-
+struct tweet;
 struct tweet_includes
 {
     tweet_includes(){}
     tweet_includes(const nlohmann::json& json);
     std::vector<tweet_media> media;
     std::vector<tweet_user> users;
+    std::vector<std::shared_ptr<tweet>> tweets;
+};
+struct tweet_referenced_tweet
+{
+    tweet_referenced_tweet(){}
+    tweet_referenced_tweet(const nlohmann::json& json);
+    std::string id;
+    std::string type;
 };
 
 struct tweet
 {
     tweet(){}
     tweet(const nlohmann::json& json);
+    void load(const nlohmann::json& data);
     std::string id;
     bool possibly_sensitive = false;
     std::string created_at;
@@ -567,6 +582,7 @@ struct tweet
     tweet_attachments attachments;
     tweet_entities entities;
     tweet_includes includes;
+    std::vector<tweet_referenced_tweet> referenced_tweets;
 };
 
 #endif // ENTITIES_H

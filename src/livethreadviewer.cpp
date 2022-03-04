@@ -339,5 +339,6 @@ void LiveThreadViewer::EventEmbedDisplay::Render()
     if(urlRenderer)
     {
         urlRenderer->Render();
-    }
+        ImGui::NewLine();
+    }    
 }
