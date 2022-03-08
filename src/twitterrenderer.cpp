@@ -140,9 +140,10 @@ void TwitterRenderer::loadTweetImages()
                                                           resource_response response){
                 auto self = weak.lock();
                 if(!self) return;
-                size_t imageIndex = std::any_cast<size_t>(response.userData);
-                if(!ec && response.status == 200)
+
+                if(!ec && response.status == 200 && response.userData.has_value() && response.userData.type() == typeid(size_t))
                 {
+                    size_t imageIndex = std::any_cast<size_t>(response.userData);
                     int width, height, channels;
                     auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
                     boost::asio::post(self->uiExecutor,std::bind(&TwitterRenderer::addTweetImage,self,

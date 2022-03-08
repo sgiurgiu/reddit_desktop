@@ -707,7 +707,6 @@ void CommentsWindow::voteParentPost(Voted vote)
         {
             auto self = weak.lock();
             if(!self) return;
-            Voted voted = std::any_cast<Voted>(response.userData);
 
             if(ec)
             {
@@ -717,8 +716,9 @@ void CommentsWindow::voteParentPost(Voted vote)
             {
                 boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::setErrorMessage,self,std::move(response.body)));
             }
-            else
+            else if(response.userData.has_value() && response.userData.type() == typeid(Voted))
             {
+                Voted voted = std::any_cast<Voted>(response.userData);
                 boost::asio::post(self->uiExecutor,std::bind(&CommentsWindow::updatePostVote,self, voted));
             }
         });
@@ -743,7 +743,7 @@ void CommentsWindow::voteComment(DisplayComment* c,Voted vote)
         {
             auto self = weak.lock();
             if (!self) return;
-            auto p = std::any_cast<std::pair<std::string, Voted>>(response.userData);
+
             if (ec)
             {
                 boost::asio::post(self->uiExecutor, std::bind(&CommentsWindow::setErrorMessage, self, ec.message()));
@@ -752,8 +752,9 @@ void CommentsWindow::voteComment(DisplayComment* c,Voted vote)
             {
                 boost::asio::post(self->uiExecutor, std::bind(&CommentsWindow::setErrorMessage, self, std::move(response.body)));
             }
-            else
+            else if(response.userData.has_value() && response.userData.type() == typeid(std::pair<std::string, Voted>))
             {
+                auto p = std::any_cast<std::pair<std::string, Voted>>(response.userData);
                 boost::asio::post(self->uiExecutor, std::bind(&CommentsWindow::updateCommentVote, self, std::move(p.first), p.second));
             }
         });

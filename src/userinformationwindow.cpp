@@ -56,10 +56,13 @@ void UserInformationWindow::loadMessages()
                           {
                               for(const auto& msgResponse : things)
                               {
-                                  boost::asio::post(self->uiExecutor,
-                                                    std::bind(&UserInformationWindow::loadMessageResponse,
-                                                    self,std::move(msgResponse),
-                                                    std::any_cast<ParentMessageResponseData>(response.userData)));
+                                  if(response.userData.has_value() && response.userData.type() == typeid(ParentMessageResponseData))
+                                  {
+                                      boost::asio::post(self->uiExecutor,
+                                                        std::bind(&UserInformationWindow::loadMessageResponse,
+                                                        self,std::move(msgResponse),
+                                                        std::any_cast<ParentMessageResponseData>(response.userData)));
+                                  }
                               }
                           }
                        }
@@ -88,7 +91,7 @@ void UserInformationWindow::loadMessages()
                    boost::asio::post(self->uiExecutor,
                                  std::bind(&UserInformationWindow::setErrorMessage,self,response.body));
                }
-               else
+               else if(response.userData.has_value() && response.userData.type() == typeid(MarkMessagesType))
                {
 
                     boost::asio::post(self->uiExecutor,
@@ -150,7 +153,7 @@ void UserInformationWindow::loadMessages(const std::string& kind)
                     {
                         boost::asio::post(self->uiExecutor,std::bind(&UserInformationWindow::setErrorMessage,self,std::move(response.body)));
                     }
-                    else
+                    else if(response.userData.has_value() && response.userData.type() == typeid(std::string))
                     {
                         boost::asio::post(self->uiExecutor,std::bind(&UserInformationWindow::loadListingsFromConnection,
                                                                      self,std::move(response.data),
@@ -262,7 +265,6 @@ void UserInformationWindow::voteComment(const std::string& kind, DisplayMessage&
         {
             auto self = weak.lock();
             if (!self) return;
-            std::tuple<std::string, std::string, Voted> voted = std::any_cast<std::tuple<std::string, std::string, Voted>>(response.userData);
 
             if (ec)
             {
@@ -272,8 +274,9 @@ void UserInformationWindow::voteComment(const std::string& kind, DisplayMessage&
             {
                 boost::asio::post(self->uiExecutor, std::bind(&UserInformationWindow::setErrorMessage, self, std::move(response.body)));
             }
-            else
+            else if(response.userData.has_value() && response.userData.type() == typeid(std::tuple<std::string, std::string, Voted>))
             {
+                auto voted = std::any_cast<std::tuple<std::string, std::string, Voted>>(response.userData);
                 boost::asio::post(self->uiExecutor, std::bind(&UserInformationWindow::updateCommentVote, self,
                                                               std::get<0>(voted), std::get<1>(voted),std::get<2>(voted)));
             }

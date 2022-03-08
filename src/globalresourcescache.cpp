@@ -62,9 +62,14 @@ RedditClientProducer::RedditResourceClientConnection
     resourceConnection->connectionCompleteHandler(
                 [uiExecutor](const boost::system::error_code& ec,
                              resource_response response){
-        std::string id = std::any_cast<std::string>(response.userData);
+        std::string id = "";
+        if(response.userData.has_value() && response.userData.type() == typeid(std::string))
+        {
+            id = std::any_cast<std::string>(response.userData);
+        }
         if(!ec)
         {
+
             int width, height, channels;
             auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
 

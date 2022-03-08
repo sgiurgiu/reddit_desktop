@@ -206,8 +206,11 @@ void SubredditWindow::setupConnections()
         {
             auto self = weak.lock();
             if(!self) return;
-            std::string postName = std::any_cast<std::string>(response.userData);
-
+            std::string postName = "";
+            if(response.userData.has_value() && response.userData.type() == typeid(std::string))
+            {
+                postName = std::any_cast<std::string>(response.userData);
+            }
             if(ec)
             {
                 auto message = "Cannot load thumbnail:" + ec.message();
@@ -218,8 +221,9 @@ void SubredditWindow::setupConnections()
                 auto message = "Cannot load thumbnail:" + response.body;
                 boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,std::move(postName),std::move(message)));
             }
-            else if(response.status == 200)
+            else if(response.status == 200 )
             {
+
                 int width, height, channels;
                 auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
                 boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,self,
@@ -236,7 +240,7 @@ void SubredditWindow::setupConnections()
         {
             auto self = weak.lock();
             if (!self) return;
-            auto p = std::any_cast<std::pair<std::string, Voted>>(response.userData);
+
 
             if (ec)
             {
@@ -246,8 +250,9 @@ void SubredditWindow::setupConnections()
             {
                 boost::asio::post(self->uiExecutor, std::bind(&SubredditWindow::setErrorMessage, self, std::move(response.body)));
             }
-            else
+            else if(response.userData.has_value() && response.userData.type() == typeid(std::pair<std::string, Voted>))
             {
+                auto p = std::any_cast<std::pair<std::string, Voted>>(response.userData);
                 boost::asio::post(self->uiExecutor, std::bind(&SubredditWindow::updatePostVote, self, std::move(p.first), p.second));
             }
         });
