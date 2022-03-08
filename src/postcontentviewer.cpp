@@ -89,10 +89,22 @@ void PostContentViewer::loadContent(post_ptr currentPost)
             this->currentPost->postHint.empty()  &&
             this->currentPost->url.starts_with("https://www.reddit.com/live/"))
     {
-        isLivePost = true;
         liveThreadViewer = std::make_shared<LiveThreadViewer>(client, token, uiExecutor);
         liveThreadViewer->loadContent(this->currentPost->url);
         return;
+    }
+
+    if(this->currentPost->domain == "twitter.com" &&
+            this->currentPost->postHint == "link" &&
+            this->currentPost->url.starts_with("https://twitter.com/") &&
+            this->currentPost->url.find("/status/") != std::string::npos)
+    {
+        auto twitterBearerOpt = Database::getInstance()->getTwitterAuthBearer();
+        if(twitterBearerOpt)
+        {
+            twitterRenderer = std::make_shared<TwitterRenderer>(client,uiExecutor,twitterBearerOpt.value());
+            twitterRenderer->LoadTweet(this->currentPost->url);
+        }
     }
 
     bool isMediaPost = std::find(mediaDomains.begin(),mediaDomains.end(),currentPost->domain) != mediaDomains.end();
@@ -845,9 +857,13 @@ void PostContentViewer::showPostContent()
         }
     }
 
-    if(isLivePost && liveThreadViewer)
+    if(liveThreadViewer)
     {
         liveThreadViewer->showLiveThread();
+    }
+    if(twitterRenderer)
+    {
+        twitterRenderer->Render();
     }
     if(markdown)
     {

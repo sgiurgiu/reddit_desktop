@@ -11,6 +11,7 @@
 #include "markdownrenderer.h"
 #include "utils.h"
 #include "livethreadviewer.h"
+#include "twitterrenderer.h"
 
 struct mpv_handle;
 struct mpv_render_context;
@@ -123,8 +124,8 @@ private:
     bool mediaLoop = false;
     bool useYoutubeDlder = false;
     std::vector<std::string> mediaDomains;
-    bool isLivePost = false;
     std::shared_ptr<LiveThreadViewer> liveThreadViewer;
+    std::shared_ptr<TwitterRenderer> twitterRenderer;
 };
 
 #endif // POSTCONTENTVIEWER_H
