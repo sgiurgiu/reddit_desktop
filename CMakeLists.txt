@@ -1,10 +1,4 @@
 cmake_minimum_required(VERSION 3.18)
-project(reddit_desktop LANGUAGES C CXX
-    VERSION 0.0.1
-    DESCRIPTION "Reddit desktop"
-    )
-
-include("${CMAKE_SOURCE_DIR}/cmake/CMakeCCache.txt")
 
 option(ENABLE_TESTS "Build tests" ON)
 option(ASAN_ENABLE "Build with sanitization on" OFF)
@@ -15,6 +9,18 @@ if(ENABLE_M4DC AND ENABLE_CMARK)
     # TODO: Make this a runtime choice not a compile time one
     message(ERROR "Please only choose one of cmark or m4dc markdown parsers")
 endif()
+
+if(ENABLE_TESTS)
+  list(APPEND VCPKG_MANIFEST_FEATURES "tests")
+endif()
+
+project(reddit_desktop LANGUAGES C CXX
+    VERSION 0.0.1
+    DESCRIPTION "Reddit desktop"
+    )
+
+include("${CMAKE_SOURCE_DIR}/cmake/CMakeCCache.txt")
+
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
@@ -48,6 +54,10 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
+if(UNIX AND NOT APPLE)
+    set(LINUX TRUE) #wrong here, what if we're BSD?
+endif()
+
 if(MSVC)
     set(WIN32_APP_OPTIONS WIN32)
 endif()
@@ -64,17 +74,20 @@ find_package(Threads REQUIRED)
 find_package(SDL2 CONFIG REQUIRED)
 find_package(Boost 1.74 REQUIRED system filesystem program_options)
 find_package(OpenSSL REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
+find_package(freetype CONFIG REQUIRED)
+find_library(GUMBO_LIB gumbo REQUIRED)
 
-if(VCPKG_TOOLCHAIN)
+if(WIN32)
     find_library(LIBMPV mpv ${LIBMPV_DIR})
-    find_package(freetype CONFIG REQUIRED)
-    #ADD IBUS TO VCPKG
-else()
+endif()
+if(LINUX)
     #set(ENV{PKG_CONFIG_PATH} "/usr/local/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
-    pkg_check_modules(FREETYPE REQUIRED IMPORTED_TARGET freetype2)
-    pkg_check_modules(IBUS REQUIRED IMPORTED_TARGET ibus-1.0)
+#    pkg_check_modules(FREETYPE REQUIRED IMPORTED_TARGET freetype2)
+#    pkg_check_modules(IBUS REQUIRED IMPORTED_TARGET ibus-1.0)
 endif()
 
 
@@ -83,12 +96,6 @@ if(ENABLE_CMARK)
     set(CMARK_SHARED OFF)
     set(CMARK_TESTS OFF)
     add_subdirectory(external/cmark-gfm)
-endif()
-add_subdirectory(external/spdlog)
-add_subdirectory(external/fmt)
-
-if(UNIX AND NOT APPLE)
-    set(LINUX TRUE) #wrong here, what if we're BSD?
 endif()
 
 if(LINUX)

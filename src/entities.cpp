@@ -304,7 +304,7 @@ post::post(const nlohmann::json& json)
     if(json.contains("num_comments") && json["num_comments"].is_number())
     {
         commentsCount = json["num_comments"].get<int>();
-        commentsText = fmt::format(reinterpret_cast<const char*>(ICON_FA_COMMENTS " {} comments"),commentsCount);
+        commentsText = fmt::format("{} {} comments",reinterpret_cast<const char*>(ICON_FA_COMMENTS), commentsCount);
     }
     if(json.contains("subreddit_name_prefixed") && json["subreddit_name_prefixed"].is_string())
     {

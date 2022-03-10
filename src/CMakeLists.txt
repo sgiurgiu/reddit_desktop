@@ -20,8 +20,6 @@ set(BOOST_URL_SRC ../external/url/src/src.cpp)
 
 set(SQLITE_SRC sqlite/sqlite3.c)
 
-file(GLOB_RECURSE GUMBO_PARSER_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/../external/gumbo-parser/src/*.c")
-
 if(ENABLE_M4DC)
     set(MD4C_SRC ../external/md4c/src/md4c.c)
 endif()
@@ -113,7 +111,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         twitterrenderer.cpp
         )
 
-if(VCPKG_TOOLCHAIN)
+if(WIN32)
     list(APPEND REDDIT_DESKTOP_SRCS win/getopt.c)
 endif()
 
@@ -127,7 +125,6 @@ set(EXECUTABLE_SOURCES
     ${IMGUI_SRCS}
     ${SQLITE_SRC}
     ${BOOST_URL_SRC}
-    ${GUMBO_PARSER_SRCS}
     ${MARKDOWN_RENDERER_SRCS}
     ${REDDIT_CONNECTIONS_SRCS}
     ${REDDIT_DESKTOP_LOG_SRCS}
@@ -140,26 +137,27 @@ endif()
 
 add_executable(${EXECUTABLE_NAME} ${EXECUTABLE_SOURCES})
 
-#Disable warnings for glad, gumbo, katana and sqlite, they're thousands and I really don't care about them
-set_source_files_properties(${GLAD_SRCS}
-    ${GUMBO_PARSER_SRCS} ${KATANA_PARSER_SRCS} ${SQLITE_SRC}
+#Disable warnings for sqlite, they're thousands and I really don't care about them
+set_source_files_properties(
+    ${SQLITE_SRC}
     PROPERTIES COMPILE_FLAGS "-w")
 
 set_property(TARGET ${EXECUTABLE_NAME} PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE  OpenGL::GL SDL2::SDL2-static GLEW::GLEW)
-target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${CMAKE_DL_LIBS} Threads::Threads )
+target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${CMAKE_DL_LIBS} Threads::Threads freetype)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE OpenSSL::SSL)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE Boost::boost Boost::system Boost::filesystem)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE spdlog::spdlog_header_only fmt::fmt-header-only)
+target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${GUMBO_LIB})
 
-if(VCPKG_TOOLCHAIN)
+if(MSVC)
     target_include_directories(${EXECUTABLE_NAME} PRIVATE "win")
-    target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${LIBMPV} "crypt32.lib" freetype)
+    target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${LIBMPV} "crypt32.lib")
     target_include_directories(${EXECUTABLE_NAME} PRIVATE ${LIBMPV_INCLUDE})
 else()
-    target_link_libraries(${EXECUTABLE_NAME} PRIVATE PkgConfig::MPV PkgConfig::FREETYPE)
-    target_link_libraries(${EXECUTABLE_NAME} PRIVATE PkgConfig::IBUS)
+    target_link_libraries(${EXECUTABLE_NAME} PRIVATE PkgConfig::MPV)
+#    target_link_libraries(${EXECUTABLE_NAME} PRIVATE PkgConfig::IBUS)
 endif()
 
 if(ENABLE_CMARK)
@@ -171,7 +169,6 @@ set(EXECUTABLE_INCLUDES
     "${CMAKE_CURRENT_SOURCE_DIR}"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/stb/"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/url/include"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../external/gumbo-parser/src/"
     )
 
 if(ENABLE_M4DC)

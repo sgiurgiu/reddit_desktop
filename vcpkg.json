@@ -3,19 +3,33 @@
   "name": "reddit-desktop",
   "version-string": "0.0.1",
   "dependencies": [
-    "boost-asio",
-		"boost-algorithm",	
-		"boost-beast",
-		"boost-system",
-		"boost-filesystem",
-		"boost-program-options",
-		"boost-serialization",
-		"boost-signals2",
-		"boost-spirit",
-		"glew",
-		"sdl2",
-		"freetype",
-		"openssl",
-		"zlib"
-  ]
+        "boost-asio",
+        "boost-algorithm",
+        "boost-beast",
+        "boost-system",
+        "boost-filesystem",
+        "boost-program-options",
+        "boost-process",
+        "boost-serialization",
+        "boost-signals2",
+        "boost-spirit",
+        "glew",
+        "gumbo",
+        "fmt",
+        "sdl2",
+        "spdlog",
+        "freetype",
+        "opengl",
+        "openssl",
+        "zlib"
+  ],
+  "features": {
+    "app": {
+        "description": "The Reddit Desktop App"
+    },
+    "tests": {
+        "description": "Build tests",
+        "dependencies": ["gtest"]
+    }
+  }
 }

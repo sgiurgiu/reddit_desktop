@@ -11,8 +11,8 @@ RUN curl -s http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-35
     rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-latest
 
 RUN  microdnf clean all && \
-      microdnf -y install libglvnd-opengl openssl ibus-libs firefox xdg-utils glew \
-        freetype mpv-libs youtube-dl mesa-libGL mesa-libGLU mesa-dri-drivers && \
+      microdnf -y install libglvnd-opengl firefox xdg-utils libSM libICE \
+        mpv-libs youtube-dl mesa-libGL mesa-libGLU mesa-dri-drivers && \
         microdnf -y upgrade && \
         microdnf clean all
 

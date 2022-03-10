@@ -13,11 +13,19 @@ RUN dnf install -yq \
     dnf upgrade -y && \
     dnf clean all
 
-RUN dnf -yq install cmake gcc g++ pkgconf-pkg-config \
-        tar rpm-build ninja-build boost-devel boost-static \
-        openssl-devel SDL2-devel SDL2-static ibus-devel \
-        freetype-devel mpv-libs-devel glew-devel && \
+RUN dnf -yq install cmake gcc g++ pkgconf-pkg-config git \
+        tar rpm-build ninja-build perl-FindBin perl-English perl-File-Compare \
+        ibus-devel libXmu-devel libXi-devel mesa-libGL-devel mesa-libGLU-devel \
+        mpv-libs-devel && \
         dnf clean all
+
+
+RUN cd /opt \
+    && git clone https://github.com/Microsoft/vcpkg.git -n \ 
+    && cd vcpkg \
+    && git fetch --all --tags \
+    && git checkout tags/2022.02.23 -b my_release \
+    && ./bootstrap-vcpkg.sh
 
 
 ENTRYPOINT ["/tmp/workdir/build_reddit_desktop.sh"]

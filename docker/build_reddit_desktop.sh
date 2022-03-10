@@ -4,7 +4,7 @@ mkdir /tmp/build
 cd /tmp/build
 
 
-CMAKE_ARGS="-GNinja -DFONTS_DIRECTORY=/usr/share/reddit_desktop -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=OFF -DENABLE_M4DC=ON -DENABLE_CMARK=OFF"
+CMAKE_ARGS="-GNinja -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake -DFONTS_DIRECTORY=/usr/share/reddit_desktop -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=OFF -DENABLE_M4DC=ON -DENABLE_CMARK=OFF"
 distro=""
 if [ -n "$1" ]
 then
