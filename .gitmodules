@@ -1,24 +1,12 @@
-[submodule "external/fmt"]
-	path = external/fmt
-	url = https://github.com/fmtlib/fmt.git
-[submodule "external/stb"]
-	path = external/stb
-	url = https://github.com/nothings/stb.git
 [submodule "external/url"]
 	path = external/url
 	url = https://github.com/vinniefalco/url.git
-[submodule "external/gumbo-parser"]
-	path = external/gumbo-parser
-	url = https://github.com/google/gumbo-parser.git
 [submodule "external/md4c"]
 	path = external/md4c
 	url = https://github.com/mity/md4c.git
 [submodule "external/katana-parser"]
 	path = external/katana-parser
 	url = https://github.com/hackers-painters/katana-parser.git
-[submodule "external/spdlog"]
-	path = external/spdlog
-	url = https://github.com/gabime/spdlog.git
 [submodule "external/cmark-gfm"]
 	path = external/cmark-gfm
 	url = https://github.com/github/cmark-gfm

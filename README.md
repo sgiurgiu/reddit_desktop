@@ -20,7 +20,7 @@ dnf install -yq \
     rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-latest
 ```
 
-If you would rather run the container image (docker or podman), download the `reddit_desktop_runtime.tar` file from the releases page. Load it for your container (e.g. `podman load -i reddit_desktop_runtime.tar`) then run it with
+If you would rather run the container image (docker or podman), download the `reddit_desktop_runtime.tar.gz` file from the releases page. Load it for your container (e.g. `podman load -i reddit_desktop_runtime.tar`) then run it with
 ```
 mkdir -p ~/.config/reddit_desktop
 
@@ -47,10 +47,8 @@ The `docker/run_container.sh` script provides an example.
 - Git
 - A C++20 capable compiler (does not need to be fully compliant)
 - Cmake 3.18+
-- Boost 1.74+
-- SDL2
+- VcPkg
 - LibMPV
-- Freetype
 
 ### Setup your development environment
  - Windows
@@ -97,9 +95,9 @@ The `docker/run_container.sh` script provides an example.
     - Done with windows. Wasn't that hard now, was it? 
  - Linux Debian 11 (and Debian based distributions)
     ```
-    apt install -y dpkg build-essential cmake gcc g++ libboost-all-dev libdrm-dev \
-            libgbm-dev libmpv-dev libsdl2-dev libssl-dev libglew-dev \
-            libfreetype-dev pkg-config generate-ninja ninja-build && \
+    apt install -y dpkg build-essential cmake gcc g++ git \
+                libmpv-dev ca-certificates curl zip unzip tar libglu1-mesa-dev libgl1-mesa-dev \
+                pkg-config generate-ninja ninja-build libxmu-dev libxi-dev libgl-dev
     ```
   - Linux Fedora (34+) 
     ```
@@ -110,10 +108,10 @@ The `docker/run_container.sh` script provides an example.
     rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-latest
     ```
     ```
-    dnf -yq install cmake gcc g++ pkgconf-pkg-config \
-        tar rpm-build ninja-build boost-devel boost-static \
-        openssl-devel SDL2-devel SDL2-static ibus-devel \
-        freetype-devel mpv-libs-devel glew-devel
+    dnf -yq install cmake gcc g++ pkgconf-pkg-config git \
+        tar rpm-build ninja-build perl-FindBin perl-English perl-File-Compare \
+        ibus-devel libXmu-devel libXi-devel mesa-libGL-devel mesa-libGLU-devel \
+        mpv-libs-devel
     ```
 
 ### Actually building the executable
@@ -125,7 +123,7 @@ The `docker/run_container.sh` script provides an example.
 
     `mkdir build && cd build`
 
-    `cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=OFF -DENABLE_M4DC=ON -DENABLE_CMARK=OFF <git cloned folder>`
+    `cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=<vcpkg folder>/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=OFF -DENABLE_M4DC=ON -DENABLE_CMARK=OFF <git cloned folder>`
 
     `ninja`
 
@@ -137,7 +135,8 @@ The `docker/run_container.sh` script provides an example.
     cmake --build .
   ```
 
-The scripts that build it on windows and linux can be found in the `scripts` folder, as well in the `docker` folder. Those scripts are the authority when it comes to the process of building a package for a particular OS.
+The scripts that build it on windows and linux can be found in the `scripts` folder, as well in the `docker` folder. Those scripts are the authority when it comes to the process of building a package for a particular OS
+should this readme not be updated.
 
 
 ---

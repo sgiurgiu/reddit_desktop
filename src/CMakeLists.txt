@@ -18,8 +18,6 @@ SET(IMGUI_SRCS
 
 set(BOOST_URL_SRC ../external/url/src/src.cpp)
 
-set(SQLITE_SRC sqlite/sqlite3.c)
-
 if(ENABLE_M4DC)
     set(MD4C_SRC ../external/md4c/src/md4c.c)
 endif()
@@ -150,6 +148,7 @@ target_link_libraries(${EXECUTABLE_NAME} PRIVATE OpenSSL::SSL)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE Boost::boost Boost::system Boost::filesystem)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE spdlog::spdlog_header_only fmt::fmt-header-only)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${GUMBO_LIB})
+target_link_libraries(${EXECUTABLE_NAME} PRIVATE unofficial::sqlite3::sqlite3)
 
 if(MSVC)
     target_include_directories(${EXECUTABLE_NAME} PRIVATE "win")
@@ -166,8 +165,8 @@ endif()
 
 set(EXECUTABLE_INCLUDES
     "imgui"
+    "${STB_INCLUDE_DIRS}"
     "${CMAKE_CURRENT_SOURCE_DIR}"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../external/stb/"
     "${CMAKE_CURRENT_SOURCE_DIR}/../external/url/include"
     )
 

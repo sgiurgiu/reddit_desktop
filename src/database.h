@@ -6,7 +6,7 @@
 #include <vector>
 #include <filesystem>
 
-#include "sqlite/sqlite3.h"
+#include <sqlite3.h>
 #include "entities.h"
 
 class database_exception : public std::runtime_error

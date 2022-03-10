@@ -18,6 +18,8 @@
         "fmt",
         "sdl2",
         "spdlog",
+        "stb",
+        "sqlite3",
         "freetype",
         "opengl",
         "openssl",
