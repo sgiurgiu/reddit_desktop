@@ -1,9 +1,9 @@
 #include "redditresourceconnection.h"
-#include <boost/url.hpp>
 #include <fmt/format.h>
 #include <charconv>
 #include <boost/asio/streambuf.hpp>
 #include <boost/beast/http/parser.hpp>
+#include "uri.h"
 
 namespace
 {
@@ -21,10 +21,10 @@ RedditResourceConnection::RedditResourceConnection(const boost::asio::any_io_exe
 
 RedditResourceConnection::request_t RedditResourceConnection::createRequest(const std::string& url)
 {
-    boost::url_view urlParts(url);
+    Uri urlParts(url);
 
-    newService = urlParts.port().empty() ? urlParts.scheme().to_string() : urlParts.port().to_string();
-    newHost = urlParts.encoded_host().to_string();
+    newService = urlParts.port().empty() ? urlParts.scheme() : urlParts.port();
+    newHost = urlParts.host();
     if(host.empty())
     {
         host = newHost;
@@ -33,10 +33,10 @@ RedditResourceConnection::request_t RedditResourceConnection::createRequest(cons
     {
         service = newService;
     }
-    auto target = urlParts.encoded_path().to_string();
-    if(!urlParts.encoded_query().empty())
+    auto target = urlParts.fullPath();
+    if(!urlParts.query().empty())
     {
-        target+="?"+urlParts.encoded_query().to_string();
+        target+="?"+urlParts.query();
     }
 
     request_t request;

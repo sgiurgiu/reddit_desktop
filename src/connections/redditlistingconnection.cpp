@@ -2,11 +2,10 @@
 #include <boost/beast/core.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/beast/http.hpp>
-#include <boost/url.hpp>
 #include <charconv>
 #include <fmt/format.h>
 #include "json.hpp"
-
+#include "uri.h"
 #include "utils.h"
 
 RedditListingConnection::RedditListingConnection(const boost::asio::any_io_executor& executor,
@@ -44,8 +43,8 @@ void RedditListingConnection::list(const std::string& target, const access_token
 }
 void RedditListingConnection::handleLocationChange(const std::string& location)
 {
-    boost::url_view urlParts(location);
-    auto target = urlParts.encoded_path().to_string();
+    Uri urlParts(location);
+    auto target = urlParts.fullPath();
 
     {
         std::lock_guard<std::mutex> _(queuedRequestsMutex);

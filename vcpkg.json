@@ -23,6 +23,7 @@
         "freetype",
         "opengl",
         "openssl",
+        "uriparser",
         "zlib"
   ],
   "features": {

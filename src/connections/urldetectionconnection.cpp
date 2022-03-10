@@ -1,9 +1,8 @@
 #include "urldetectionconnection.h"
 #include <boost/asio.hpp>
-#include <boost/url.hpp>
 #include <fstream>
 #include <filesystem>
-
+#include "uri.h"
 #include "htmlparser.h"
 #include "macros.h"
 
@@ -174,20 +173,20 @@ void UrlDetectionConnection::detectMediaUrl(post* mediaPost)
 
 void UrlDetectionConnection::downloadUrl(const std::string& url)
 {
-    boost::url_view urlParts(url);
+    Uri urlParts(url);
     if(!urlParts.port().empty() || !urlParts.scheme().empty())
     {
-        service = urlParts.port().empty() ? urlParts.scheme().to_string() : urlParts.port().to_string();
+        service = urlParts.port().empty() ? urlParts.scheme() : urlParts.port();
     }
     if(!urlParts.host().empty())
     {
-        host = urlParts.encoded_host().to_string();
+        host = urlParts.host();
     }
-    auto target = urlParts.encoded_path().to_string();
-    auto query = urlParts.encoded_query().to_string();
+    auto target = urlParts.fullPath();
+    auto query = urlParts.query();
     if(!query.empty())
     {
-        target+="?"+urlParts.encoded_query().to_string();
+        target+="?"+urlParts.query();
     }
     if(host.find("youtube") != host.npos ||  host == "youtu.be")
     {

@@ -22,7 +22,7 @@
 #include <algorithm>
 #include "mediawidget.h"
 #include <spdlog/spdlog.h>
-#include <boost/url.hpp>
+
 
 namespace
 {

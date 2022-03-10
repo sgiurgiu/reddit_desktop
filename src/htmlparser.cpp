@@ -1,12 +1,12 @@
 #include "htmlparser.h"
-#include "gumbo.h"
+#include <gumbo.h>
 
 #include <fstream>
 #include <cstring>
 #include <iostream>
 #include <boost/algorithm/string.hpp>
 #include "json.hpp"
-#include <boost/url.hpp>
+#include "uri.h"
 
 #include <boost/spirit/include/karma.hpp>
 #include <boost/spirit/include/qi.hpp>
@@ -254,16 +254,18 @@ std::string HtmlParser::lookupYoutubeVideoUrl(Node* node) const
                         {
                             auto sigCihper = desiredFormat["signatureCipher"].get<std::string>();
                             std::string tmpUrl("http://example.com/?"+sigCihper);
-                            boost::url_view urlParts(tmpUrl);
-                            auto params = urlParts.params();
-                            for(const auto& p : params)
+                            Uri urlParts(tmpUrl);
+                            auto params = urlParts.query();
+                            /*
+                             * TODO: Fix this with UriParser library
+                             * for(const auto& p : params)
                             {
                                 if(p.encoded_key() == "url")
                                 {
                                     auto url = p.encoded_value().to_string();
                                     return HtmlParser::unescape(url);
                                 }
-                            }
+                            }*/
                         }
                     }
                 }

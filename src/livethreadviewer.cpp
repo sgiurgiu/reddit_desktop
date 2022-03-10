@@ -3,7 +3,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <fmt/format.h>
-#include <boost/url.hpp>
+#include "uri.h"
 #include "utils.h"
 #include "markdown/markdownnodetext.h"
 #include <cinttypes>
@@ -86,7 +86,7 @@ void LiveThreadViewer::showLiveThread()
 void LiveThreadViewer::loadContent(const std::string& url)
 {
     loadingPostContent = true;
-    boost::url_view urlParts(url);
+    Uri urlParts(url);
     {
         auto listingConnection = client->makeListingClientConnection();
         listingConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
@@ -110,7 +110,7 @@ void LiveThreadViewer::loadContent(const std::string& url)
                 }
             }
         });
-        listingConnection->list(urlParts.encoded_path().to_string(),token);
+        listingConnection->list(urlParts.fullPath(),token);
     }
 
     {
@@ -137,7 +137,7 @@ void LiveThreadViewer::loadContent(const std::string& url)
 
             }
         });
-        listingConnection->list(urlParts.encoded_path().to_string()+"/about.json",token);
+        listingConnection->list(urlParts.fullPath()+"/about.json",token);
     }
     liveConnection->onUpdate([weak=weak_from_this()](const boost::system::error_code& ec,
                              live_update_event event){

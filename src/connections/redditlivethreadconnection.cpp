@@ -1,5 +1,5 @@
 #include "redditlivethreadconnection.h"
-#include <boost/url.hpp>
+#include "uri.h"
 
 RedditLiveThreadConnection::RedditLiveThreadConnection(const boost::asio::any_io_executor& executor,
                                                        boost::asio::ssl::context& ssl_context):
@@ -9,10 +9,10 @@ RedditLiveThreadConnection::RedditLiveThreadConnection(const boost::asio::any_io
 }
 void RedditLiveThreadConnection::getUpdates(const std::string& url)
 {
-    boost::url_view urlParts(url);
-    connect(urlParts.encoded_host().to_string(),
-            urlParts.port().empty() ? "443" : urlParts.port().to_string(),
-            urlParts.encoded_path().to_string()+"?"+urlParts.encoded_query().to_string());
+    Uri urlParts(url);
+    connect(urlParts.host(),
+            urlParts.port().empty() ? "443" : urlParts.port(),
+            urlParts.fullPath()+"?"+urlParts.query());
 
 }
 void RedditLiveThreadConnection::messageReceived()

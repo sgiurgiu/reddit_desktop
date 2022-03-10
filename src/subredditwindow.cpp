@@ -7,11 +7,11 @@
 #include "utils.h"
 #include "spinner/spinner.h"
 #include "database.h"
-#include <boost/url.hpp>
 #include <boost/asio/post.hpp>
 #include "utils.h"
 #include "macros.h"
 #include "cssparser.h"
+#include "uri.h"
 #include <spdlog/spdlog.h>
 
 namespace
@@ -593,15 +593,15 @@ void SubredditWindow::renderPostOpenLinkButton(PostDisplay& p)
         if(ImGui::InvisibleButton(p.openLinkButtonText.c_str(),subredditTextSize))
         {
             try {
-                boost::url_view urlParts(p.post->url);
-                auto host = urlParts.encoded_host().to_string();
+                Uri urlParts(p.post->url);
+                auto host = urlParts.host();
                 if(host.find("reddit.com") == std::string::npos || ImGui::GetIO().KeyCtrl)
                 {
                     Utils::openInBrowser(p.post->url);
                 }
                 else
                 {
-                    auto target = urlParts.encoded_path().to_string();
+                    auto target = urlParts.fullPath();
                     if(target.find("/comments/") != std::string::npos)
                     {
                         commentsSignal(p.post->id,p.post->title);

@@ -16,8 +16,6 @@ SET(IMGUI_SRCS
     imgui/misc/freetype/imgui_freetype.cpp
     spinner/spinner.cpp)
 
-set(BOOST_URL_SRC ../external/url/src/src.cpp)
-
 if(ENABLE_M4DC)
     set(MD4C_SRC ../external/md4c/src/md4c.c)
 endif()
@@ -107,6 +105,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         flairrenderer.cpp
         livethreadviewer.cpp
         twitterrenderer.cpp
+        uri.cpp
         )
 
 if(WIN32)
@@ -122,7 +121,6 @@ set(EXECUTABLE_SOURCES
     ${REDDIT_DESKTOP_SRCS}
     ${IMGUI_SRCS}
     ${SQLITE_SRC}
-    ${BOOST_URL_SRC}
     ${MARKDOWN_RENDERER_SRCS}
     ${REDDIT_CONNECTIONS_SRCS}
     ${REDDIT_DESKTOP_LOG_SRCS}
@@ -149,6 +147,7 @@ target_link_libraries(${EXECUTABLE_NAME} PRIVATE Boost::boost Boost::system Boos
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE spdlog::spdlog_header_only fmt::fmt-header-only)
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE ${GUMBO_LIB})
 target_link_libraries(${EXECUTABLE_NAME} PRIVATE unofficial::sqlite3::sqlite3)
+target_link_libraries(${EXECUTABLE_NAME} PRIVATE uriparser::uriparser)
 
 if(MSVC)
     target_include_directories(${EXECUTABLE_NAME} PRIVATE "win")

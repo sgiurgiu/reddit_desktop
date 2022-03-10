@@ -3,10 +3,9 @@
 #include <boost/beast/core.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/beast/http.hpp>
-#include <boost/url.hpp>
 #include <fmt/format.h>
 #include "json.hpp"
-
+#include "uri.h"
 #include "utils.h"
 
 TwitterConnection::TwitterConnection(const boost::asio::any_io_executor& executor,
@@ -18,14 +17,12 @@ TwitterConnection::TwitterConnection(const boost::asio::any_io_executor& executo
 }
 void TwitterConnection::GetTweetFromUrl(const std::string& url,std::any userData)
 {
-    boost::url_view urlParts(url);
+    Uri urlParts(url);
     //the kind of url we expect is: https://twitter.com/<user>/status/<tweetid>
-    const auto& segments = urlParts.segments();
-    if(segments.size() > 2)
+    const auto path = urlParts.path();
+    if(path.size() > 2)
     {
-        auto it = segments.begin();
-        ++it;++it;
-        auto tweetId = it->string();
+        auto tweetId = path[2];
         GetTweet(std::move(tweetId),std::move(userData));
     }
     else
