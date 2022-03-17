@@ -20,7 +20,7 @@ dnf install -yq \
     rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-latest
 ```
 
-If you would rather run the container image (docker or podman), download the `reddit_desktop_runtime.tar.gz` file from the releases page. Load it for your container (e.g. `podman load -i reddit_desktop_runtime.tar`) then run it with
+If you would rather run the container image (docker or podman), download the `reddit_desktop_runtime.tar.gz` file from the releases page. Load it for your container (e.g. `podman load -i reddit_desktop_runtime.tar.gz`) then run it with
 ```
 mkdir -p ~/.config/reddit_desktop
 
@@ -59,12 +59,12 @@ The `docker/run_container.sh` script provides an example.
         Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 
         choco feature enable -n allowGlobalConfirmation
-        choco -y install 7zip.install
-        choco -y install git.install
-        choco -y install cmake.install --installargs 'ADD_CMAKE_TO_PATH=System'
-        choco -y install ninja 
-        choco -y install wixtoolset 
-        choco -y install powershell-core
+        choco install 7zip.install
+        choco install git.install
+        choco install cmake.install --installargs 'ADD_CMAKE_TO_PATH=System'
+        choco install ninja 
+        choco install wixtoolset 
+        choco install powershell-core
         ```
    - Install vcpkg (assuming the vcpkg folder will be `E:\projects\vcpkg`. Change as desired.)
         ```
@@ -123,7 +123,7 @@ The `docker/run_container.sh` script provides an example.
 
     `mkdir build && cd build`
 
-    `cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=<vcpkg folder>/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=OFF -DENABLE_M4DC=ON -DENABLE_CMARK=OFF <git cloned folder>`
+    `cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=<vcpkg folder>/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=OFF -DENABLE_M4DC=ON -DENABLE_CMARK=OFF <git cloned folder>`
 
     `ninja`
 
@@ -131,7 +131,7 @@ The `docker/run_container.sh` script provides an example.
 
 - Windows
   ```
-    cmake -B . -S <git cloned folder> -G Ninja -DCMAKE_TOOLCHAIN_FILE=<vcpkg folder>/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DENABLE_TESTS=False -DCMAKE_BUILD_TYPE=Release -DCPACK_GENERATOR=WIX -DLIBMPV_DIR="<libmpv folder>" -DLIBMPV_INCLUDE="<libmpv include folder>" -DYOUTUBE_DL="<youtube-dl.exe path>"
+    cmake -B . -S <git cloned folder> -G Ninja -DCMAKE_TOOLCHAIN_FILE=<vcpkg folder>/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DENABLE_TESTS=False -DCMAKE_BUILD_TYPE=Release -DCPACK_GENERATOR=WIX -DLIBMPV_DIR="<libmpv folder>" -DLIBMPV_INCLUDE="<libmpv include folder>" -DYOUTUBE_DL="<youtube-dl.exe path>"
     cmake --build .
   ```
 
