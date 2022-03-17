@@ -194,8 +194,6 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
 
     desktop->loginCurrentUser();
 
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
     // Main loop
     bool done = false;
     while (!done)
@@ -241,7 +239,8 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
         // Rendering
         ImGui::Render();
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-        glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+        const auto& backgroundColor = desktop->getBackgroundColor();
+        glClearColor(backgroundColor.x, backgroundColor.y, backgroundColor.z, backgroundColor.w);
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         SDL_GL_SwapWindow(window);
@@ -250,6 +249,7 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
             done = desktop->quitSelected();
         }
     }
+    desktop->saveBackgroundColor();
     work.reset();
     uiContext.stop();
 }

@@ -17,6 +17,7 @@ set(RD_TEST_SRCS
 
 set(TESTING_RD_CLASSES
     ${CMAKE_SOURCE_DIR}/src/htmlparser.cpp    
+    ${CMAKE_SOURCE_DIR}/src/uri.cpp
     )
 
 add_executable(${PROJECT_NAME}

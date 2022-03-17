@@ -41,6 +41,8 @@ Database::Database():db(nullptr,connection_deleter())
     DB_ERR_CHECK("Cannot create table SCHEMA_VERSION");
     rc = sqlite3_exec(db.get(),"CREATE TABLE IF NOT EXISTS MEDIA_DOMAINS(DOMAIN TEXT)",nullptr,nullptr,nullptr);
     DB_ERR_CHECK("Cannot create table MEDIA_DOMAINS");
+    rc = sqlite3_exec(db.get(),"CREATE TABLE IF NOT EXISTS COLORS(NAME TEXT, RED FLOAT, GREEN FLOAT, BLUE FLOAT, ALPHA FLOAT)",nullptr,nullptr,nullptr);
+    DB_ERR_CHECK("Cannot create table COLORS");
 
     int version = getSchemaVersion();
     if(version < 1)
@@ -107,6 +109,56 @@ void Database::incrementSchemaVersion(int version)
         DB_ERR_CHECK("Cannot update version");
     }
 }
+void Database::setColor(const std::string& name, const std::array<float,4>& col)
+{
+    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
+    sqlite3_stmt *stmt_ptr = nullptr;
+    int rc = sqlite3_prepare_v2(db.get(),"DELETE FROM COLORS WHERE NAME=?",-1,&stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot delete "+name);
+    rc = sqlite3_bind_text(stmt.get(),1,name.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to "+name);
+    rc = sqlite3_step(stmt.get());
+    DB_ERR_CHECK("Cannot insert "+name);
+    stmt.reset();
+
+    stmt_ptr = nullptr;
+    rc = sqlite3_prepare_v2(db.get(),"INSERT INTO COLORS(NAME,RED,GREEN,BLUE,ALPHA) VALUES(?,?,?,?,?)",-1,&stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot insert "+name);
+    rc = sqlite3_bind_text(stmt.get(),1,name.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to "+name);
+    int colIndex = 2;
+    for(const auto& v : col)
+    {
+        rc = sqlite3_bind_double(stmt.get(),colIndex,v);
+        DB_ERR_CHECK("Cannot bind values to "+name);
+        colIndex++;
+    }
+    rc = sqlite3_step(stmt.get());
+    DB_ERR_CHECK("Cannot insert "+name);
+}
+std::array<float,4> Database::getColor(const std::string& name, const std::array<float,4>& defaultColor) const
+{
+    auto value = defaultColor;
+    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
+    sqlite3_stmt *stmt_ptr;
+    int rc = sqlite3_prepare_v2(db.get(),"SELECT RED,GREEN,BLUE,ALPHA FROM COLORS WHERE NAME=?",-1,&stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot find "+name);
+    rc = sqlite3_bind_text(stmt.get(),1,name.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to "+name);
+
+    if(sqlite3_step(stmt.get()) == SQLITE_ROW)
+    {
+        value[0] = sqlite3_column_double(stmt.get(),0);
+        value[1] = sqlite3_column_double(stmt.get(),1);
+        value[2] = sqlite3_column_double(stmt.get(),2);
+        value[3] = sqlite3_column_double(stmt.get(),3);
+    }
+    return value;
+}
+
 std::vector<std::string> Database::getMediaDomains() const
 {
     std::vector<std::string> domains;

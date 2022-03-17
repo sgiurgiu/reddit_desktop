@@ -5,9 +5,10 @@
 #include <memory>
 #include <vector>
 #include <filesystem>
-
+#include <array>
 #include <sqlite3.h>
 #include "entities.h"
+
 
 class database_exception : public std::runtime_error
 {
@@ -57,6 +58,8 @@ public:
     void removeMediaDomain(const std::string& domain);
     void setTwitterAuthBearer(const std::string& bearer);
     std::optional<std::string> getTwitterAuthBearer();
+    void setColor(const std::string& name, const std::array<float,4>& col);
+    std::array<float,4> getColor(const std::string& name, const std::array<float,4>& defaultColor) const;
 private:
     void setBoolProperty(bool flag, const std::string& propName);
     bool getBoolProperty(const std::string& propName, bool defaultValue) const;

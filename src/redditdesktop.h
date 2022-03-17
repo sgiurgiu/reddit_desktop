@@ -23,7 +23,7 @@ public:
     void loginCurrentUser();
     void showDesktop();
     void closeWindow();
-    bool quitSelected()
+    bool quitSelected() const
     {
         return shouldQuit;
     }
@@ -35,6 +35,11 @@ public:
     {
         appFrameHeight = height;
     }
+    ImVec4 getBackgroundColor() const
+    {
+        return backgroundColor;
+    }
+    void saveBackgroundColor();
 private:
     void showMainMenuBar();
     void showMenuFile();
@@ -101,6 +106,8 @@ private:
     AboutWindow aboutWindow;
     bool twitterAPIAuthBearerDialog = false;
     std::string twitterBearer;
+    ImVec4 backgroundColor =  {0.45f, 0.55f, 0.60f, 1.00f};
+    bool changeBackgroundColorDialog = false;
 };
 
 

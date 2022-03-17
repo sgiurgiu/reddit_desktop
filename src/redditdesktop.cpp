@@ -16,6 +16,8 @@ constexpr auto OPENSUBREDDIT_WINDOW_POPUP_TITLE = "Open Subreddit";
 constexpr auto ERROR_WINDOW_POPUP_TITLE = "Error Occurred";
 constexpr auto MEDIA_DOMAINS_POPUP_TITLE = "Media Domains Management";
 constexpr auto TWITTER_API_BEARER_TITLE = "Twitter API Auth Bearer";
+constexpr auto BACKGROUND_COLOR_MENU = "Background Color";
+constexpr auto BACKGROUND_COLOR_NAME = "BACKGROUND";
 }
 
 RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
@@ -36,6 +38,11 @@ RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
     showRandomNSFW = db->getShowRandomNSFW();
     automaticallyArangeWindowsInGrid = db->getAutoArangeWindowsGrid();
     useYoutubeDl = db->getUseYoutubeDownloader();
+    auto bCol = db->getColor(BACKGROUND_COLOR_NAME,{backgroundColor.x,backgroundColor.y,backgroundColor.z,backgroundColor.w});
+    backgroundColor.x = bCol[0];
+    backgroundColor.y = bCol[1];
+    backgroundColor.z = bCol[2];
+    backgroundColor.w = bCol[3];
     loggingWindow->setupLogging();
     loggingWindow->setWindowOpen(showLoggingWindow);
 }
@@ -594,6 +601,22 @@ void RedditDesktop::showMainMenuBar()
             {
                 twitterAPIAuthBearerDialog = true;
             }
+            if(ImGui::BeginMenu(BACKGROUND_COLOR_MENU))
+            {
+                float col[3] = { backgroundColor.x, backgroundColor.y,
+                                  backgroundColor.z };
+                if(ImGui::ColorPicker3("###background",col, ImGuiColorEditFlags_AlphaBar|
+                                       ImGuiColorEditFlags_NoOptions|
+                                       ImGuiColorEditFlags_NoInputs|
+                                       ImGuiColorEditFlags_NoSidePreview))
+                {
+                    backgroundColor.x = col[0];
+                    backgroundColor.y = col[1];
+                    backgroundColor.z = col[2];
+                    backgroundColor.w = 1.f;
+                }
+                ImGui::EndMenu();
+            }
             ImGui::EndMenu();
         }
         if(ImGui::BeginMenu("Windows"))
@@ -838,4 +861,8 @@ void RedditDesktop::setSearchResultsNames(names_list names)
 {
     searchedNamesList = std::move(names);
     searchingSubreddits = false;
+}
+void RedditDesktop::saveBackgroundColor()
+{
+    Database::getInstance()->setColor(BACKGROUND_COLOR_NAME,{backgroundColor.x,backgroundColor.y,backgroundColor.z,backgroundColor.w});
 }
