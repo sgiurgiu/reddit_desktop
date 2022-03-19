@@ -631,7 +631,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
 
     ImGui::SetNextWindowSize(ImVec2(appFrameWidth*0.6,appFrameHeight*0.8),ImGuiCond_FirstUseEver);
 
-    if(!ImGui::Begin(windowName.c_str(),&windowOpen,ImGuiWindowFlags_None))
+    if(!ImGui::Begin(windowName.c_str(),&windowOpen,ImGuiWindowFlags_HorizontalScrollbar))
     {
         pauseAllPosts();
         ImGui::End();
