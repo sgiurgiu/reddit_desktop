@@ -62,6 +62,7 @@ int main(int /*argc*/, char** argv)
     std::filesystem::path programPath(argv[0]);
 #endif    
     auto executablePath = programPath.parent_path();
+    SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "1");
 
     // Setup window
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
@@ -69,6 +70,7 @@ int main(int /*argc*/, char** argv)
         std::cerr << "Error: "<<SDL_GetError()<<"\n";
         return EXIT_FAILURE;
     }
+
 
 
     // Decide GL+GLSL versions
@@ -153,7 +155,7 @@ int main(int /*argc*/, char** argv)
     CMarkMarkdownParser::InitCMarkEngine();
 #endif
 
-    runMainLoop(window,io);    
+    runMainLoop(window,io);
 
     {
         int x,y,w,h;
