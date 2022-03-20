@@ -628,7 +628,6 @@ void SubredditWindow::renderPostOpenLinkButton(PostDisplay& p)
 }
 void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
 {
-
     ImGui::SetNextWindowSize(ImVec2(appFrameWidth*0.6,appFrameHeight*0.8),ImGuiCond_FirstUseEver);
 
     if(!ImGui::Begin(windowName.c_str(),&windowOpen,ImGuiWindowFlags_HorizontalScrollbar))
@@ -813,6 +812,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Medium_Big)]);
         if(!p.post->title.empty())
         {
+            //ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionMax().x-(ImGui::GetStyle().FramePadding.x)-ImGui::GetFontSize());
             ImGui::TextWrapped("%s",p.post->title.c_str());
         }
         else
@@ -820,7 +820,6 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             ImGui::TextWrapped("<No Title>");
         }
         ImGui::PopFont();
-
 
         p.flairRenderer->Render();
 

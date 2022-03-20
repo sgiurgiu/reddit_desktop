@@ -81,7 +81,7 @@ void PostContentViewer::loadContent(post_ptr currentPost)
     }
     if(currentPost->isGallery && !currentPost->gallery.empty())
     {
-        loadPostGalleryImages();
+        loadPostEmbeddedGalleryImages();
         return;
     }
 
@@ -146,17 +146,24 @@ void PostContentViewer::loadContent(post_ptr currentPost)
                     {
                     case HtmlParser::MediaType::Video:
                         boost::asio::post(self->uiExecutor,
-                                          std::bind(&PostContentViewer::setupMediaContext,self,link.url, link.useLink));
+                                          std::bind(&PostContentViewer::setupMediaContext,self,*link.urls.begin(), link.useLink));
                         break;
                     case HtmlParser::MediaType::Image:
                         boost::asio::post(self->uiExecutor,
-                                          std::bind(&PostContentViewer::downloadPostImage,self,link.url));
+                                          std::bind(&PostContentViewer::downloadPostImage,self,*link.urls.begin()));
+                        break;
+                    case HtmlParser::MediaType::Gallery:
+                        boost::asio::post(self->uiExecutor,
+                                          std::bind(&PostContentViewer::loadPostGalleryImages,self,std::move(link.urls)));
                         break;
                     case HtmlParser::MediaType::Gif:
                         break;
                     default:
-                        boost::asio::post(self->uiExecutor,
-                                          std::bind(&PostContentViewer::setupMediaContext,self,link.url, false));
+                        if(!link.urls.empty())
+                        {
+                            boost::asio::post(self->uiExecutor,
+                                              std::bind(&PostContentViewer::setupMediaContext,self,*link.urls.begin(), false));
+                        }
                         break;
                     }
 
@@ -221,15 +228,15 @@ void PostContentViewer::setErrorMessage(std::string errorMessage)
     this->errorMessage = errorMessage;
     loadingPostContent = false;
 }
-
-void PostContentViewer::loadPostGalleryImages()
+void PostContentViewer::loadPostGalleryImages(std::vector<std::string> urls)
 {
     loadingPostContent = true;
-    for(size_t i=0;i<currentPost->gallery.size();i++)
+    if(currentPost) currentPost->isGallery = true;
+    for(size_t i=0;i<urls.size();i++)
     {
-        const auto& galImage = currentPost->gallery.at(i);
+        const auto& galImage = urls.at(i);
         gallery.images.emplace_back();
-        if(galImage.url.empty()) continue;
+        if(galImage.empty()) continue;
         auto resourceConnection = client->makeResourceClientConnection();
         resourceConnection->connectionCompleteHandler(
                     [weak = weak_from_this(),index=i](const boost::system::error_code& ec,
@@ -250,8 +257,16 @@ void PostContentViewer::loadPostGalleryImages()
                                                              data,width,height,channels,(int)index));
             }
         });
-        resourceConnection->getResource(galImage.url);
+        resourceConnection->getResource(galImage);
     }
+}
+void PostContentViewer::loadPostEmbeddedGalleryImages()
+{
+    loadingPostContent = true;
+    std::vector<std::string> urls{currentPost->gallery.size()};
+    std::transform(currentPost->gallery.begin(),currentPost->gallery.end(),
+                   urls.begin(),[](const auto& g){return g.url;});
+    loadPostGalleryImages(std::move(urls));
 }
 void PostContentViewer::setPostGalleryImage(Utils::STBImagePtr data, int width, int height, int channels, int index)
 {
@@ -268,9 +283,10 @@ void PostContentViewer::loadPostImage()
     {
         auto urlDetectionConnection = client->makeUrlDetectionClientConnection();
         urlDetectionConnection->streamAvailableHandler([weak=weak_from_this()](HtmlParser::MediaLink link) {
+            if(link.urls.empty()) return;
             auto self = weak.lock();
             if (!self) return;
-            self->downloadPostImage(link.url);
+            self->downloadPostImage(*link.urls.begin());
         });
         urlDetectionConnection->errorHandler([weak = weak_from_this()](int /*errorCode*/,const std::string& str){
             auto self = weak.lock();
@@ -362,8 +378,8 @@ void PostContentViewer::setupMediaContext(std::string file, bool useProvidedFile
     //mpv_set_option(mpv, "demuxer-max-bytes", MPV_FORMAT_INT64,&maxBytes);
 
     mpv_initialize(mpv);
-    int64_t cacheDefault = 150000;
-    int64_t cacheBackBuffer = 150000;
+    //int64_t cacheDefault = 150000;
+    //int64_t cacheBackBuffer = 150000;
     int64_t cacheSecs = 30;
    // mpv_set_property(mpv, "cache-default", MPV_FORMAT_INT64, &cacheDefault);
    // mpv_set_property(mpv, "cache-backbuffer", MPV_FORMAT_INT64, &cacheBackBuffer);

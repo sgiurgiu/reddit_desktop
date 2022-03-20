@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <string>
+#include <vector>
 
 class HtmlParser
 {
@@ -12,11 +13,12 @@ public:
         Unknown = 0,
         Video,
         Image,
-        Gif
+        Gif,
+        Gallery
     };
     struct MediaLink
     {
-        std::string url;
+        std::vector<std::string> urls;
         MediaType type;
         bool useLink = false;
     };
@@ -35,6 +37,7 @@ private:
     std::string lookupDivPlayerContainerVideoUrl(Node* node) const;
     template<class Node>
     std::string lookupYoutubeVideoUrl(Node* node) const;
+
 
 private:
     std::string contents;

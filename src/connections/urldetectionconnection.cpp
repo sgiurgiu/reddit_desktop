@@ -148,7 +148,7 @@ void UrlDetectionConnection::responseReceivedComplete()
     }
     else
     {
-        urlDetected({currentUrl,HtmlParser::MediaType::Unknown});
+        urlDetected({{currentUrl},HtmlParser::MediaType::Unknown});
         //BOOST_ASSERT(false);
     }
 }
@@ -160,7 +160,7 @@ void UrlDetectionConnection::detectMediaUrl(post* mediaPost)
     if(currentPost->postMedia && currentPost->postMedia->redditVideo)
     {
         currentUrl = currentPost->postMedia->redditVideo->dashUrl;
-        HtmlParser::MediaLink link{currentUrl,HtmlParser::MediaType::Video, true};
+        HtmlParser::MediaLink link{{currentUrl},HtmlParser::MediaType::Video, true};
         boost::asio::post(strand,std::bind(
                                &UrlDetectionConnection::urlDetected,
                                this->shared_from_base<UrlDetectionConnection>(),link));

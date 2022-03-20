@@ -11,10 +11,10 @@ TEST(HtmlParserTest, ParseStreamableHtml)
     HtmlParser parser(streamable_html);
     auto url = parser.getMediaLink("streamable.com");
     UriUriA uri;
-    auto uriResult = uriParseSingleUriA(&uri, url.url.c_str(), nullptr);
+    auto uriResult = uriParseSingleUriA(&uri, url.urls.begin()->c_str(), nullptr);
     ASSERT_EQ(uriResult,URI_SUCCESS);
 
-    EXPECT_FALSE(url.url.empty());
+    EXPECT_FALSE(url.urls.empty());
     EXPECT_EQ(MAKE_URI_TEXT_RANGE_STRING(uri.hostText),"cdn-cf-east.streamable.com");
     auto path = uri.pathHead;
     EXPECT_EQ(MAKE_URI_TEXT_RANGE_STRING(path->text),"video");
@@ -37,10 +37,10 @@ TEST(HtmlParserTest, ParseStreamjaHtml)
     HtmlParser parser(streamable_html);
     auto url = parser.getMediaLink("streamja.com");
     UriUriA uri;
-    auto uriResult = uriParseSingleUriA(&uri, url.url.c_str(), nullptr);
+    auto uriResult = uriParseSingleUriA(&uri, url.urls.begin()->c_str(), nullptr);
     ASSERT_EQ(uriResult,URI_SUCCESS);
 
-    EXPECT_FALSE(url.url.empty());
+    EXPECT_FALSE(url.urls.empty());
     EXPECT_EQ(MAKE_URI_TEXT_RANGE_STRING(uri.hostText),"tiger.cdnja.co");
     auto path = uri.pathHead;
     EXPECT_EQ(MAKE_URI_TEXT_RANGE_STRING(path->text),"v");
@@ -61,10 +61,10 @@ TEST(HtmlParserTest, ParseYoutubeHtml)
     HtmlParser parser(streamable_html);
     auto url = parser.getMediaLink("youtube.com");
     UriUriA uri;
-    auto uriResult = uriParseSingleUriA(&uri, url.url.c_str(), nullptr);
+    auto uriResult = uriParseSingleUriA(&uri, url.urls.begin()->c_str(), nullptr);
     ASSERT_EQ(uriResult,URI_SUCCESS);
 
-    EXPECT_FALSE(url.url.empty());
+    EXPECT_FALSE(url.urls.empty());
     EXPECT_EQ(MAKE_URI_TEXT_RANGE_STRING(uri.hostText),"r3---sn-cxaaj5o5q5-t34e.googlevideo.com");
     auto path = uri.pathHead;
     EXPECT_EQ(MAKE_URI_TEXT_RANGE_STRING(path->text),"videoplayback");
@@ -79,10 +79,10 @@ TEST(HtmlParserTest, ParseYoutu_beHtml)
     HtmlParser parser(streamable_html);
     auto url = parser.getMediaLink("youtu.be");
     UriUriA uri;
-    auto uriResult = uriParseSingleUriA(&uri, url.url.c_str(), nullptr);
+    auto uriResult = uriParseSingleUriA(&uri, url.urls.begin()->c_str(), nullptr);
     ASSERT_EQ(uriResult,URI_SUCCESS);
 
-    EXPECT_FALSE(url.url.empty());
+    EXPECT_FALSE(url.urls.empty());
     EXPECT_EQ(MAKE_URI_TEXT_RANGE_STRING(uri.hostText),"r3---sn-cxaaj5o5q5-t34e.googlevideo.com");
     auto path = uri.pathHead;
     EXPECT_EQ(MAKE_URI_TEXT_RANGE_STRING(path->text),"videoplayback");

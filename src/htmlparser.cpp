@@ -294,49 +294,60 @@ HtmlParser::MediaLink HtmlParser::getMediaLink(const std::string& domain) const
     link.type = MediaType::Video;
     if(domain.find("youtube") != domain.npos || domain == "youtu.be")
     {
-        link.url = this->template lookupYoutubeVideoUrl<GumboNode>(output->root);
+        link.urls.emplace_back(this->template lookupYoutubeVideoUrl<GumboNode>(output->root));
     }
     else if(domain == "streamable.com")
     {
-        link.url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:video:url");
+        link.urls.emplace_back(this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:video:url"));
     }
     else if (domain == "streamja.com" || domain == "streamvi.com" || 
         domain == "streamwo.com" || domain == "streamye.com")
     {
-        link.url = this->template lookupVideoSourceVideoUrl<GumboNode>(output->root);
+        link.urls.emplace_back(this->template lookupVideoSourceVideoUrl<GumboNode>(output->root));
     }
     else if (domain == "clippituser.tv" || domain == "www.clippituser.tv")
     {
-        link.url = this->template lookupDivPlayerContainerVideoUrl<GumboNode>(output->root);
+        link.urls.emplace_back(this->template lookupDivPlayerContainerVideoUrl<GumboNode>(output->root));
     }
     else if(domain.find("gfycat") != domain.npos ||
             domain.find("redgifs") != domain.npos ||
             domain.find("giphy") != domain.npos)
     {
-        link.url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:video");
-        if(link.url.empty())
+        link.urls.emplace_back(this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:video"));
+        if(link.urls.empty() || link.urls.begin()->empty())
         {
-            link.url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:url");
+            link.urls.emplace_back(this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:url"));
         }
-        if(link.url.empty())
+        if(link.urls.empty() || link.urls.begin()->empty())
         {
-            link.url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:image");
+            link.urls.emplace_back(this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:image"));
             link.type = MediaType::Image;
         }
     }
     else if(domain.find("imgur") != domain.npos)
     {
-        link.url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:video");
 
-        if(link.url.empty())
+        link.urls.emplace_back(this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:video"));
+
+        if(link.urls.empty() || link.urls.begin()->empty())
         {
-            link.url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:image");
-            link.type = MediaType::Image;
+            auto url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:url");
+            auto type = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:type");
+            if(type == "article" || url.find("/a/") != std::string::npos)
+            {
+                link.type = MediaType::Gallery;
+
+            }
+            else
+            {
+                link.urls.emplace_back(this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:image"));
+                link.type = MediaType::Image;
+            }
         }
     }
 
     gumbo_destroy_output(&kGumboDefaultOptions,output);
-    if(link.url.empty())
+    if(link.urls.empty())
     {
         link.type = MediaType::Unknown;
     }

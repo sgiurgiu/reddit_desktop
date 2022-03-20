@@ -47,7 +47,8 @@ private:
     void mpvDoublePropertyChanged(std::string name, double value);
     void mpvFlagPropertyChanged(std::string name, int value);
     void mpvInt64PropertyChanged(std::string name, int64_t value);
-    void loadPostGalleryImages();
+    void loadPostEmbeddedGalleryImages();
+    void loadPostGalleryImages(std::vector<std::string> urls);
     void setPostGalleryImage(Utils::STBImagePtr data, int width, int height, int channels, int index);
     void setErrorMessage(std::string errorMessage);
 
