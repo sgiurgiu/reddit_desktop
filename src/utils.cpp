@@ -79,10 +79,12 @@ namespace {
         }
     };
 
-    size_t seguiemjFileDataSize = 0;
-    void* seguiemjFileData = nullptr;
+    //size_t seguiemjFileDataSize = 0;
+    //void* seguiemjFileData = nullptr;
     //size_t notoColorEmojiFileDataSize = 0;
     //void* notoColorEmojiFileData = nullptr;
+    size_t twColorEmojiFileDataSize = 0;
+    void* twColorEmojiFileData = nullptr;
     size_t fontAwesomeFileDataSize = 0;
     void* fontAwesomeFileData = nullptr;
 }
@@ -128,20 +130,17 @@ ImFont* Utils::AddFont(const std::filesystem::path& fontsFolder,
     static ImFontConfig emojiConfig;
     emojiConfig.MergeMode = true;
     emojiConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
-    emojiConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_Bitmap;
+    //emojiConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_Bitmap;
     emojiConfig.OversampleH = emojiConfig.OversampleV = 1;
     emojiConfig.FontDataOwnedByAtlas = false;
     //emojiConfig.GlyphMinAdvanceX = fontSize;
     static const ImWchar emoji_icon_ranges[] = { 0x1, 0x1FFFF,
                                                  0 };
-    auto seguiemjFile = (fontsFolder / "seguiemj.ttf").string();
-    auto notoColorEmojiFile = (fontsFolder / "NotoColorEmoji.ttf").string();
-    auto fontAwesomeFile = (fontsFolder / FONT_ICON_FILE_NAME_FA).string();
 
-    ImGui::GetIO().Fonts->AddFontFromMemoryTTF(seguiemjFileData,seguiemjFileDataSize, fontSize,
-                                                         &emojiConfig,emoji_icon_ranges);
-    /*ImGui::GetIO().Fonts->AddFontFromMemoryTTF(notoColorEmojiFileData, notoColorEmojiFileDataSize, fontSize,
+    /*ImGui::GetIO().Fonts->AddFontFromMemoryTTF(seguiemjFileData,seguiemjFileDataSize, fontSize,
                                                          &emojiConfig,emoji_icon_ranges);*/
+    ImGui::GetIO().Fonts->AddFontFromMemoryTTF(twColorEmojiFileData, twColorEmojiFileDataSize, fontSize,
+                                                         &emojiConfig,emoji_icon_ranges);
     return ImGui::GetIO().Fonts->AddFontFromMemoryTTF(fontAwesomeFileData, fontAwesomeFileDataSize, fontSize,
                                                          &fontAwesomeConfig, icon_ranges);
 }
@@ -165,12 +164,12 @@ void Utils::LoadFonts(const std::filesystem::path& executablePath)
     if(!std::filesystem::exists(fontsFolder)) throw std::runtime_error(
                 fmt::format("Fonts folder does not exists ({})",fontsFolder.string()));
 
-    auto seguiemjFile = (fontsFolder / "seguiemj.ttf").string();
-    auto notoColorEmojiFile = (fontsFolder / "NotoColorEmoji.ttf").string();
+    //auto seguiemjFile = (fontsFolder / "seguiemj.ttf").string();
+    auto twColorEmojiFile = (fontsFolder / "Twemoji_Mozilla.ttf").string();
     auto fontAwesomeFile = (fontsFolder / FONT_ICON_FILE_NAME_FA).string();
 
-    seguiemjFileData = ImFileLoadToMemory(seguiemjFile.c_str(), "rb", &seguiemjFileDataSize, 0);
-    //notoColorEmojiFileData = ImFileLoadToMemory(notoColorEmojiFile.c_str(), "rb", &notoColorEmojiFileDataSize, 0);
+    //seguiemjFileData = ImFileLoadToMemory(seguiemjFile.c_str(), "rb", &seguiemjFileDataSize, 0);
+    twColorEmojiFileData = ImFileLoadToMemory(twColorEmojiFile.c_str(), "rb", &twColorEmojiFileDataSize, 0);
     fontAwesomeFileData = ImFileLoadToMemory(fontAwesomeFile.c_str(), "rb", &fontAwesomeFileDataSize, 0);
 
     AddFont(fontsFolder, "NotoSans-Bold.ttf", normalFontSize);
@@ -181,11 +180,11 @@ void Utils::LoadFonts(const std::filesystem::path& executablePath)
     AddFont(fontsFolder, "NotoSans-Regular.ttf", normalFontSize);
     AddFont(fontsFolder, "NotoSans-Medium.ttf", bigFontSize);
     AddFont(fontsFolder, "NotoMono-Regular.ttf", normalFontSize);
+    //ImGuiFreeType::BuildFontAtlas(ImGui::GetIO().Fonts, ImGuiFreeType::LoadColor);
 }
 void Utils::DeleteFonts()
 {
-    free(seguiemjFileData);
-    //free(notoColorEmojiFileData);
+    free(twColorEmojiFileData);
     free(fontAwesomeFileData);
 }
 int Utils::GetFontIndex(Fonts font)
