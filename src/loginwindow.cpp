@@ -69,10 +69,12 @@ bool LoginWindow::showLoginWindow()
         auto fieldsPosition = ImGui::CalcTextSize(LABEL_TEMPLATE.data()).x;
 
         ImGui::Text("Username:");
-        if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::IsAnyItemActive()
+        static bool firstTimeRender = true;
+        if (firstTimeRender && ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::IsAnyItemActive()
                 && !ImGui::IsMouseClicked(0))
         {
-           ImGui::SetKeyboardFocusHere(0);
+            ImGui::SetKeyboardFocusHere(0);
+            firstTimeRender = false;
         }
         ImGui::SameLine(fieldsPosition);
         ImGui::PushItemWidth(ImGui::CalcTextSize(FIELD_TEMPLATE.data()).x);
