@@ -447,112 +447,111 @@ HtmlParser::MediaLink HtmlParser::getMediaLink(const std::string& domain) const
             auto url = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:url");
             Uri uri(url);
             auto uriPath = uri.path();
-            auto type = this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:type");
-            if(type == "article" || url.find("/a/") != std::string::npos ||
-                    url.find("/gallery/") != std::string::npos)
-            {
-                link.type = MediaType::Gallery;
-
-                auto jsonStr = getImgurPostDataJson<GumboNode>(output->root);
-                try{
-                    nlohmann::json json = nlohmann::json::parse(jsonStr);
-                    if(json.contains("media") && json["media"].is_array())
+            auto jsonStr = getImgurPostDataJson<GumboNode>(output->root);
+            try{
+                nlohmann::json json = nlohmann::json::parse(jsonStr);
+                if(json.contains("media") && json["media"].is_array())
+                {
+                    for(const auto& m : json["media"])
                     {
-                        for(const auto& m : json["media"])
+                        if(m.contains("url") && m["url"].is_string())
                         {
-                            if(m.contains("url") && m["url"].is_string())
+                            auto url = m["url"].get<std::string>();
+                            if(!url.empty())
                             {
-                                auto url = m["url"].get<std::string>();
-                                if(!url.empty())
-                                {
-                                    link.urls.emplace_back(std::move(url));
-                                }
+                                link.urls.emplace_back(std::move(url));
                             }
                         }
                     }
-                }catch(const std::exception& ex){
-                    spdlog::error("Error parsing galery json:{}",ex.what());
                 }
+            }catch(const std::exception& ex){
+                spdlog::error("Error parsing galery json:{}",ex.what());
+            }
 
-                if(link.urls.empty())
+            if(link.urls.empty())
+            {
+                auto mainJsUrl = getImgurMainJsURL<GumboNode>(output->root);
+                std::promise<std::string> jsContentsPromise;
+                auto future = jsContentsPromise.get_future();
                 {
-                    auto mainJsUrl = getImgurMainJsURL<GumboNode>(output->root);
-                    std::promise<std::string> jsContentsPromise;
-                    auto future = jsContentsPromise.get_future();
+                    auto resourceConnection = client->makeResourceClientConnection();
+                    resourceConnection->connectionCompleteHandler([&jsContentsPromise](auto ec, auto response){
+                        if(ec)
+                        {
+                            jsContentsPromise.set_exception(std::make_exception_ptr(std::runtime_error(ec.message())));
+                        }
+                        else if(response.status >= 400)
+                        {
+                            jsContentsPromise.set_exception(std::make_exception_ptr(std::runtime_error("Cant find url")));
+                        }
+                        else if(response.status == 200 )
+                        {
+                            jsContentsPromise.set_value(std::string(reinterpret_cast<const char*>(response.data.data()),response.data.size()));
+                        }
+                    });
+                    resourceConnection->getResource(mainJsUrl);
+                }
+                try
+                {
+                    auto mainJsUrlContents = future.get();
+                    auto clientId = getClientId(mainJsUrlContents);
+                    if(!clientId.empty())
                     {
+                        std::promise<std::string> mainJsonContentsPromise;
+                        auto mainJsonContentsFuture = mainJsonContentsPromise.get_future();
                         auto resourceConnection = client->makeResourceClientConnection();
-                        resourceConnection->connectionCompleteHandler([&jsContentsPromise](auto ec, auto response){
+                        resourceConnection->connectionCompleteHandler([&mainJsonContentsPromise](auto ec, auto response){
                             if(ec)
                             {
-                                jsContentsPromise.set_exception(std::make_exception_ptr(std::runtime_error(ec.message())));
+                                mainJsonContentsPromise.set_exception(std::make_exception_ptr(std::runtime_error(ec.message())));
                             }
                             else if(response.status >= 400)
                             {
-                                jsContentsPromise.set_exception(std::make_exception_ptr(std::runtime_error("Cant find url")));
+                                mainJsonContentsPromise.set_exception(std::make_exception_ptr(std::runtime_error("Cant find url")));
                             }
                             else if(response.status == 200 )
                             {
-                                jsContentsPromise.set_value(std::string(reinterpret_cast<const char*>(response.data.data()),response.data.size()));
+                                mainJsonContentsPromise.set_value(std::string(reinterpret_cast<const char*>(response.data.data()),response.data.size()));
                             }
                         });
-                        resourceConnection->getResource(mainJsUrl);
-                    }
-                    try
-                    {
-                        auto mainJsUrlContents = future.get();
-                        auto clientId = getClientId(mainJsUrlContents);
-                        if(!clientId.empty())
+                        //the ID of the album is the last item in the uri path
+                        auto albumID = uriPath.back();
+                        resourceConnection->getResource("https://api.imgur.com/post/v1/albums/"+albumID+"?client_id="+clientId+"&include=media");
+                        auto mainJsonContents = mainJsonContentsFuture.get();
+                        auto json = nlohmann::json::parse(mainJsonContents);
+                        if(json.contains("media") && json["media"].is_array())
                         {
-                            std::promise<std::string> mainJsonContentsPromise;
-                            auto mainJsonContentsFuture = mainJsonContentsPromise.get_future();
-                            auto resourceConnection = client->makeResourceClientConnection();
-                            resourceConnection->connectionCompleteHandler([&mainJsonContentsPromise](auto ec, auto response){
-                                if(ec)
-                                {
-                                    mainJsonContentsPromise.set_exception(std::make_exception_ptr(std::runtime_error(ec.message())));
-                                }
-                                else if(response.status >= 400)
-                                {
-                                    mainJsonContentsPromise.set_exception(std::make_exception_ptr(std::runtime_error("Cant find url")));
-                                }
-                                else if(response.status == 200 )
-                                {
-                                    mainJsonContentsPromise.set_value(std::string(reinterpret_cast<const char*>(response.data.data()),response.data.size()));
-                                }
-                            });
-                            //the ID of the album is the last item in the uri path
-                            auto albumID = uriPath.back();
-                            resourceConnection->getResource("https://api.imgur.com/post/v1/albums/"+albumID+"?client_id="+clientId+"&include=media");
-                            auto mainJsonContents = mainJsonContentsFuture.get();
-                            auto json = nlohmann::json::parse(mainJsonContents);
-                            if(json.contains("media") && json["media"].is_array())
+                            for(const auto& m : json["media"])
                             {
-                                for(const auto& m : json["media"])
+                                if(m.contains("url") && m["url"].is_string() && m.contains("type") && m["type"].get<std::string>() == "image")
                                 {
-                                    if(m.contains("url") && m["url"].is_string() && m.contains("type") && m["type"].get<std::string>() == "image")
+                                    auto url = m["url"].get<std::string>();
+                                    if(!url.empty())
                                     {
-                                        auto url = m["url"].get<std::string>();
-                                        if(!url.empty())
-                                        {
-                                            link.urls.emplace_back(std::move(url));
-                                        }
+                                        link.urls.emplace_back(std::move(url));
                                     }
                                 }
                             }
                         }
                     }
-                    catch(const std::exception& ex)
-                    {
-                        spdlog::error("Error getting mainjs:{}",ex.what());
-                    }
-
-
+                }
+                catch(const std::exception& ex)
+                {
+                    spdlog::error("Error getting mainjs:{}",ex.what());
                 }
             }
+
+            if(link.urls.size() > 1)
+            {
+                link.type = MediaType::Gallery;                
+            }
             else
+            {                
+                link.type = MediaType::Image;
+            }
+            if(link.urls.empty())
             {
                 link.urls.emplace_back(this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:image"));
-                link.type = MediaType::Image;
             }
         }
     }
