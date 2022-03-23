@@ -11,13 +11,16 @@
 #include "redditconnection.h"
 #include "htmlparser.h"
 
+class RedditClientProducer;
+
 using dummy_response = client_response<void*>;
 class UrlDetectionConnection : public RedditGetConnection<dummy_response>
 {
 public:
     UrlDetectionConnection(const boost::asio::any_io_executor& executor,
                              boost::asio::ssl::context& ssl_context,
-                             const std::string& userAgent);
+                             const std::string& userAgent,
+                           RedditClientProducer* client);
     ~UrlDetectionConnection();
     void detectMediaUrl(post* mediaPost);
     using StreamingSignal = boost::signals2::signal<void(HtmlParser::MediaLink)>;
@@ -49,6 +52,7 @@ private:
     bool downloadingHtml = false;
     post* currentPost;
     std::string currentUrl;
+    RedditClientProducer* client;
 };
 
 #endif // MEDIASTREAMINGCONNECTION_H

@@ -166,7 +166,6 @@ set(EXECUTABLE_INCLUDES
     "imgui"
     "${STB_INCLUDE_DIRS}"
     "${CMAKE_CURRENT_SOURCE_DIR}"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../external/url/include"
     )
 
 if(ENABLE_M4DC)

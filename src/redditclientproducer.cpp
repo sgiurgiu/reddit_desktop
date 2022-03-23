@@ -72,7 +72,7 @@ RedditClientProducer::RedditResourceClientConnection RedditClientProducer::makeR
 }
 RedditClientProducer::UrlDetectionClientConnection RedditClientProducer::makeUrlDetectionClientConnection()
 {
-    return std::make_shared<UrlDetectionConnection>(executor,ssl_context,userAgent);
+    return std::make_shared<UrlDetectionConnection>(executor,ssl_context,userAgent, this);
 }
 RedditClientProducer::RedditCreatePostClientConnection RedditClientProducer::makeCreatePostClientConnection()
 {

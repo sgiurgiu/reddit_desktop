@@ -834,7 +834,7 @@ void PostContentViewer::showPostContent()
         display_image->resizedHeight = gif->height;
     }
 
-    if(currentPost->isGallery && !currentPost->gallery.empty())
+    if(currentPost->isGallery && !gallery.images.empty())
     {
         if(gallery.currentImage < 0 || gallery.currentImage >= (int)gallery.images.size())
         {

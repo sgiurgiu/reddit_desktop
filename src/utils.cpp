@@ -130,7 +130,7 @@ ImFont* Utils::AddFont(const std::filesystem::path& fontsFolder,
     static ImFontConfig emojiConfig;
     emojiConfig.MergeMode = true;
     emojiConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
-    //emojiConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_Bitmap;
+    emojiConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_Bitmap;
     emojiConfig.OversampleH = emojiConfig.OversampleV = 1;
     emojiConfig.FontDataOwnedByAtlas = false;
     //emojiConfig.GlyphMinAdvanceX = fontSize;

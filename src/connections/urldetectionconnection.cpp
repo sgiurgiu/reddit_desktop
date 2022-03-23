@@ -5,11 +5,14 @@
 #include "uri.h"
 #include "htmlparser.h"
 #include "macros.h"
+#include "redditclientproducer.h"
 
 UrlDetectionConnection::UrlDetectionConnection(const boost::asio::any_io_executor& executor,
                                                    boost::asio::ssl::context& ssl_context,
-                                                   const std::string& userAgent):
-    RedditConnection(executor,ssl_context,"",""),userAgent(userAgent),cancel(false)
+                                                   const std::string& userAgent,
+                                               RedditClientProducer* client):
+    RedditConnection(executor,ssl_context,"",""),userAgent(userAgent),cancel(false),
+    client(client)
 {
     responseParser->body_limit(10*1024*1024);//10 MB html file limit should be plenty
 }
@@ -132,7 +135,7 @@ void UrlDetectionConnection::responseReceivedComplete()
     }
     if(downloadingHtml)
     {
-        HtmlParser htmlParser(responseParser->get().body());
+        HtmlParser htmlParser(responseParser->get().body(), client);
         auto videoUrl = htmlParser.getMediaLink(currentPost->domain);
         //boost::system::error_code ec;
         //stream->shutdown(ec);
