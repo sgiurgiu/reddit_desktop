@@ -470,12 +470,14 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
         {
             c.showingReplyArea = true;
             c.replyingToComment = true;
+            c.updatingComment = false;
         }
         ImGui::SameLine();
         if(ImGui::Button(c.quoteButtonText.c_str()))
         {
             c.showingReplyArea = true;
             c.replyingToComment = true;
+            c.updatingComment = false;
             if(c.postReplyTextBuffer.empty())
             {
                 std::istringstream comment(c.commentData.body);
@@ -494,6 +496,7 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
             {
                 c.showingReplyArea = true;
                 c.updatingComment = true;
+                c.replyingToComment = false;
                 if (c.postReplyTextBuffer.empty())
                 {
                     c.postReplyTextBuffer = c.commentData.body;
