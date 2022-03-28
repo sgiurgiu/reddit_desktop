@@ -125,6 +125,38 @@ int main(int /*argc*/, char** argv)
     {
         int x,y,w,h;
         db->getMainWindowDimensions(&x,&y,&w,&h);
+
+        int numDisplays = SDL_GetNumVideoDisplays();
+        bool withinBounds = false;
+        SDL_Rect windowDimensions;
+        windowDimensions.x = x;
+        windowDimensions.y = y;
+        windowDimensions.w = w;
+        windowDimensions.h = h;
+        for (int i = 0; i < numDisplays; i++)
+        {
+            SDL_Rect dispBounds = { 0 };
+            if (SDL_GetDisplayBounds(i, &dispBounds) == 0)
+            {
+                SDL_Rect intersect = { 0 };
+                //even if we intersect, we want at least 100px of width or height
+                withinBounds = (SDL_IntersectRect(&windowDimensions, &dispBounds, &intersect) && (intersect.w >= 100 || intersect.h >= 100));
+                if (withinBounds) break;
+            }
+        }
+
+        if (!withinBounds && numDisplays >= 1 /*must be at least one*/)
+        {
+            //center on the primary screen
+            SDL_Rect dispBounds = { 0 };
+            if (SDL_GetDisplayBounds(0, &dispBounds) == 0)
+            {
+                w = std::min(w,dispBounds.w);
+                h = std::min(h, dispBounds.h);
+                x = dispBounds.w / 2 - w / 2;
+                y = dispBounds.h / 2 - h / 2;
+            }
+        }
         SDL_SetWindowPosition(window,x,y);
         SDL_SetWindowSize(window,w,h);
     }
