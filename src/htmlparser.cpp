@@ -17,6 +17,7 @@
 #include "redditclientproducer.h"
 #include <future>
 #include "uri.h"
+#include <unordered_set>
 
 /**
  * This class looks for video links in HTML
@@ -83,6 +84,11 @@ std::string getClientId(const std::string& jsContents)
     }
     return "";
 }
+
+const std::unordered_set<std::string> stream_video_source_domains = {
+    "streamja.com", "streamvi.com", "streamwo.com", "streamye.com",
+    "streamgg.com","streamff.com"
+};
 }
 
 HtmlParser::HtmlParser(const std::filesystem::path& file)
@@ -409,8 +415,7 @@ HtmlParser::MediaLink HtmlParser::getMediaLink(const std::string& domain) const
     {
         link.urls.emplace_back(this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:video:url"));
     }
-    else if (domain == "streamja.com" || domain == "streamvi.com" || 
-        domain == "streamwo.com" || domain == "streamye.com")
+    else if (stream_video_source_domains.contains(domain))
     {
         link.urls.emplace_back(this->template lookupVideoSourceVideoUrl<GumboNode>(output->root));
     }
