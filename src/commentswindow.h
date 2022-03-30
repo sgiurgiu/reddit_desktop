@@ -56,6 +56,16 @@ public:
         windowSize = size;
     }
 private:
+    enum class CommentState
+    {
+        NONE,
+        REPLYING,
+        QUOTING,
+        UPDATING,
+        DELETING,
+        DELETECONFIRMED,
+        DELETED
+    };
     struct DisplayComment
     {
         DisplayComment(comment cmt, const access_token& token,
@@ -72,6 +82,12 @@ private:
             updateButtonsText();
             awardsRenderer->LoadAwards(token,client,executor);
             flairRenderer->LoadFlair(token,client,executor);
+            if(commentData.author == "[deleted]")
+            {
+                //there doesn't seem to be any other way to detect
+                //that a comment has been deleted. It's ... weird.
+                state = CommentState::DELETED;
+            }
         }
         comment commentData;
         MarkdownRenderer renderer;
@@ -90,14 +106,16 @@ private:
         std::string commentScoreText;
         std::string postReplyPreviewCheckboxId;
         std::string liveReplyPreviewText;
+        std::string deleteButtonText;
+        std::string deleteYesButtonText;
+        std::string deleteNoButtonText;
+
         std::vector<DisplayComment> replies;
         bool loadingUnloadedReplies = false;
         std::string postReplyTextBuffer;
         bool postingReplyInProgress = false;
         bool showingReplyArea = false;
         bool showingPreview = false;
-        bool replyingToComment = false;
-        bool updatingComment = false;
 
         MarkdownRenderer previewRenderer;
         ImVec2 postReplyTextFieldSize;
@@ -110,6 +128,7 @@ private:
         float markdownHeight = 10.f;
         std::shared_ptr<AwardsRenderer> awardsRenderer;
         std::shared_ptr<FlairRenderer> flairRenderer;
+        CommentState state = CommentState::NONE;
         void updateButtonsText();
     };
     void loadMoreChildrenListing(const listing& listingResponse,std::any userData);
@@ -152,7 +171,7 @@ private:
     RedditClientProducer::RedditListingClientConnection listingConnection;
     RedditClientProducer::RedditVoteClientConnection postVotingConnection;
     RedditClientProducer::RedditMoreChildrenClientConnection moreChildrenConnection;
-    RedditClientProducer::RedditCreateCommentClientConnection createCommentConnection;
+    RedditClientProducer::RedditCommentClientConnection commentConnection;
     RedditClientProducer::RedditVoteClientConnection commentVotingConnection;
 
     using OpenSubredditSignal = boost::signals2::signal<void(std::string subreddit)>;
@@ -185,7 +204,7 @@ private:
     struct CommentUserData
     {
         std::string commentName;
-        bool isUpdating = false;
+        CommentState state = CommentState::NONE;
     };
 };
 

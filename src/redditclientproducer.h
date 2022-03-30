@@ -10,7 +10,7 @@
 #include "connections/redditsearchnamesconnection.h"
 #include "connections/redditvoteconnection.h"
 #include "connections/redditmorechildrenconnection.h"
-#include "connections/redditcreatecommentconnection.h"
+#include "connections/redditcommentconnection.h"
 #include "connections/redditmarkreplyreadconnection.h"
 #include "connections/redditsrsubscriptionconnection.h"
 #include "connections/redditlivethreadconnection.h"
@@ -36,7 +36,7 @@ public:
     using RedditSearchNamesClientConnection = std::shared_ptr<RedditSearchNamesConnection>;
     using RedditVoteClientConnection = std::shared_ptr<RedditVoteConnection>;
     using RedditMoreChildrenClientConnection = std::shared_ptr<RedditMoreChildrenConnection>;
-    using RedditCreateCommentClientConnection = std::shared_ptr<RedditCreateCommentConnection>;
+    using RedditCommentClientConnection = std::shared_ptr<RedditCommentConnection>;
     using RedditMarkReplyReadClientConnection = std::shared_ptr<RedditMarkReplyReadConnection>;
     using RedditSRSubscriptionClientConnection = std::shared_ptr<RedditSRSubscriptionConnection>;
     using RedditLiveThreadClientConnection = std::shared_ptr<RedditLiveThreadConnection>;
@@ -49,7 +49,7 @@ public:
     RedditSearchNamesClientConnection makeRedditSearchNamesClientConnection();
     RedditVoteClientConnection makeRedditVoteClientConnection();
     RedditMoreChildrenClientConnection makeRedditMoreChildrenClientConnection();
-    RedditCreateCommentClientConnection makeRedditCreateCommentClientConnection();
+    RedditCommentClientConnection makeRedditCommentClientConnection();
     RedditMarkReplyReadClientConnection makeRedditMarkReplyReadClientConnection();
     RedditSRSubscriptionClientConnection makeRedditRedditSRSubscriptionClientConnection();
     RedditLiveThreadClientConnection makeRedditLiveThreadClientConnection();

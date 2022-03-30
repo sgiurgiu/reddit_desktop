@@ -34,7 +34,7 @@ set(REDDIT_CONNECTIONS_SRCS
     ${CMAKE_SOURCE_DIR}/src/connections/redditsearchnamesconnection.cpp
     ${CMAKE_SOURCE_DIR}/src/connections/redditvoteconnection.cpp
     ${CMAKE_SOURCE_DIR}/src/connections/redditmorechildrenconnection.cpp
-    ${CMAKE_SOURCE_DIR}/src/connections/redditcreatecommentconnection.cpp
+    ${CMAKE_SOURCE_DIR}/src/connections/redditcommentconnection.cpp
     ${CMAKE_SOURCE_DIR}/src/connections/redditmarkreplyreadconnection.cpp
     ${CMAKE_SOURCE_DIR}/src/connections/redditsrsubscriptionconnection.cpp
     ${CMAKE_SOURCE_DIR}/src/connections/redditlivethreadconnection.cpp

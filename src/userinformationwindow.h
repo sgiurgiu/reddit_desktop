@@ -98,7 +98,7 @@ private:
     const boost::asio::any_io_executor& uiExecutor;
     std::map<std::string,Messages> messages;
     std::string listingErrorMessage;
-    RedditClientProducer::RedditCreateCommentClientConnection createCommentConnection;
+    RedditClientProducer::RedditCommentClientConnection createCommentConnection;
     RedditClientProducer::RedditListingClientConnection listingConnection;
     RedditClientProducer::RedditMarkReplyReadClientConnection markReplyReadConnection;
     RedditClientProducer::RedditVoteClientConnection commentVotingConnection;

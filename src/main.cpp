@@ -135,12 +135,14 @@ int main(int /*argc*/, char** argv)
         windowDimensions.h = h;
         for (int i = 0; i < numDisplays; i++)
         {
-            SDL_Rect dispBounds = { 0 };
+            SDL_Rect dispBounds = { 0, 0, 0, 0 };
             if (SDL_GetDisplayBounds(i, &dispBounds) == 0)
             {
-                SDL_Rect intersect = { 0 };
+                SDL_Rect intersect = { 0, 0, 0, 0 };
                 //even if we intersect, we want at least 100px of width or height
-                withinBounds = (SDL_IntersectRect(&windowDimensions, &dispBounds, &intersect) && (intersect.w >= 100 || intersect.h >= 100));
+                withinBounds = (SDL_IntersectRect(&windowDimensions, &dispBounds, &intersect) &&
+                                (intersect.w >= 0 && intersect.h >= 0) &&
+                                (intersect.w >= 100 || intersect.h >= 100));
                 if (withinBounds) break;
             }
         }
@@ -148,7 +150,7 @@ int main(int /*argc*/, char** argv)
         if (!withinBounds && numDisplays >= 1 /*must be at least one*/)
         {
             //center on the primary screen
-            SDL_Rect dispBounds = { 0 };
+            SDL_Rect dispBounds = { 0, 0, 0, 0 };
             if (SDL_GetDisplayBounds(0, &dispBounds) == 0)
             {
                 w = std::min(w,dispBounds.w);

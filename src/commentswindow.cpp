@@ -111,10 +111,10 @@ void CommentsWindow::setupListingConnections()
              }
         });
     }
-    if(!createCommentConnection)
+    if(!commentConnection)
     {
-        createCommentConnection = client->makeRedditCreateCommentClientConnection();
-        createCommentConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
+        commentConnection = client->makeRedditCommentClientConnection();
+        commentConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
                                    client_response<listing> response)
        {
            auto self = weak.lock();
@@ -167,10 +167,9 @@ void CommentsWindow::loadCommentReply(const listing& listingResponse,std::any us
             c->postReplyTextBuffer.clear();
             c->showingPreview = false;
             c->previewRenderer.SetText(c->postReplyTextBuffer);
-            c->replyingToComment = false;
-            c->updatingComment = false;
+            c->state = CommentState::NONE;
             auto replies = std::move(std::get<0>(receivedComments));
-            if (commentData.isUpdating)
+            if (commentData.state == CommentState::UPDATING)
             {
                 if (!replies.empty())
                 {
@@ -178,13 +177,25 @@ void CommentsWindow::loadCommentReply(const listing& listingResponse,std::any us
                     c->renderer.SetText(c->commentData.body);
                 }
             }
-            else
+            else if (commentData.state == CommentState::REPLYING ||
+                     commentData.state == CommentState::QUOTING ||
+                     commentData.state == CommentState::NONE)
             {
                 
                 for (auto&& reply : replies)
                 {
                     c->replies.emplace(c->replies.begin(), std::move(reply), token, client, uiExecutor);
                 }
+            }
+            else if(commentData.state == CommentState::DELETECONFIRMED)
+            {
+                c->titleText = "[deleted]";
+                c->renderer.SetText("[deleted]");
+                c->commentData.body = "[deleted]";
+                c->commentData.author = "[deleted]";
+                c->commentData.isSubmitter = false;
+                c->state = CommentState::DELETED;
+                c->updateButtonsText();
             }
         }
     }
@@ -428,6 +439,8 @@ void CommentsWindow::renderCommentContents(DisplayComment& c, int level)
 }
 void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
 {
+    if(c.state == CommentState::DELETED) return;
+
     if(c.commentData.voted == Voted::UpVoted)
     {
         ImGui::PushStyleColor(ImGuiCol_Text,Utils::GetUpVoteColor());
@@ -458,27 +471,23 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
         ImGui::PopStyleColor(1);
     }
 
-   /* ImGui::SameLine();
-    if(ImGui::Button(c.saveButtonText.c_str()))
-    {
-
-    }*/
     if(parentPost && !parentPost->locked)
     {
         ImGui::SameLine();
         if(ImGui::Button(c.replyButtonText.c_str()))
         {
             c.showingReplyArea = true;
-            c.replyingToComment = true;
-            c.updatingComment = false;
+            if (c.state != CommentState::REPLYING)
+            {
+                c.postReplyTextBuffer.clear();
+                c.state = CommentState::REPLYING;
+            }
         }
         ImGui::SameLine();
         if(ImGui::Button(c.quoteButtonText.c_str()))
         {
             c.showingReplyArea = true;
-            c.replyingToComment = true;
-            c.updatingComment = false;
-            if(c.postReplyTextBuffer.empty())
+            if (c.state != CommentState::QUOTING)
             {
                 std::istringstream comment(c.commentData.body);
                 std::string quotedText;
@@ -487,6 +496,7 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
                     quotedText += "> " + line + "\n";
                 }
                 c.postReplyTextBuffer = quotedText + "\n\n";
+                c.state = CommentState::QUOTING;
             }
         }
         if (c.commentData.isUsersComment)
@@ -495,17 +505,59 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
             if (ImGui::Button(c.editButtonText.c_str()))
             {
                 c.showingReplyArea = true;
-                c.updatingComment = true;
-                c.replyingToComment = false;
-                if (c.postReplyTextBuffer.empty())
+                if (c.state != CommentState::UPDATING)
                 {
                     c.postReplyTextBuffer = c.commentData.body;
+                    c.state = CommentState::UPDATING;
                 }
+            }
+
+            ImGui::SameLine(0.0f, 10.f);
+            if(c.state != CommentState::DELETING &&
+               c.state != CommentState::DELETECONFIRMED &&
+               ImGui::Button(c.deleteButtonText.c_str()))
+            {
+                c.showingReplyArea = false;
+                c.postReplyTextBuffer.clear();
+                c.state = CommentState::DELETING;
+            }
+            else if(c.state == CommentState::DELETING)
+            {
+                ImGui::TextUnformatted("Confirm Delete: ");
+                ImGui::SameLine();
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.f,1.f,0.f,1.f));
+                if(ImGui::Button(c.deleteYesButtonText.c_str()))
+                {
+                    c.state = CommentState::DELETECONFIRMED;
+                    commentConnection->deleteComment(c.commentData.name, token, CommentUserData{ c.commentData.name, c.state });
+                }
+                ImGui::PopStyleColor(1);
+                if(ImGui::IsItemHovered())
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted("Delete this comment");
+                    ImGui::EndTooltip();
+                }
+                ImGui::SameLine();
+                ImGui::TextUnformatted("/");
+                ImGui::SameLine();
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f,0.f,0.f,1.f));
+                if(ImGui::Button(c.deleteNoButtonText.c_str()))
+                {
+                    c.state = CommentState::NONE;
+                }
+                ImGui::PopStyleColor(1);
+                if(ImGui::IsItemHovered())
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted("Cancel comment deletion");
+                    ImGui::EndTooltip();
+                }
+
             }
         }
         if(c.showingReplyArea)
         {
-
             if(ResizableInputTextMultiline::InputText(c.replyIdText.c_str(),&c.postReplyTextBuffer,
                                       &c.postReplyTextFieldSize))
             {
@@ -530,13 +582,13 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
             {
                 c.showingReplyArea = false;
                 c.postingReplyInProgress = true;
-                if (c.replyingToComment)
+                if (c.state == CommentState::REPLYING || c.state == CommentState::QUOTING)
                 {
-                    createCommentConnection->createComment(c.commentData.name, c.postReplyTextBuffer, token, CommentUserData{ c.commentData.name, false });
+                    commentConnection->createComment(c.commentData.name, c.postReplyTextBuffer, token, CommentUserData{ c.commentData.name, c.state });
                 }
-                else if (c.updatingComment)
+                if (c.state == CommentState::UPDATING)
                 {
-                    createCommentConnection->updateComment(c.commentData.name, c.postReplyTextBuffer, token, CommentUserData{ c.commentData.name, true });
+                    commentConnection->updateComment(c.commentData.name, c.postReplyTextBuffer, token, CommentUserData{ c.commentData.name, c.state });
                 }
             }
             if(saveDisabled)
@@ -697,6 +749,9 @@ void CommentsWindow::DisplayComment::updateButtonsText()
     titleText = fmt::format("{}  {} points, {}",commentData.author,
                             commentData.humanScore,commentData.humanReadableTimeDifference);
 #endif
+    deleteButtonText = fmt::format("{}##{}_delete",reinterpret_cast<const char*>(ICON_FA_TRASH),commentData.name);
+    deleteYesButtonText = fmt::format("{}##{}_deleteyes",reinterpret_cast<const char*>(ICON_FA_CHECK),commentData.name);
+    deleteNoButtonText = fmt::format("{}##{}_deleteno",reinterpret_cast<const char*>(ICON_FA_TIMES),commentData.name);
 }
 void CommentsWindow::voteParentPost(Voted vote)
 {
@@ -955,7 +1010,7 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
             if(ImGui::Button(commentButtonText.c_str()) && !postingComment && !postCommentTextBuffer.empty())
             {
                 postingComment = true;
-                createCommentConnection->createComment(parentPost->name,postCommentTextBuffer,token, PostUserData());
+                commentConnection->createComment(parentPost->name,postCommentTextBuffer,token, PostUserData());
             }
             ImGui::SameLine();
             if(ImGui::Button(clearCommentButtonText.c_str()) && !postingComment && !postCommentTextBuffer.empty())

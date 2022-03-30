@@ -69,7 +69,7 @@ set(REDDIT_CONNECTIONS_SRCS
     connections/redditsearchnamesconnection.cpp
     connections/redditvoteconnection.cpp
     connections/redditmorechildrenconnection.cpp
-    connections/redditcreatecommentconnection.cpp
+    connections/redditcommentconnection.cpp
     connections/redditmarkreplyreadconnection.cpp
     connections/redditsrsubscriptionconnection.cpp
     connections/redditlivethreadconnection.cpp

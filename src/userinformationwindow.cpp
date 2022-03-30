@@ -25,7 +25,7 @@ void UserInformationWindow::loadMessages()
 {
     if(!createCommentConnection)
     {
-        createCommentConnection = client->makeRedditCreateCommentClientConnection();
+        createCommentConnection = client->makeRedditCommentClientConnection();
         createCommentConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
                                    client_response<listing> response)
        {

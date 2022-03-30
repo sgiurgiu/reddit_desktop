@@ -1,11 +1,11 @@
-#include "redditcreatecommentconnection.h"
+#include "redditcommentconnection.h"
 
 #include <fmt/format.h>
 #include "json.hpp"
 #include <charconv>
 #include "htmlparser.h"
 
-RedditCreateCommentConnection::RedditCreateCommentConnection(const boost::asio::any_io_executor& executor,
+RedditCommentConnection::RedditCommentConnection(const boost::asio::any_io_executor& executor,
                                                              boost::asio::ssl::context& ssl_context,
                                                              const std::string& host, const std::string& service,
                                                              const std::string& userAgent):
@@ -13,7 +13,26 @@ RedditCreateCommentConnection::RedditCreateCommentConnection(const boost::asio::
 {
 
 }
-void RedditCreateCommentConnection::updateComment(const std::string& postId, const std::string& text,
+void RedditCommentConnection::deleteComment(const std::string& postId,
+    const access_token& token, std::any userData)
+{
+    if (postId.empty()) return;
+    request_t request;
+    request.clear();
+    request.version(11);
+    request.method(boost::beast::http::verb::post);
+    request.target("/api/del");
+    request.set(boost::beast::http::field::host, host);
+    request.set(boost::beast::http::field::accept, "*/*");
+    request.set(boost::beast::http::field::connection, "keep-alive");
+    request.set(boost::beast::http::field::user_agent, userAgent);
+    request.set(boost::beast::http::field::authorization, fmt::format("Bearer {}", token.token));
+    request.set(boost::beast::http::field::content_type, "application/x-www-form-urlencoded");
+    request.body() = fmt::format("id={}&raw_json=1",postId);
+    request.prepare_payload();
+    enqueueRequest(std::move(request), std::move(userData));
+}
+void RedditCommentConnection::updateComment(const std::string& postId, const std::string& text,
     const access_token& token, std::any userData)
 {
     if (text.empty() || postId.empty()) return;
@@ -35,7 +54,7 @@ void RedditCreateCommentConnection::updateComment(const std::string& postId, con
     request.prepare_payload();
     enqueueRequest(std::move(request), std::move(userData));
 }
-void RedditCreateCommentConnection::createComment(const std::string& parentId,const std::string& text,
+void RedditCommentConnection::createComment(const std::string& parentId,const std::string& text,
                                                   const access_token& token, std::any userData)
 {
     if(text.empty() || parentId.empty()) return;
@@ -58,7 +77,7 @@ void RedditCreateCommentConnection::createComment(const std::string& parentId,co
     enqueueRequest(std::move(request), std::move(userData));
 }
 
-void RedditCreateCommentConnection::responseReceivedComplete(std::any userData)
+void RedditCommentConnection::responseReceivedComplete(std::any userData)
 {
     auto status = responseParser->get().result_int();
     auto body = responseParser->get().body();
