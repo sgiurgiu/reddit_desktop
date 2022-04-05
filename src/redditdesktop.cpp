@@ -159,11 +159,11 @@ void RedditDesktop::updateUserInformation(user_info info)
         userInfoDisplay = fmt::format("{} ({}-{})",infoUser->name,infoUser->humanLinkKarma,infoUser->humanCommentKarma);
         if(infoUser->hasMail)
         {
-            userInfoDisplay.append(reinterpret_cast<const char*>(" " ICON_FA_ENVELOPE_O));
+            userInfoDisplay.append(fmt::format(" {}{}",infoUser->inboxCount, reinterpret_cast<const char*>(" " ICON_FA_ENVELOPE_O)));
         }
         if(infoUser->hasModMail)
         {
-            userInfoDisplay.append(reinterpret_cast<const char*>(" " ICON_FA_BELL));
+            userInfoDisplay.append(fmt::format(" {}{}",infoUser->inboxCount, reinterpret_cast<const char*>(" " ICON_FA_BELL)));
         }
     }
 }
