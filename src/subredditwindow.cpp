@@ -707,7 +707,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         if (ImGui::BeginPopupContextItem("aboutsubredditpopup"))
         {
             bool refreshButtonDisabled = posts.empty();
-            if (ImGui::Selectable(reinterpret_cast<const char*>(ICON_FA_REFRESH " Refresh")) && !refreshButtonDisabled)
+            if (ImGui::Selectable(reinterpret_cast<const char*>(ICON_FA_REFRESH " Refresh (F5)")) && !refreshButtonDisabled)
             {
                 refreshPosts();
             }
@@ -880,6 +880,12 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             before.reset();
             after.reset();
         }
+        if(ImGui::IsItemHovered() && ImGui::IsWindowFocused())
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted("Previous page (mouse back button)");
+            ImGui::EndTooltip();
+        }
         if(!previousEnabled)
         {
             ImGui::PopStyleColor(3);
@@ -904,6 +910,12 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             loadSubredditListings(target+"?after="+after.value()+"&count="+std::to_string(currentCount),token);
             after.reset();
             before.reset();
+        }
+        if(ImGui::IsItemHovered() && ImGui::IsWindowFocused())
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted("Next page (mouse forward button)");
+            ImGui::EndTooltip();
         }
         if(!nextEnabled)
         {
