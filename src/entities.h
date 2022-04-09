@@ -573,6 +573,7 @@ struct tweet
     tweet(const nlohmann::json& json);
     void load(const nlohmann::json& data);
     std::string id;
+    std::string conversation_id;
     bool possibly_sensitive = false;
     std::string created_at;
     std::string text;

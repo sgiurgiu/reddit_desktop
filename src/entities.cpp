@@ -1500,6 +1500,10 @@ void tweet::load(const nlohmann::json& data)
     {
         id = data["id"].get<std::string>();
     }
+    if(data.contains("conversation_id") && data["conversation_id"].is_string())
+    {
+        conversation_id = data["conversation_id"].get<std::string>();
+    }
     if(data.contains("created_at") && data["created_at"].is_string())
     {
         created_at = data["created_at"].get<std::string>();

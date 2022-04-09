@@ -8,6 +8,7 @@
 #include "fonts/IconsFontAwesome4.h"
 #include "date.h"
 #include <algorithm>
+#include "markdown/markdownnodetext.h"
 
 namespace
 {
@@ -79,6 +80,14 @@ void TwitterRenderer::Render() const
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Light)]);
         ImGui::Text("Tweet posted %s",createdAtLocal.c_str());
         ImGui::PopFont();
+
+        if(fullThreadUrlRenderer)
+        {
+            ImGui::Text("Full thread:");
+            ImGui::SameLine();
+            fullThreadUrlRenderer->Render();
+        }
+
     }
     ImGui::EndGroup();
 
@@ -115,6 +124,12 @@ void TwitterRenderer::setTwitterResponse(tweet response)
     splitTweetTextIntoEntities();
     loadTweetImages();
     loadReferencedTweets();
+    if(!theTweet.conversation_id.empty())
+    {
+        auto fullThreadUrl = fmt::format("https://threadreaderapp.com/thread/{}.html",theTweet.conversation_id);
+        fullThreadUrlRenderer = std::make_unique<MarkdownNodeLink>(fullThreadUrl,fullThreadUrl);
+        fullThreadUrlRenderer->AddChild(std::make_unique<MarkdownNodeText>(fullThreadUrl.c_str(),fullThreadUrl.size()));
+    }
 }
 void TwitterRenderer::loadTweetImages()
 {

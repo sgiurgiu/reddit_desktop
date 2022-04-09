@@ -10,6 +10,7 @@
 #include "utils.h"
 #include <SDL_video.h>
 #include "markdownrenderer.h"
+#include "markdown/markdownnodelink.h"
 
 class TwitterRenderer : public std::enable_shared_from_this<TwitterRenderer>
 {
@@ -44,6 +45,7 @@ private:
     std::string createdAtLocal;
     MarkdownRenderer tweetTextRenderer;
     std::vector<TwitterRenderer> referencedTweets;
+    std::unique_ptr<MarkdownNodeLink> fullThreadUrlRenderer;
 };
 
 #endif // TWITTERRENDERER_H
