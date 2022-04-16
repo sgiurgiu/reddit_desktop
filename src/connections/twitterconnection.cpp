@@ -36,7 +36,7 @@ void TwitterConnection::GetTweet(const std::string& tweet,std::any userData)
                               "referenced_tweets.id,entities.mentions.username,referenced_tweets.id.author_id&"
                               "tweet.fields=attachments,author_id,created_at,id,"
                               "in_reply_to_user_id,lang,possibly_sensitive,public_metrics,"
-                              "referenced_tweets,text,withheld,entities&media.fields=media_key,height,"
+                              "referenced_tweets,text,withheld,entities,conversation_id&media.fields=media_key,height,"
                               "type,url,width,preview_image_url,duration_ms&"
                               "user.fields=id,name,username,verified",tweet);
     request_t request;

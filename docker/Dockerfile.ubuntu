@@ -8,17 +8,15 @@ WORKDIR /tmp/workdir
 COPY build_reddit_desktop.sh /tmp/workdir/
 
 RUN apt update && \
-    apt install -y dpkg build-essential cmake gcc g++ git \
+    apt install -y dpkg build-essential cmake gcc g++ git linux-headers-generic \
                 libmpv-dev ca-certificates curl zip unzip tar libglu1-mesa-dev libgl1-mesa-dev \
                 pkg-config generate-ninja ninja-build libxmu-dev libxi-dev libgl-dev  --no-install-recommends && \
     apt clean && \
     chmod 777 /tmp/workdir/build_reddit_desktop.sh
 
 RUN cd /opt \
-    && git clone https://github.com/Microsoft/vcpkg.git -n \
+    && git clone https://github.com/Microsoft/vcpkg.git \
     && cd vcpkg \
-    && git fetch --all --tags \
-    && git checkout tags/2022.03.10 -b my_release \
     && ./bootstrap-vcpkg.sh \
     && ./vcpkg install boost-asio boost-algorithm boost-beast boost-system boost-filesystem  boost-program-options  boost-process  boost-serialization boost-signals2 boost-spirit glew gumbo fmt sdl2 spdlog stb sqlite3 freetype opengl openssl uriparser zlib gtest
 

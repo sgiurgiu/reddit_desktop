@@ -13,18 +13,17 @@ RUN dnf install -yq \
     dnf upgrade -y && \
     dnf clean all
 
-RUN dnf -yq install cmake gcc g++ pkgconf-pkg-config git \
-        tar rpm-build ninja-build perl-FindBin perl-English perl-File-Compare \
+RUN dnf -yq install cmake gcc g++ pkgconf-pkg-config git kernel-headers \
+        tar rpm-build ninja-build perl-FindBin perl-English perl-File-Compare perl-IPC-Cmd.noarch \
+        perl-File-Copy perl-File-Copy-Recursive perl-File-Copy-Recursive-Reduced \
         ibus-devel libXmu-devel libXi-devel mesa-libGL-devel mesa-libGLU-devel \
         mpv-libs-devel && \
         dnf clean all
 
 
 RUN cd /opt \
-    && git clone https://github.com/Microsoft/vcpkg.git -n \ 
+    && git clone https://github.com/Microsoft/vcpkg.git \ 
     && cd vcpkg \
-    && git fetch --all --tags \
-    && git checkout tags/2022.03.10 -b my_release \
     && ./bootstrap-vcpkg.sh \
     && ./vcpkg install boost-asio boost-algorithm boost-beast boost-system boost-filesystem  boost-program-options  boost-process  boost-serialization boost-signals2 boost-spirit glew gumbo fmt sdl2 spdlog stb sqlite3 freetype opengl openssl uriparser zlib gtest
 
