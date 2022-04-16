@@ -14,6 +14,7 @@ if [ -z ${REDDITDESKTOP_VERSION_MAJOR+x} ]; then
     REDDITDESKTOP_VERSION_PATCH="dev"
 fi
 
+
 if [ -z $1 ]; then
     distros=("debian" "fedora" "ubuntu")
 else
@@ -25,9 +26,7 @@ if [ -z $CONTAINER_REGISTRY ]; then
     exit 1
 fi
 
-function build()
-{
-    local distro=$1
+for distro in "${distros[@]}"; do
     echo "Running podman to build for distribution ${distro}"
     podman pull $CONTAINER_REGISTRY/reddit_desktop_$distro:build
     podman run --rm --privileged=true --name rd$distro \
@@ -36,32 +35,11 @@ function build()
             -e REDDITDESKTOP_VERSION_MINOR="${REDDITDESKTOP_VERSION_MINOR}" \
             -e REDDITDESKTOP_VERSION_PATCH="${REDDITDESKTOP_VERSION_PATCH}" \
             $CONTAINER_REGISTRY/reddit_desktop_$distro:build
-}
-procs=()  # bash array
-for distro in "${distros[@]}"; do
-    procs+=("build $distro")
 done
-num_procs=${#procs[@]}  # number of processes
-pids=()  # bash array
-for (( i=0; i<"$num_procs"; i++ )); do
-    echo "cmd = ${procs[$i]}"
-    ${procs[$i]} &  # run the cmd as a subprocess
-    # store pid of last subprocess started; see:
-    # https://unix.stackexchange.com/a/30371/114401
-    pids+=("$!")
-    echo "    pid = ${pids[$i]}"
-done
-
-for pid in "${pids[@]}"; do
-    wait "$pid"
-    return_code="$?"
-    echo "PID = $pid; return_code = $return_code"
-done
-
 
 podman rmi -f reddit_desktop_runtime:latest || true
-FEDORA_PACKAGE=/tmp/reddit_desktop/packages/reddit_desktop-${REDDITDESKTOP_VERSION_MAJOR}.${REDDITDESKTOP_VERSION_MINOR}.${REDDITDESKTOP_VERSION_PATCH}-fedora.rpm
-buildah bud --build-arg RDRPM=${FEDORA_PACKAGE} \
+
+buildah bud --build-arg RDRPM=/tmp/reddit_desktop/packages/reddit_desktop-${REDDITDESKTOP_VERSION_MAJOR}.${REDDITDESKTOP_VERSION_MINOR}.${REDDITDESKTOP_VERSION_PATCH}-fedora.rpm \
             --build-arg BASE_CONTAINER=$CONTAINER_REGISTRY/reddit_desktop_fedora:runtime \
             -v "${root}":/tmp/reddit_desktop/:Z \
             -f  ${root}/docker/Dockerfile.fedora.runtime -t reddit_desktop_runtime
