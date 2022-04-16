@@ -6,6 +6,7 @@ ENV TZ=America/Toronto
 
 WORKDIR /tmp/workdir
 COPY build_reddit_desktop.sh /tmp/workdir/
+COPY prepare_vcpkg.sh /tmp/workdir/
 
 RUN apt update && \
     apt install -y dpkg build-essential cmake gcc g++ git linux-headers-generic \
@@ -14,12 +15,7 @@ RUN apt update && \
     apt clean && \
     chmod 777 /tmp/workdir/build_reddit_desktop.sh
 
-RUN cd /opt \
-    && git clone https://github.com/Microsoft/vcpkg.git \
-    && cd vcpkg \
-    && ./bootstrap-vcpkg.sh \
-    && ./vcpkg install boost-asio boost-algorithm boost-beast boost-system boost-filesystem  boost-program-options  boost-process  boost-serialization boost-signals2 boost-spirit glew gumbo fmt sdl2 spdlog stb sqlite3 freetype opengl openssl uriparser zlib gtest
-
+RUN /tmp/workdir/prepare_vcpkg.sh
 
 ENTRYPOINT ["/tmp/workdir/build_reddit_desktop.sh"]
 CMD ["ubuntu"]
