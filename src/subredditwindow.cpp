@@ -84,13 +84,33 @@ void SubredditWindow::loadSubreddit()
             target = "/r/" + target;
         }
     }
-    windowName = fmt::format("{}###{}",title,id);
-    aboutSubredditWindowName = fmt::format("About {}###{}_about", title, id);
-
+    updateWindowsNames();
     if(!target.starts_with("/")) target = "/" + target;
     loadSubredditListings(target,token);
     lookAndDestroyPostsContents();
     //subredditStylesheet->LoadSubredditStylesheet(target);
+}
+void SubredditWindow::updateWindowsNames()
+{
+    std::string sortingText;
+    auto sortingPostsIt = std::find_if(sortPosts.begin(),sortPosts.end(),[](const auto& s){
+        return s.selected && !s.sort.empty();
+    });
+    std::string windowTitle = title;
+    std::string aboutWindowTitle = title;
+    if(subredditAbout)
+    {
+        windowTitle = subredditAbout->title;
+        aboutSubredditWindowName = subredditAbout->displayNamePrefixed;
+    }
+    if(sortingPostsIt != sortPosts.end())
+    {
+        windowTitle += " - "+sortingPostsIt->label;
+    }
+
+    windowName = fmt::format("{}###{}",windowTitle,id);
+    aboutSubredditWindowName = fmt::format("About {}###{}_about", aboutWindowTitle, id);
+
 }
 void SubredditWindow::lookAndDestroyPostsContents()
 {
@@ -119,7 +139,13 @@ void SubredditWindow::lookAndDestroyPostsContents()
 void SubredditWindow::loadSubredditListings(const std::string& target,const access_token& token)
 {
     setupConnections();
-    listingConnection->list(target,token);
+    std::string sort = "";
+    auto sortPostsIt = std::find_if(sortPosts.begin(),sortPosts.end(),[](const auto& s){return s.selected;});
+    if(sortPostsIt != sortPosts.end())
+    {
+        sort = sortPostsIt->sort;
+    }
+    listingConnection->list(target+sort,token);
     spdlog::debug("Loading about data of : {} ", target );
     if( target != "/r/random" && 
         target != "/r/randnsfw" && 
@@ -290,8 +316,7 @@ void SubredditWindow::loadAbout(listing aboutData)
 
     subredditAbout = std::make_optional<subreddit>(aboutData.json["data"]);
     subredditAboutDisplay = std::make_optional<AboutDisplay>(subredditAbout.value());
-    windowName = fmt::format("{}###{}",subredditAbout->title,id);
-    aboutSubredditWindowName = fmt::format("About {}###{}_about", subredditAbout->displayNamePrefixed, id);
+    updateWindowsNames();
 }
 void SubredditWindow::loadListingsFromConnection(listing listingResponse)
 {
@@ -660,7 +685,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
     }
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F5)) && ImGui::IsWindowFocused())
     {
-        loadSubredditListings(target,token);
+        refreshPosts();
     }
 
     if(scrollToTop)
@@ -680,16 +705,27 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "%s",listingErrorMessage.c_str());
     }
 
-    if(ImGui::Button("Submit New Post"))
+    if(subredditAbout)
     {
-        newTextPostDialog = true;
+        if(subredditAbout->userIsBanned)
+        {
+            ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "You are banned here");
+        }
+        else
+        {
+            if(ImGui::Button("Submit New Post"))
+            {
+                newTextPostDialog = true;
+            }
+            ImGui::SameLine();
+            if(ImGui::Button("Submit New Link"))
+            {
+                newLinkPostDialog = true;
+            }
+            ImGui::SameLine();
+        }
     }
-    ImGui::SameLine();
-    if(ImGui::Button("Submit New Link"))
-    {
-        newLinkPostDialog = true;
-    }
-    ImGui::SameLine();
+
     if(ImGui::Checkbox("Auto Refresh",&autoRefreshEnabled))
     {
         rearmRefreshTimer();
@@ -702,6 +738,39 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Light)]);
         ImGui::TextUnformatted(text.c_str());
         ImGui::PopFont();
+    }
+    {
+        ImGui::SameLine();
+        if(sortPostsLabelWidth < 0.f)
+        {
+            for(const auto& s : sortPosts)
+            {
+                auto size = ImGui::CalcTextSize(s.label.c_str()).x;
+                if(size > sortPostsLabelWidth)
+                {
+                    sortPostsLabelWidth = size;
+                }
+            }
+        }
+        ImGui::SetNextItemWidth(sortPostsLabelWidth + ImGui::GetFrameHeight() + ImGui::GetStyle().FramePadding.x*2.0f);
+        if(ImGui::BeginCombo("Sort",currentlySelectedSortPostLabel.c_str()))
+        {
+            for(auto&& s : sortPosts)
+            {
+                if(ImGui::Selectable(s.label.c_str(),s.selected))
+                {
+                    if(!s.selected)
+                    {
+                        for(auto&& ss : sortPosts) ss.selected = false;
+                        s.selected = true;
+                        currentlySelectedSortPostLabel = s.label;
+                        refreshPosts();
+                        updateWindowsNames();
+                    }
+                }
+            }
+            ImGui::EndCombo();
+        }
     }
     {
         if (ImGui::BeginPopupContextItem("aboutsubredditpopup"))
@@ -724,8 +793,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
             if (subredditAbout && ImGui::Selectable("About"))
             {
                 aboutSubredditWindowOpen = true;
-            }
-
+            }            
             ImGui::EndPopup();
         }
 

@@ -113,6 +113,13 @@ private:
         MarkdownRenderer submit;
     };
 
+    struct SortPosts
+    {
+        std::string label;
+        std::string sort;
+        bool selected = false;
+    };
+
     void showWindowMenu();
     void setupConnections();
     void loadSubredditListings(const std::string& target,const access_token& token);
@@ -139,7 +146,8 @@ private:
     void renderPostOpenLinkButton(PostDisplay& p);
     void loadAbout(listing aboutData);
     void showAboutWindow();
-private:    
+    void updateWindowsNames();
+private:
     using CommentsSignal = boost::signals2::signal<void(std::string id,std::string title)>;
     using SubredditSignal = boost::signals2::signal<void(std::string)>;
     using SubscriptionChangedSignal = boost::signals2::signal<void(void)>;
@@ -190,6 +198,16 @@ private:
     std::shared_ptr<SubredditStylesheet> subredditStylesheet;
     bool aboutSubredditWindowOpen = false;
     std::string aboutSubredditWindowName;
+    std::vector<SortPosts> sortPosts = {
+        {"Default","",true},
+        {"Hot","/hot",false},
+        {"New","/new",false},
+        {"Rising","/rising",false},
+        {"Controversial","/controversial",false},
+        {"Top","/top",false},
+    };
+    std::string currentlySelectedSortPostLabel = "Default";
+    float sortPostsLabelWidth = -1.f;
 };
 
 using SubredditWindowPtr = std::shared_ptr<SubredditWindow>;
