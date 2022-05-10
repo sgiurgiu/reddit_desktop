@@ -87,7 +87,7 @@ std::string getClientId(const std::string& jsContents)
 
 const std::unordered_set<std::string> stream_video_source_domains = {
     "streamja.com", "streamvi.com", "streamwo.com", "streamye.com",
-    "streamgg.com","streamff.com"
+    "streamgg.com","streamff.com", "fodder.gg"
 };
 }
 
@@ -415,7 +415,9 @@ HtmlParser::MediaLink HtmlParser::getMediaLink(const std::string& domain) const
     {
         link.urls.emplace_back(this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:video:url"));
     }
-    else if (stream_video_source_domains.contains(domain))
+    else if (std::find_if(stream_video_source_domains.begin(), stream_video_source_domains.end(),
+                          [&domain](const auto& s){return domain.find(s) != domain.npos;})
+             != stream_video_source_domains.end())
     {
         link.urls.emplace_back(this->template lookupVideoSourceVideoUrl<GumboNode>(output->root));
     }
@@ -437,7 +439,7 @@ HtmlParser::MediaLink HtmlParser::getMediaLink(const std::string& domain) const
             link.urls.emplace_back(this->template lookupMetaOgVideoUrl<GumboNode>(output->root,"og:image"));
             link.type = MediaType::Image;
         }
-    }
+    }    
     else if(domain.find("imgur") != domain.npos)
     {
 
@@ -561,8 +563,27 @@ HtmlParser::MediaLink HtmlParser::getMediaLink(const std::string& domain) const
         }
     }
 
+    //final tries
+    if(link.urls.empty() || link.urls.begin()->empty())
+    {
+        auto url = lookupMetaOgVideoUrl<GumboNode>(output->root,"og:video");
+        if(!url.empty())
+        {
+            link.type = MediaType::Video;
+            link.urls.emplace_back(url);
+        }
+    }
+    if(link.urls.empty() || link.urls.begin()->empty())
+    {
+        auto url = lookupVideoSourceVideoUrl<GumboNode>(output->root);
+        if(!url.empty())
+        {
+            link.type = MediaType::Video;
+            link.urls.emplace_back(url);
+        }
+    }
     gumbo_destroy_output(&kGumboDefaultOptions,output);
-    if(link.urls.empty())
+    if(link.urls.empty() || link.urls.begin()->empty())
     {
         link.type = MediaType::Unknown;
     }
