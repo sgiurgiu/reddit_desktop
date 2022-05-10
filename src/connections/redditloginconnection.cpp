@@ -10,6 +10,11 @@
 #include "utils.h"
 #include "htmlparser.h"
 
+namespace
+{
+    static login_error_category cat;
+}
+
 RedditLoginConnection::RedditLoginConnection(const boost::asio::any_io_executor& executor,
                                              boost::asio::ssl::context& ssl_context,
                                              const std::string& host,
@@ -69,24 +74,28 @@ void RedditLoginConnection::responseReceivedComplete()
                 auto error = json["error"].get<std::string>();
                 token.body = error;
                 token.status = 500;
-                ec.assign(token.status,login_error_category(error));
+                cat.setMessage(error);
+                ec.assign(token.status,cat);
             }
             else
             {
-                ec.assign(status,login_error_category(""));
+                cat.setMessage("");
+                ec.assign(status,cat);
             }
         }
         catch(const std::exception& ex)
         {
             token.body = ex.what();
             if(status < 500) token.status = 500;
-            ec.assign(token.status,login_error_category(body));
+            cat.setMessage(body);
+            ec.assign(token.status,cat);
         }
     }
     else
     {
         token.body = body;
-        ec.assign(status,login_error_category(body));
+        cat.setMessage(body);
+        ec.assign(token.status,cat);
     }
     signal(ec,std::move(token));
 }

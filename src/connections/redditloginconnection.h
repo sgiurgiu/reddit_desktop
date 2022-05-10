@@ -29,6 +29,7 @@ public:
         errorMessage(std::move(errorMessage))
     {
     }
+    login_error_category(){}
     const char *name() const noexcept
     {
         return "LoginErrorCategory";
@@ -37,9 +38,15 @@ public:
     {
         return errorMessage;
     }
+
     virtual bool failed( int ev ) const BOOST_NOEXCEPT
     {
         return ev != 200;
+    }
+
+    void setMessage(const std::string& msg)
+    {
+        errorMessage = msg;
     }
 private:
     std::string errorMessage;
