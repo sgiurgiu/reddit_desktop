@@ -54,6 +54,7 @@ private:
 
     void showMediaControls(int width);
     void showGalleryControls(int width);
+    void loadPostFromListing(const listing& listingResponse);
 private:
     RedditClientProducer* client;
     access_token token;

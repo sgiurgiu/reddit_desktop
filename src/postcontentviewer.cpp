@@ -119,7 +119,41 @@ void PostContentViewer::loadContent(post_ptr currentPost)
 
     if (!isMediaPost && currentPost->postHint != "image")
     {
-        return;
+        if(currentPost->url.starts_with("/r/"))
+        {
+            //this is a crosspost from another subreddit
+            auto listingConnection = client->makeListingClientConnection();
+            listingConnection->connectionCompleteHandler(
+                [weak=weak_from_this()](const boost::system::error_code& ec,
+                                                 client_response<listing> response)
+            {
+                 auto self = weak.lock();
+                 if(!self) return;
+                 if(ec)
+                 {
+                     boost::asio::post(self->uiExecutor,
+                              std::bind(&PostContentViewer::setErrorMessage,self,ec.message()));
+                 }
+                 else
+                 {
+                     if(response.status >= 400)
+                     {
+                         boost::asio::post(self->uiExecutor,
+                                       std::bind(&PostContentViewer::setErrorMessage,self,response.body));
+                     }
+                     else
+                     {
+                         self->loadPostFromListing(std::move(response.data));
+                     }
+                 }
+            });
+
+            listingConnection->list(currentPost->url,token);
+        }
+        else
+        {
+            return;
+        }
     }
     if(currentPost->postHint == "image" &&
             !currentPost->url.empty() &&
@@ -174,6 +208,45 @@ void PostContentViewer::loadContent(post_ptr currentPost)
                     boost::asio::post(self->uiExecutor,std::bind(&PostContentViewer::setErrorMessage,self,str));
                 });
                 urlDetectionConnection->detectMediaUrl(currentPost.get());
+            }
+        }
+    }
+}
+void PostContentViewer::loadPostFromListing(const listing& listingResponse)
+{
+    if(listingResponse.json.is_array())
+    {
+        for(const auto& child:listingResponse.json)
+        {
+            if(!child.is_object())
+            {
+                continue;
+            }
+            if(!child.contains("kind") || child["kind"].get<std::string>() != "Listing")
+            {
+                continue;
+            }
+            if(!child.contains("data") || !child["data"].contains("children"))
+            {
+                continue;
+            }
+            for(const auto& grandChild: child["data"]["children"])
+            {
+                if(!grandChild.is_object())
+                {
+                    continue;
+                }
+                if(!grandChild.contains("kind") || !grandChild.contains("data"))
+                {
+                    continue;
+                }
+                auto kind = grandChild["kind"].get<std::string>();
+                if (kind == "t3")
+                {
+                    //load post
+                    auto pp = std::make_shared<post>(grandChild["data"]);
+                    boost::asio::post(uiExecutor,std::bind(&PostContentViewer::loadContent,this,pp));
+                }
             }
         }
     }
