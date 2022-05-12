@@ -9,19 +9,6 @@
 #include <boost/beast/http.hpp>
 #include <boost/signals2.hpp>
 
-class RedditLoginConnection : public RedditPostConnection<client_response<access_token>>
-{
-public:
-    RedditLoginConnection(const boost::asio::any_io_executor& executor,
-                          boost::asio::ssl::context& ssl_context,const std::string& host,
-                          const std::string& service);
-
-    void login(const user& user);
-protected:
-    virtual void responseReceivedComplete() override;
-
-};
-
 class login_error_category : public boost::system::error_category
 {
 public:
@@ -51,5 +38,20 @@ public:
 private:
     std::string errorMessage;
 };
+
+class RedditLoginConnection : public RedditPostConnection<client_response<access_token>>
+{
+public:
+    RedditLoginConnection(const boost::asio::any_io_executor& executor,
+                          boost::asio::ssl::context& ssl_context,const std::string& host,
+                          const std::string& service);
+
+    void login(const user& user);
+protected:
+    virtual void responseReceivedComplete() override;
+private:
+    login_error_category cat;
+};
+
 
 #endif // REDDITLOGINCONNECTION_H

@@ -10,11 +10,6 @@
 #include "utils.h"
 #include "htmlparser.h"
 
-namespace
-{
-    static login_error_category cat;
-}
-
 RedditLoginConnection::RedditLoginConnection(const boost::asio::any_io_executor& executor,
                                              boost::asio::ssl::context& ssl_context,
                                              const std::string& host,
