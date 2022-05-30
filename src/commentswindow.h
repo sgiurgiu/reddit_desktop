@@ -116,6 +116,7 @@ private:
         bool postingReplyInProgress = false;
         bool showingReplyArea = false;
         bool showingPreview = false;
+        bool commentVisible = false;
 
         MarkdownRenderer previewRenderer;
         ImVec2 postReplyTextFieldSize;
@@ -129,7 +130,10 @@ private:
         std::shared_ptr<AwardsRenderer> awardsRenderer;
         std::shared_ptr<FlairRenderer> flairRenderer;
         CommentState state = CommentState::NONE;
+        ImVec2 commentPosition;
         void updateButtonsText();
+        void findText(const std::string& text);
+        void clearFind();
     };
     void loadMoreChildrenListing(const listing& listingResponse,std::any userData);
     void loadListingsFromConnection(const listing& listingResponse);
@@ -154,6 +158,7 @@ private:
     DisplayComment* getChildComment(DisplayComment& c,const std::string& commentName);
     void loadCommentReply(const listing& listingResponse,std::any userData);
     bool commentNode(DisplayComment& c);
+    void findText(const std::string& text);
 private:
     std::string postId;
     std::string title;
@@ -199,6 +204,9 @@ private:
     ImVec2 windowSize;
     ImVec2 postReplyCharCountTextSize;
     std::string postReplyCharCountText;
+    std::string textToFind;
+    bool findTextFocusedAlready = false;
+    bool findingStopped = true;
 
     struct PostUserData {};
     struct CommentUserData

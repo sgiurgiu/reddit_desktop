@@ -15,6 +15,9 @@ public:
         return NodeType::Text;
     }
     void AddText(const std::string& str);
+    virtual void FindAndHighlightText(const std::string& textToFind) override;
+private:
+    void highlightMatchedText(const char* text, const char* text_end, const char* text_start);
 private:
     std::string text;
     std::string curatedText;

@@ -1,6 +1,7 @@
 #include "commentswindow.h"
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <imgui_stdlib.h>
 #include <fmt/format.h>
 #include "fonts/IconsFontAwesome4.h"
 #include <SDL.h>
@@ -420,6 +421,8 @@ void CommentsWindow::setParentPost(post_ptr receivedParentPost)
 }
 void CommentsWindow::renderCommentContents(DisplayComment& c, int level)
 {
+    ImGuiContext& g = *GImGui;
+    ImGuiWindow* window = g.CurrentWindow;
     ImGui::Columns(2,nullptr,false);
     float barWidth = 5.f;
     ImGui::SetColumnWidth(0,barWidth+(ImGui::GetStyle().ItemSpacing.y * 2.f));
@@ -433,8 +436,10 @@ void CommentsWindow::renderCommentContents(DisplayComment& c, int level)
     }
     ImGui::NextColumn();
     auto markdownYPos = ImGui::GetCursorScreenPos().y;
+    c.commentPosition = window->DC.CursorPos;
     c.renderer.RenderMarkdown();
     c.markdownHeight = ImGui::GetCursorScreenPos().y - markdownYPos;
+
     ImGui::Columns(1);
 }
 void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
@@ -641,6 +646,7 @@ bool CommentsWindow::commentNode(DisplayComment& c)
     ImVec2 pos = window->DC.CursorPos;
     ImRect bb(pos, ImVec2(pos.x + ImGui::GetContentRegionAvail().x, pos.y + g.FontSize + g.Style.FramePadding.y*2));
     bool opened = ImGui::TreeNodeBehaviorIsOpen(id, ImGuiTreeNodeFlags_DefaultOpen);
+    c.commentVisible = opened;
     bool hovered, held;
     if (ImGui::ButtonBehavior(bb, id, &hovered, &held, 0))
         window->DC.StateStorage->SetInt(id, opened ? 0 : 1);
@@ -883,6 +889,7 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
     {
         windowOpen = false;
     }
+
     if(windowPositionAndSizeSet)
     {
         windowPositionAndSizeSet = false;
@@ -898,8 +905,41 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
     if(!listingErrorMessage.empty())
     {
         ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "%s",listingErrorMessage.c_str());
+    }    
+    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F)) && ImGui::GetIO().KeyCtrl && ImGui::IsWindowFocused())
+    {
+        ImGui::OpenPopup("find_text_popup");
+        findTextFocusedAlready = false;
+        textToFind.clear();
     }
+    if(ImGui::BeginPopup("find_text_popup"))
+    {
+        findingStopped = false;
+        if(!findTextFocusedAlready)
+        {
+            ImGui::SetKeyboardFocusHere();
+            findTextFocusedAlready = true;
+        }
+        if(ImGui::InputText("Find",&textToFind))
+        {
+            //searching
+            findText(textToFind);
+        }
 
+        ImGui::EndPopup();
+    }
+    else
+    {
+        if(!findingStopped)
+        {
+            for(auto&& c : comments)
+            {
+                c.clearFind();
+            }
+            textToFind.clear();
+        }
+        findingStopped = true;
+    }
     if(parentPost)
     {
         if(parentPost->locked)
@@ -1080,6 +1120,33 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
 
     ImGui::End();
 }
+
+void CommentsWindow::findText(const std::string& text)
+{
+    for(auto&& c : comments)
+    {
+        c.findText(text);
+    }
+}
+
+void CommentsWindow::DisplayComment::findText(const std::string& text)
+{
+    renderer.FindText(text);
+    for(auto&& c:replies)
+    {
+        c.findText(text);
+    }
+}
+
+void CommentsWindow::DisplayComment::clearFind()
+{
+    renderer.ClearFind();
+    for(auto&& c:replies)
+    {
+        c.clearFind();
+    }
+}
+
 void CommentsWindow::setFocused()
 {
     willBeFocused = true;

@@ -4,6 +4,8 @@
 #include <memory>
 #include <vector>
 #include <boost/signals2.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <vector>
 
 enum class NodeAlign
 {
@@ -63,10 +65,26 @@ public:
     {
         individualComponentSignal.connect(slot);
     }
+    virtual void FindAndHighlightText(const std::string& textToFind)
+    {
+        for(auto&& child : children)
+        {
+            child->FindAndHighlightText(textToFind);
+        }
+    }
+    virtual void ClearFind()
+    {
+        matches.clear();
+        for(auto&& child : children)
+        {
+            child->ClearFind();
+        }
+    }
 protected:
     MarkdownNode* parent = nullptr;
     std::vector<std::unique_ptr<MarkdownNode>> children;
     IndividualComponentSignal individualComponentSignal;
+    std::vector<boost::iterator_range<std::string::const_iterator>> matches;
 };
 
 #endif // MARKDOWNNODE_H
