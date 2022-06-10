@@ -80,7 +80,7 @@ find_package(freetype CONFIG REQUIRED)
 find_library(GUMBO_LIB gumbo REQUIRED)
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_package(uriparser CONFIG REQUIRED)
-find_path(STB_INCLUDE_DIRS "stb.h")
+find_package(Stb REQUIRED)
 
 if(WIN32)
     find_library(LIBMPV mpv ${LIBMPV_DIR})
