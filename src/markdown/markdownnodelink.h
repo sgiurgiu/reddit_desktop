@@ -14,11 +14,13 @@ public:
     {
         return NodeType::Link;
     }
+
 private:
     void componentLinkHandling();
 private:
     std::string href;
     std::string title;
+
 };
 
 #endif // MARKDOWNNODELINK_H

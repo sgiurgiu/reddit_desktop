@@ -45,6 +45,12 @@ int enter_block_callback(MD_BLOCKTYPE type, void* detail, void* userdata)
     }
     std::unique_ptr<MarkdownNode> newNode;
 
+    if(currentNode->GetNodeType() == MarkdownNode::NodeType::Link)
+    {
+        currentNode->setChildSkipped(true);
+        return 0;
+    }
+
     switch(type)
     {
         case MD_BLOCK_DOC:      /* noop */ break;
@@ -168,6 +174,12 @@ int leave_block_callback(MD_BLOCKTYPE type, void* , void* userdata)
     {
         return -1;
     }
+    if(currentNode->isChildSkipped())
+    {
+        currentNode->setChildSkipped(false);
+        return 0;
+    }
+
     r->SetCurrentNode(currentNode->GetParent());
 
     return 0;
@@ -182,6 +194,11 @@ int enter_span_callback(MD_SPANTYPE type, void* detail, void* userdata)
         return -1;
     }
     std::unique_ptr<MarkdownNode> newNode;
+    if(currentNode->GetNodeType() == MarkdownNode::NodeType::Link)
+    {
+        currentNode->setChildSkipped(true);
+        return 0;
+    }
 
     switch(type)
     {
@@ -250,6 +267,13 @@ int leave_span_callback(MD_SPANTYPE type, void* , void* userdata)
     {
         return -1;
     }
+
+    if(currentNode->isChildSkipped())
+    {
+        currentNode->setChildSkipped(false);
+        return 0;
+    }
+
     r->SetCurrentNode(currentNode->GetParent());
 
     /*switch(type)

@@ -80,11 +80,20 @@ public:
             child->ClearFind();
         }
     }
+    bool isChildSkipped() const
+    {
+        return childSkipped;
+    }
+    void setChildSkipped(bool flag)
+    {
+        childSkipped = flag;
+    }
 protected:
     MarkdownNode* parent = nullptr;
     std::vector<std::unique_ptr<MarkdownNode>> children;
     IndividualComponentSignal individualComponentSignal;
     std::vector<boost::iterator_range<std::string::const_iterator>> matches;
+    bool childSkipped = false;
 };
 
 #endif // MARKDOWNNODE_H
