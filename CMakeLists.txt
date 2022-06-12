@@ -10,7 +10,6 @@ if(ENABLE_M4DC AND ENABLE_CMARK)
     message(ERROR "Please only choose one of cmark or m4dc markdown parsers")
 endif()
 set(VCPKG_OVERLAY_PORTS "${CMAKE_CURRENT_LIST_DIR}/vcpkg-ports")
-set(VCPKG_C_FLAGS "-DOPENSSL_NO_AUTOLOAD_CONFIG ${VCPKG_C_FLAGS}")
 
 if(ENABLE_TESTS)
   list(APPEND VCPKG_MANIFEST_FEATURES "tests")

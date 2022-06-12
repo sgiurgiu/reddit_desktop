@@ -120,7 +120,6 @@ set(EXECUTABLE_SOURCES
     ${WIN32_APP_OPTIONS}
     ${REDDIT_DESKTOP_SRCS}
     ${IMGUI_SRCS}
-    ${SQLITE_SRC}
     ${MARKDOWN_RENDERER_SRCS}
     ${REDDIT_CONNECTIONS_SRCS}
     ${REDDIT_DESKTOP_LOG_SRCS}
@@ -132,11 +131,6 @@ endif()
 
 
 add_executable(${EXECUTABLE_NAME} ${EXECUTABLE_SOURCES})
-
-#Disable warnings for sqlite, they're thousands and I really don't care about them
-set_source_files_properties(
-    ${SQLITE_SRC}
-    PROPERTIES COMPILE_FLAGS "-w")
 
 set_property(TARGET ${EXECUTABLE_NAME} PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 
