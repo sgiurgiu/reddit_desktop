@@ -117,6 +117,7 @@ void UserInformationWindow::setMessagesRead(MarkMessagesType markedMessages)
             msg->updateButtonsText();
         }
     }
+    refreshInfoSignal();
 }
 void UserInformationWindow::loadMoreUnreadMessages()
 {

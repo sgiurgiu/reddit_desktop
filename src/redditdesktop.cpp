@@ -670,6 +670,13 @@ void RedditDesktop::showMainMenuBar()
                                           std::bind(&RedditDesktop::addMessageContextWindow,
                                           self, context));
                     });
+                    userInfoWindow->refreshHandler([weak = weak_from_this()](){
+                        auto self = weak.lock();
+                        if(!self) return;
+                        boost::asio::post(self->uiExecutor,
+                                          std::bind(&RedditDesktop::loadUserInformation,
+                                          self));
+                    });
                     userInfoWindow->loadMessages();
                 }
                 userInfoWindow->shouldShowWindow(true);

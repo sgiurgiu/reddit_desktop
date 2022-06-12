@@ -32,6 +32,11 @@ public:
     {
         contextSignal.connect(slot);
     }
+    template<typename S>
+    void refreshHandler(S slot)
+    {
+        refreshInfoSignal.connect(slot);
+    }
 private:
     struct DisplayMessage;
     using DisplayMessageList = std::vector<DisplayMessage>;
@@ -103,7 +108,7 @@ private:
     RedditClientProducer::RedditMarkReplyReadClientConnection markReplyReadConnection;
     RedditClientProducer::RedditVoteClientConnection commentVotingConnection;
     boost::signals2::signal<void(const std::string&)> contextSignal;
-
+    boost::signals2::signal<void()> refreshInfoSignal;
 };
 
 #endif // USERINFORMATIONWINDOW_H
