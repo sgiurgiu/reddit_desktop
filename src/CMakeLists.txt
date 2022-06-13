@@ -237,7 +237,7 @@ endif()
 
 if(WIN32)
     file(REAL_PATH ${LIBMPV_DIR} MPV_DIR)    
-    install(FILES "${MPV_DIR}/mpv-1.dll"  DESTINATION ${CMAKE_INSTALL_BINDIR} RENAME mpv.dll)
+    install(FILES "${MPV_DIR}/mpv-2.dll"  DESTINATION ${CMAKE_INSTALL_BINDIR})
     if(YOUTUBE_DL)
         file(REAL_PATH "${YOUTUBE_DL}" YOUTUBE_DL_EXE)
         install(PROGRAMS "${YOUTUBE_DL_EXE}" DESTINATION ${CMAKE_INSTALL_BINDIR})
