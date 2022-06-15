@@ -34,10 +34,8 @@ public:
     static Database* getInstance();
     std::vector<user> getRegisteredUsers() const;
     void addRegisteredUser(const user& registeredUser);
-    void setLoggedInUser(const user& u);
-    user getLoggedInUser() const;
-    void getMainWindowDimensions(int *x, int *y, int *width,int *height);
-    void setMainWindowDimensions(int x, int y, int width,int height);
+    void setLastLoggedInUser(const user& u);
+    std::optional<user> getLastLoggedInUser() const;
     void setMediaAudioVolume(int volume);
     int getMediaAudioVolume();
     void setBlurNSFWPictures(bool flag);

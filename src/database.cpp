@@ -1,5 +1,4 @@
 #include "database.h"
-#include <SDL.h>
 #include "utils.h"
 
 #define DB_ERR_CHECK(msg) \
@@ -373,84 +372,6 @@ std::optional<std::string> Database::getTwitterAuthBearer()
 {
     return getStringProperty("TWITTER_BEARER");
 }
-void Database::getMainWindowDimensions(int *x, int *y, int *width,int *height)
-{
-    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
-    sqlite3_stmt *stmt_ptr;
-    int rc = sqlite3_prepare_v2(db.get(),"SELECT NAME,PROP_VAL FROM PROPERTIES WHERE NAME='WINDOW_X' OR NAME='WINDOW_Y' "
-                                         "OR NAME='WINDOW_WIDTH' OR NAME='WINDOW_HEIGHT'",-1,&stmt_ptr, nullptr);
-    stmt.reset(stmt_ptr);
-    DB_ERR_CHECK("Cannot find window dimensions");
-    SDL_DisplayMode displayMode;
-    SDL_GetDesktopDisplayMode(0, &displayMode);
-    *width = 1024;
-    *height = 728;
-
-    *x = (displayMode.w - *width) / 2;
-    *y = (displayMode.h - *height) / 2;
-    while(sqlite3_step(stmt.get()) == SQLITE_ROW)
-    {
-       auto name = sqlite3_column_text(stmt.get(),0);
-       auto val = sqlite3_column_int(stmt.get(),1);
-       if(std::string("WINDOW_X") == std::string(reinterpret_cast<const char*>(name)))
-       {
-            *x = val;
-       }
-       else if(std::string("WINDOW_Y") == std::string(reinterpret_cast<const char*>(name)))
-       {
-            *y = val;
-       }
-       else if(std::string("WINDOW_WIDTH") == std::string(reinterpret_cast<const char*>(name)))
-       {
-            *width = val;
-       }
-       else if(std::string("WINDOW_HEIGHT") == std::string(reinterpret_cast<const char*>(name)))
-       {
-            *height = val;
-       }
-    }
-}
-void Database::setMainWindowDimensions(int x, int y, int width,int height)
-{
-    sqlite3_exec(db.get(),"DELETE FROM PROPERTIES WHERE NAME='WINDOW_X' OR NAME='WINDOW_Y' "
-                          "OR NAME='WINDOW_WIDTH' OR NAME='WINDOW_HEIGHT'",nullptr,nullptr,nullptr);
-    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
-    sqlite3_stmt *stmt_ptr;
-    int rc = sqlite3_prepare_v2(db.get(),"INSERT INTO PROPERTIES(NAME,PROP_VAL) VALUES(?,?)",-1,&stmt_ptr, nullptr);
-    stmt.reset(stmt_ptr);
-    DB_ERR_CHECK("Cannot insert window dimensions");
-
-    rc = sqlite3_bind_text(stmt.get(),1,"WINDOW_X",-1,nullptr);
-    DB_ERR_CHECK("Cannot bind values to window dims")
-    rc = sqlite3_bind_int(stmt.get(),2,x);
-    DB_ERR_CHECK("Cannot bind values to window dims");
-    rc = sqlite3_step(stmt.get());
-    DB_ERR_CHECK("Cannot insert window dims");
-    sqlite3_reset(stmt.get());
-
-    rc = sqlite3_bind_text(stmt.get(),1,"WINDOW_Y",-1,nullptr);
-    DB_ERR_CHECK("Cannot bind values to window dims")
-    rc = sqlite3_bind_int(stmt.get(),2,y);
-    DB_ERR_CHECK("Cannot bind values to window dims");
-    rc = sqlite3_step(stmt.get());
-    DB_ERR_CHECK("Cannot insert window dims");
-    sqlite3_reset(stmt.get());
-
-    rc = sqlite3_bind_text(stmt.get(),1,"WINDOW_WIDTH",-1,nullptr);
-    DB_ERR_CHECK("Cannot bind values to window dims")
-    rc = sqlite3_bind_int(stmt.get(),2,width);
-    DB_ERR_CHECK("Cannot bind values to window dims");
-    rc = sqlite3_step(stmt.get());
-    DB_ERR_CHECK("Cannot insert window dims");
-    sqlite3_reset(stmt.get());
-
-    rc = sqlite3_bind_text(stmt.get(),1,"WINDOW_HEIGHT",-1,nullptr);
-    DB_ERR_CHECK("Cannot bind values to window dims")
-    rc = sqlite3_bind_int(stmt.get(),2,height);
-    DB_ERR_CHECK("Cannot bind values to window dims");
-    rc = sqlite3_step(stmt.get());
-    DB_ERR_CHECK("Cannot insert window dims");
-}
 
 std::vector<user> Database::getRegisteredUsers() const
 {
@@ -517,7 +438,7 @@ void Database::addRegisteredUser(const user& registeredUser)
     rc = sqlite3_step(stmt.get());
     DB_ERR_CHECK("Cannot insert user");
 }
-void Database::setLoggedInUser(const user& u)
+void Database::setLastLoggedInUser(const user& u)
 {
     sqlite3_exec(db.get(),"UPDATE USER SET LAST_LOGGEDIN=0",nullptr,nullptr,nullptr);
 
@@ -531,9 +452,9 @@ void Database::setLoggedInUser(const user& u)
     rc = sqlite3_step(stmt.get());
     DB_ERR_CHECK("Cannot update user");
 }
-user Database::getLoggedInUser() const
+std::optional<user> Database::getLastLoggedInUser() const
 {
-    user user;
+    std::optional<user> user;
     std::unique_ptr<sqlite3_stmt, statement_finalizer> stmt;
     sqlite3_stmt* stmt_ptr;
     int rc = sqlite3_prepare_v2(db.get(), "SELECT USERNAME,PASSWORD,CLIENT_ID,SECRET,WEBSITE,APP_NAME,LAST_LOGGEDIN FROM USER WHERE LAST_LOGGEDIN=1", -1, &stmt_ptr, nullptr);
@@ -542,19 +463,20 @@ user Database::getLoggedInUser() const
 
     if (sqlite3_step(stmt.get()) == SQLITE_ROW)
     {
-        user.username = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 0)),
+        auto username = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 0)),
             sqlite3_column_bytes(stmt.get(), 0));
-        user.password = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 1)),
+        auto password = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 1)),
             sqlite3_column_bytes(stmt.get(), 1));
-        user.client_id = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 2)),
+        auto client_id = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 2)),
             sqlite3_column_bytes(stmt.get(), 2));
-        user.secret = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 3)),
+        auto secret = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 3)),
             sqlite3_column_bytes(stmt.get(), 3));
-        user.website = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 4)),
+        auto website = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 4)),
             sqlite3_column_bytes(stmt.get(), 4));
-        user.app_name = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 5)),
+        auto app_name = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 5)),
             sqlite3_column_bytes(stmt.get(), 5));
-        user.lastLoggedIn = sqlite3_column_int(stmt.get(), 6) == 1;
+        auto lastLoggedIn = sqlite3_column_int(stmt.get(), 6) == 1;
+        user.emplace(username,password,client_id,secret,website,app_name,lastLoggedIn);
     }
 
     return user;

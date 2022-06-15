@@ -1,30 +1,38 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
   "name": "reddit-desktop",
-  "version-string": "0.0.1",
+  "version-string": "2.0.0",
   "dependencies": [
-        "boost-asio",
-        "boost-algorithm",
-        "boost-beast",
-        "boost-system",
-        "boost-filesystem",
-        "boost-program-options",
-        "boost-process",
-        "boost-serialization",
-        "boost-signals2",
-        "boost-spirit",
-        "glew",
         "gumbo",
         "fmt",
-        "sdl2",
         "spdlog",
         "stb",
         "sqlite3",
-        "freetype",
-        "opengl",
         "openssl",
         "uriparser",
-        "zlib"
+        "zlib",
+        "qtbase",
+        "qtdeclarative",
+        {
+              "name": "qt5compat",
+              "default-features": false,
+              "features": [
+                "big-codecs",
+                "codecs",
+                "qml",
+                "textcodec"
+              ]
+        },
+        "qtconnectivity",
+        {
+              "name": "qtimageformats",
+              "default-features": false,
+              "features": [
+                "jasper",
+                "webp"
+              ]
+        }
+
   ],
   "features": {
     "app": {
