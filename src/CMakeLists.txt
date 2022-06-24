@@ -11,6 +11,19 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         database.cpp
         utils.cpp
         accesstokenprovider.cpp
+        userinformationprovider.cpp
+        entities/userinfo.cpp
+        subscribedsubredditsprovider.cpp
+        entities/subreddit.cpp
+        subredditslistmodel.cpp
+        postsprovider.cpp
+        postslistmodel.cpp
+        entities/post.cpp
+        entities/image.cpp
+        entities/media.cpp
+        entities/postgalleryitem.cpp
+        entities/award.cpp
+        entities/flairrichtext.cpp
         )
 
 if(MSVC)
@@ -40,14 +53,39 @@ target_link_libraries(${EXECUTABLE_NAME} PRIVATE Qt6::Core Qt6::Gui Qt6::Qml
     Qt6::Quick Qt6::QuickControls2 Qt6::Network)
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
 
+set_source_files_properties(images/default.png PROPERTIES
+    QT_RESOURCE_ALIAS qml/default.png
+)
+set_source_files_properties(images/image.png PROPERTIES
+    QT_RESOURCE_ALIAS qml/image.png
+)
+set_source_files_properties(images/nsfw.png PROPERTIES
+    QT_RESOURCE_ALIAS qml/nsfw.png
+)
+set_source_files_properties(images/reddit.png PROPERTIES
+    QT_RESOURCE_ALIAS qml/reddit.png
+)
+set_source_files_properties(images/self.png PROPERTIES
+    QT_RESOURCE_ALIAS qml/self.png
+)
+
 qt_add_qml_module(${EXECUTABLE_NAME}
-    URI reddit_desktop_qml
+    URI com.zergiu.reddit
     VERSION 1.0
     QML_FILES
         qml/main.qml
         qml/LoginDialog.qml
         qml/UserDrawer.qml
-    )
+        qml/SubredditTabButton.qml
+        qml/SubredditPage.qml
+        qml/PostComponent.qml
+    RESOURCES
+        images/default.png
+        images/image.png
+        images/nsfw.png
+        images/reddit.png
+        images/self.png
+)
 
 qt_import_qml_plugins(${EXECUTABLE_NAME})
 
@@ -64,6 +102,7 @@ if(ENABLE_CMARK)
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE libcmark-gfm-extensions_static libcmark-gfm_static)
 endif()
 
+set(EXECUTABLE_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/entities")
 
 if(ENABLE_M4DC)
     list(APPEND EXECUTABLE_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../external/md4c/src")   
@@ -75,8 +114,9 @@ if(ENABLE_CMARK)
         "${CMAKE_CURRENT_SOURCE_DIR}/../external/cmark-gfm/extensions"
         "${CMAKE_BINARY_DIR}/external/cmark-gfm/src"
         "${CMAKE_BINARY_DIR}/external/cmark-gfm/extensions"
-        )
+        )    
 endif()
+
 
 target_include_directories(${EXECUTABLE_NAME} PRIVATE ${EXECUTABLE_INCLUDES})
 

@@ -21,17 +21,20 @@ public:
     QString getToken() const;
     QString getTokenType() const;
     QString getScope() const;
+    QString getUserAgent() const;
     int getExpires() const;
 
     void setToken(const QString&);
     void setTokenType(const QString&);
     void setScope(const QString&);
     void  setExpires(int);
+    void setUserAgent(const QString&);
 private:
     QString token;
     QString tokenType;
     int expires = 0;
     QString scope;
+    QString userAgent;
 };
 
 class AccessTokenProvider : public QObject
@@ -49,7 +52,7 @@ private slots:
 private:
     void makeRequest(const user& u);
 private:
-    QNetworkAccessManager* _networkAccessManager;
+    QNetworkAccessManager* networkAccessManager;
 };
 
 #endif // ACCESSTOKENPROVIDER_H

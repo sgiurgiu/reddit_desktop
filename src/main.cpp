@@ -4,10 +4,10 @@
 #include <QNetworkAccessManager>
 #include <QVariant>
 #include "accesstokenprovider.h"
-
-Q_DECLARE_METATYPE(user)
-Q_DECLARE_METATYPE(access_token)
-
+#include "userinformationprovider.h"
+#include "entities/userinfo.h"
+#include "subredditslistmodel.h"
+#include "postslistmodel.h"
 
 int main(int argc, char** argv)
 {
@@ -19,13 +19,17 @@ int main(int argc, char** argv)
 
     qmlRegisterType<AccessToken>("com.zergiu.reddit", 1, 0,"AccessToken");
     qmlRegisterType<AccessTokenProvider>("com.zergiu.reddit", 1, 0, "AccessTokenProvider");
+    qmlRegisterType<UserInformationProvider>("com.zergiu.reddit", 1, 0, "UserInformationProvider");
+    qmlRegisterType<UserInfo>("com.zergiu.reddit", 1, 0, "UserInfo");
+    qmlRegisterType<SubredditsListModel>("com.zergiu.reddit", 1, 0, "SubredditsListModel");
+    qmlRegisterType<PostsListModel>("com.zergiu.reddit", 1, 0, "PostsListModel");
 
 
     QGuiApplication app(argc, argv);
     QNetworkAccessManager nas(&app);
     app.setProperty("NetworkAccessManager",QVariant::fromValue(&nas));
     QQmlApplicationEngine engine;
-    engine.load(QUrl(QStringLiteral("qrc:/reddit_desktop_qml/qml/main.qml")));
+    engine.load(QUrl(QStringLiteral("qrc:/com/zergiu/reddit/qml/main.qml")));
     if (engine.rootObjects().isEmpty())
         return -1;
 

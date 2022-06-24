@@ -1,17 +1,14 @@
 #include "accesstokenprovider.h"
 #include "database.h"
-#include "qcoreapplication.h"
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QUrl>
-#include <QHttpMultiPart>
 #include <QUrlQuery>
 #include <QCoreApplication>
 
 AccessTokenProvider::AccessTokenProvider(QObject *parent)
-    : QObject{parent},_networkAccessManager{QCoreApplication::instance()->property("NetworkAccessManager").value<QNetworkAccessManager*>()}
-{
-    QCoreApplication::instance()->property("NetworkAccessManager").value<QNetworkAccessManager*>();
+    : QObject{parent},networkAccessManager{QCoreApplication::instance()->property("NetworkAccessManager").value<QNetworkAccessManager*>()}
+{    
 }
 
 void AccessTokenProvider::refreshAccessToken()
@@ -42,7 +39,8 @@ void AccessTokenProvider::makeRequest(const user& u)
     postData.addQueryItem("username", QString::fromStdString(u.username));
     postData.addQueryItem("password", QString::fromStdString(u.password));
 
-    auto reply = _networkAccessManager->post(request,postData.toString(QUrl::FullyEncoded).toUtf8());
+    auto reply = networkAccessManager->post(request,postData.toString(QUrl::FullyEncoded).toUtf8());
+    reply->setProperty("user_agent",QVariant::fromValue(QString::fromStdString(make_user_agent(u))));
     connect(reply,&QNetworkReply::finished,this,&AccessTokenProvider::onNetworkAccessFinished);
     connect(reply,&QNetworkReply::errorOccurred,this,&AccessTokenProvider::onNetworkAccessError);
 }
@@ -55,6 +53,7 @@ void AccessTokenProvider::onNetworkAccessFinished()
     {
         auto json = nlohmann::json::parse(replyData.toStdString());
         AccessToken* token = new AccessToken(this);
+        token->setUserAgent(reply->property("user_agent").toString());
         if(json.contains("access_token") && json["access_token"].is_string())
         {
             token->setToken(QString::fromStdString(json["access_token"].get<std::string>()));
@@ -76,7 +75,7 @@ void AccessTokenProvider::onNetworkAccessFinished()
             emit failure(QString::fromStdString(json["error"].get<std::string>()));
         }
         else
-        {
+        {            
             emit success(token);
         }
     }
@@ -87,7 +86,6 @@ void AccessTokenProvider::onNetworkAccessError(QNetworkReply::NetworkError)
 {
     auto reply = (QNetworkReply*)sender();
     emit failure(reply->errorString());
-    reply->deleteLater();
 }
 
 AccessToken::AccessToken(QObject *parent): QObject{parent}
@@ -110,6 +108,14 @@ int AccessToken::getExpires() const
 {
     return expires;
 }
+QString AccessToken::getUserAgent() const
+{
+    return userAgent;
+}
+void AccessToken::setUserAgent(const QString& u)
+{
+    this->userAgent = u;
+}
 void AccessToken::setToken(const QString& t)
 {
     this->token = t;
@@ -126,4 +132,5 @@ void  AccessToken::setExpires(int e)
 {
     this->expires = e;
 }
+
 

@@ -27,7 +27,7 @@ ApplicationWindow
         onSuccess : function (token) {
             busyIndicator.running = false
             appWindow.accessToken = token
-
+            drawer.loadDrawerData(token)
         }
 
         onFailure: {
@@ -82,6 +82,22 @@ ApplicationWindow
 
     UserDrawer {
         id: drawer
+        onSubredditClicked: function(name, url){
+            console.log("subreddit clicked "+name+", "+url)
+            let tabButtonComponent = Qt.createComponent("SubredditTabButton.qml")
+            let tabButton = tabButtonComponent.createObject(bar, {text:name})
+            bar.addItem(tabButton)
+
+            let tabPageComponent = Qt.createComponent("SubredditPage.qml")
+            let tabPage = tabPageComponent.createObject(panels,
+                                                        {url:url,
+                                                         name:name,
+                                                        tabButton:tabButton,
+                                                        accessToken: appWindow.accessToken})
+
+            om.append(tabPage)
+            bar.currentIndex = bar.count - 1
+        }
     }
 
     TabBar {
@@ -90,37 +106,23 @@ ApplicationWindow
         anchors.right : parent.right
         anchors.leftMargin: !inPortrait ? drawer.width : undefined
         //width: appWindow.width - (!inPortrait? 0 : drawer.width )
-        TabButton {
-            text: qsTr("Home")
-        }
-        TabButton {
-            text: qsTr("Discover")
-        }
-        TabButton {
-            text: qsTr("Activity")
-        }
+
     }
 
     StackLayout {
-        anchors.fill: parent
+        id : panels
+        y : bar.height + 2 + menuBar.height
+        height: parent.height - bar.height - menuBar.height - 2
+        anchors.top: bar.bottom
+        anchors.left : parent.left
+        anchors.right : parent.right
+        anchors.bottom : parent.bottom
+
         anchors.leftMargin: !inPortrait ? drawer.width : undefined
         currentIndex: bar.currentIndex
-        Item {
-            id: homeTab
-            Label {
-                text: "home tab"
-            }
-        }
-        Item {
-            id: discoverTab
-            Label {
-                text: "discover tab"
-            }
-        }
-        Item {
-            id: activityTab
-            Label {
-                text: "activity tab"
+        Repeater {
+            model: ObjectModel {
+                id: om
             }
         }
     }

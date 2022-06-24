@@ -78,7 +78,6 @@ struct images_preview
     std::vector<preview_variant> variants;
 };
 
-
 struct oembed
 {
     int height;
