@@ -134,6 +134,7 @@ private:
         void updateButtonsText();
         void findText(const std::string& text);
         void clearFind();
+        DisplayComment* findChild(const std::string& name);
     };
     void loadMoreChildrenListing(const listing& listingResponse,std::any userData);
     void loadListingsFromConnection(const listing& listingResponse);

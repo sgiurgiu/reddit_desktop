@@ -230,6 +230,26 @@ void CommentsWindow::setErrorMessage(std::string errorMessage)
 {
     listingErrorMessage = errorMessage;
 }
+CommentsWindow::DisplayComment* CommentsWindow::DisplayComment::findChild(const std::string& name)
+{
+    auto it = std::find_if(replies.begin(), replies.end(),[&name](const auto& r){
+        return r.commentData.name == name;
+    });
+
+    if(it != replies.end())
+    {
+        return &(*it);
+    }
+    else
+    {
+        for(auto&& c : replies)
+        {
+            auto r = c.findChild(name);
+            if(r != nullptr) return r;
+        }
+    }
+    return nullptr;
+}
 void CommentsWindow::loadMoreChildrenListing(const listing& listingResponse,std::any userData)
 {
     if(!windowOpen) return;
@@ -258,7 +278,18 @@ void CommentsWindow::loadMoreChildrenListing(const listing& listingResponse,std:
             auto replies = std::move(std::get<0>(receivedComments));
             for(auto&& reply : replies)
             {
-                c->replies.emplace_back(std::move(reply), token, client, uiExecutor);
+                if(reply.parentId == c->commentData.name)
+                {
+                    c->replies.emplace_back(std::move(reply), token, client, uiExecutor);
+                }
+                else
+                {
+                    auto cr = c->findChild(reply.parentId);
+                    if(cr)
+                    {
+                        cr->replies.emplace_back(std::move(reply), token, client, uiExecutor);
+                    }
+                }
             }
         }
     }
@@ -682,7 +713,11 @@ bool CommentsWindow::commentNode(DisplayComment& c)
     float nextPos = c.awardsRenderer->RenderDirect(awardsPos);
 #ifdef REDDIT_DESKTOP_DEBUG
     ImVec2 commentNamePos(nextPos+g.Style.ItemInnerSpacing.x + arrowSize, authorPos.y);
+    auto commentNameSize = ImGui::CalcTextSize(("("+c.commentData.name +")").c_str());
     ImGui::RenderText(commentNamePos,("("+c.commentData.name +")").c_str());
+
+    ImVec2 parentNamePos(commentNamePos.x + g.Style.ItemInnerSpacing.x*2 + commentNameSize.x , authorPos.y);
+    ImGui::RenderText(parentNamePos,("("+c.commentData.parentId +")").c_str());
 #endif
 
     ImGui::ItemSize(bb, g.Style.FramePadding.y);
