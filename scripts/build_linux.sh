@@ -34,6 +34,7 @@ for distro in "${distros[@]}"; do
             -e REDDITDESKTOP_VERSION_MAJOR="${REDDITDESKTOP_VERSION_MAJOR}" \
             -e REDDITDESKTOP_VERSION_MINOR="${REDDITDESKTOP_VERSION_MINOR}" \
             -e REDDITDESKTOP_VERSION_PATCH="${REDDITDESKTOP_VERSION_PATCH}" \
+            --entrypoint "/tmp/reddit_desktop/docker/build_reddit_desktop.sh" \
             $CONTAINER_REGISTRY/reddit_desktop_$distro:build
 done
 
