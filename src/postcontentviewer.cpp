@@ -471,7 +471,7 @@ void PostContentViewer::setupMediaContext(std::string file, bool useProvidedFile
     int mpv_advanced_control = 1;
     if(useMediaHwAccel)
     {
-        mpv_opengl_init_params gl_params = {get_proc_address_mpv, nullptr, nullptr};
+        mpv_opengl_init_params gl_params = {get_proc_address_mpv, nullptr};
         mpv_render_param params[] = {
             {MPV_RENDER_PARAM_API_TYPE, const_cast<char*>(MPV_RENDER_API_TYPE_OPENGL)},
             {MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_params},

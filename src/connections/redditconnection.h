@@ -234,7 +234,7 @@ protected:
         {
             if(h.name() == boost::beast::http::field::location)
             {
-                location = h.value().to_string();
+                location = h.value();
                 break;
             }
         }

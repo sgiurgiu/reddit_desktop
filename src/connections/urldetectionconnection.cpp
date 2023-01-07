@@ -64,11 +64,11 @@ void UrlDetectionConnection::onWrite(const boost::system::error_code& ec,std::si
     {
         if(h.name() == boost::beast::http::field::content_type)
         {
-            contentType = h.value().to_string();
+            contentType = h.value();
         }
         if(h.name() == boost::beast::http::field::location)
         {
-            location = h.value().to_string();
+            location = h.value();
         }
     }
 

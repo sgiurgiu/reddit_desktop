@@ -46,7 +46,7 @@ void RedditVoteConnection::responseReceivedComplete(std::any userData)
         }
         else if(h.name() == boost::beast::http::field::content_type)
         {
-            resp.contentType = h.value().to_string();
+            resp.contentType = h.value();
         }
     }
     resp.status = status;
