@@ -98,18 +98,7 @@ void RedditResourceConnection::responseReceivedComplete(std::any userData)
     resp.status = status;
 
     resp.data = responseParser->get().body();
-    for(const auto& h : responseParser->get())
-    {
-        if(h.name() == boost::beast::http::field::content_length)
-        {
-            auto val = h.value();
-            std::from_chars(val.data(),val.data()+val.size(),resp.contentLength);
-        }
-        else if(h.name() == boost::beast::http::field::content_type)
-        {
-            resp.contentType = h.value();
-        }
-    }
+    fillResponseHeaders(resp);
     resp.userData = std::move(userData);
     signal({},std::move(resp));
 }

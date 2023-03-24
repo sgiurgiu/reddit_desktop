@@ -10,6 +10,7 @@
 #include <boost/asio/strand.hpp>
 #include <boost/beast/http/parser.hpp>
 #include <boost/signals2.hpp>
+#include <boost/version.hpp>
 #include <string>
 #include <memory>
 #include <optional>
@@ -234,7 +235,11 @@ protected:
         {
             if(h.name() == boost::beast::http::field::location)
             {
+#if BOOST_VERSION < 108000
+                location = h.value().to_string();
+#else
                 location = h.value();
+#endif // BOOST_VERSION < 108000
                 break;
             }
         }
@@ -305,6 +310,31 @@ protected:
     virtual void responseReceivedComplete(typename ClientResponse::user_type userData) {
         boost::ignore_unused(userData);
     };
+
+    template<typename ClientResponse>
+    void fillResponseHeaders(ClientResponse& resp)
+    {
+        for (const auto& h : responseParser->get())
+        {
+            if (h.name() == boost::beast::http::field::content_length)
+            {
+#if BOOST_VERSION < 108000
+                auto val = h.value().to_string();
+#else
+                auto val = h.value();
+#endif // BOOST_VERSION < 108000
+                std::from_chars(val.data(), val.data() + val.size(), resp.contentLength);
+            }
+            else if (h.name() == boost::beast::http::field::content_type)
+            {
+#if BOOST_VERSION < 108000
+                resp.contentType = h.value().to_string();
+#else
+                resp.contentType = h.value();
+#endif // BOOST_VERSION < 108000
+            }
+        }
+    }
 protected:    
     boost::asio::ssl::context& ssl_context;
     boost::asio::strand<boost::asio::any_io_executor> strand;
