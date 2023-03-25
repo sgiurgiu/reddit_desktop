@@ -311,7 +311,6 @@ protected:
         boost::ignore_unused(userData);
     };
 
-    template<typename ClientResponse>
     void fillResponseHeaders(ClientResponse& resp)
     {
         for (const auto& h : responseParser->get())

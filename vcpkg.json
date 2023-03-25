@@ -16,7 +16,6 @@
         "glew",
         "gumbo",
         "fmt",
-        "sdl2",
         "spdlog",
         "stb",
         "sqlite3",
@@ -24,7 +23,13 @@
         "opengl",
         "openssl",
         "uriparser",
-        "zlib"
+        "zlib",
+        {
+            "name": "sdl2",
+            "features": ["x11","wayland"],
+            "default-features": false,
+            "platform": "linux"
+        }
   ],
   "features": {
     "app": {
