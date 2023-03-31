@@ -1,4 +1,4 @@
-FROM docker.io/ubuntu:21.10
+FROM docker.io/ubuntu:22.10
 LABEL maintainer="Sergiu Giurgiu <sgiurgiu11@gmail.com>"
 
 ARG DEBIAN_FRONTEND=noninteractive
