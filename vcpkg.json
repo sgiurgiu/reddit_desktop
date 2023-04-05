@@ -24,12 +24,7 @@
         "openssl",
         "uriparser",
         "zlib",
-        {
-            "name": "sdl2",
-            "features": ["x11","wayland"],
-            "default-features": false,
-            "platform": "linux"
-        }
+        "sdl2"
   ],
   "features": {
     "app": {

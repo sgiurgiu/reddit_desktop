@@ -318,11 +318,12 @@ protected:
             if (h.name() == boost::beast::http::field::content_length)
             {
 #if BOOST_VERSION < 108000
-                auto val = h.value().to_string();
+                std::string val = h.value().to_string();
 #else
-                auto val = h.value();
+                std::string val = h.value();
 #endif // BOOST_VERSION < 108000
-                std::from_chars(val.data(), val.data() + val.size(), resp.contentLength);
+                resp.contentLength = std::atol(val.c_str());
+                //std::from_chars(val.data(), val.data() + val.size(), resp.contentLength);
             }
             else if (h.name() == boost::beast::http::field::content_type)
             {
