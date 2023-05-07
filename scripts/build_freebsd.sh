@@ -21,7 +21,7 @@ if [ -z $CONTAINER_REGISTRY ]; then
 fi
 
 
-mkdir /tmp/build
+mkdir -p /tmp/build
 cd /tmp/build
 
 CMAKE_ARGS="-GNinja \
