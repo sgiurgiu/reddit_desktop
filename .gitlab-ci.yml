@@ -57,8 +57,8 @@ windows-job:
 freebsd-job:
   stage: build
   tags:
-    -  freebsd
-    variables:
+    - freebsd
+  variables:
     GIT_SUBMODULE_STRATEGY: recursive
   only:
     - master
