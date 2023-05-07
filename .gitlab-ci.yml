@@ -54,3 +54,19 @@ windows-job:
         - scripts/build_windows.ps1
 
 
+freebsd-job:
+  stage: build
+  tags:
+    -  freebsd
+    variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+  only:
+    - master
+  artifacts:
+    paths:
+      - packages/
+  script:
+    - echo "Compiling the code..."
+    - scripts/build_freebsd.sh
+    - echo "Compile complete."
+

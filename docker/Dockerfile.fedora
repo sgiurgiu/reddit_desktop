@@ -7,11 +7,11 @@ COPY build_reddit_desktop.sh /tmp/workdir/
 COPY prepare_vcpkg.sh /tmp/workdir/
 
 RUN dnf install -yq \
-    http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-stable.noarch.rpm \
-    http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-stable.noarch.rpm && \
-    rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-latest && \
-    rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-latest && \
-#    dnf upgrade -y && \
+    http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-38.noarch.rpm \
+    http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-38.noarch.rpm && \
+    rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-38 && \
+    rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-38 && \
+    dnf upgrade -y && \
     dnf clean all
 
 RUN dnf -yq install cmake gcc g++ pkgconf-pkg-config git kernel-headers \
