@@ -20,7 +20,7 @@ if [ -z $CONTAINER_REGISTRY ]; then
     exit 1
 fi
 
-rm -rf /tmp/build
+sudo rm -rf /tmp/build
 mkdir -p /tmp/build
 cd /tmp/build
 
@@ -38,5 +38,5 @@ sudo ninja package
 
 rm -rf ${root}/packages
 mkdir -p ${root}/packages
-mv reddit_desktop-*-${distro}.* ${root}/packages
+sudo mv reddit_desktop-*-${distro}.* ${root}/packages
 
