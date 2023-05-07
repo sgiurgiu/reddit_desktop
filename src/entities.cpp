@@ -3,6 +3,7 @@
 #include "utils.h"
 #include <spdlog/spdlog.h>
 #include "fonts/IconsFontAwesome4.h"
+#include <algorithm>
 
 std::string make_user_agent(const user& u)
 {
