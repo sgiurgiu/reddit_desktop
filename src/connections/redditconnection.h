@@ -322,7 +322,22 @@ protected:
 #else
                 std::string val = h.value();
 #endif // BOOST_VERSION < 108000
-                std::from_chars(val.data(), val.data() + val.size(), resp.contentLength);
+#if (defined(__clang__) && __clang_major__ < 16) || (defined(__GNUC__) && __GNUC__ < 11)
+                try
+                {
+                    resp.contentLength = std::stol(val);
+                }
+                catch(...)
+                {
+                    resp.contentLength = 0;
+                }
+#else
+                auto [_, ec] { std::from_chars(val.data(), val.data() + val.size(), resp.contentLength) };
+                if(ec != std::errc{})
+                {
+                    resp.contentLength = 0;
+                }
+#endif
             }
             else if (h.name() == boost::beast::http::field::content_type)
             {
