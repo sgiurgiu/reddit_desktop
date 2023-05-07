@@ -20,7 +20,7 @@ if [ -z $CONTAINER_REGISTRY ]; then
     exit 1
 fi
 
-
+rm -rf /tmp/build
 mkdir -p /tmp/build
 cd /tmp/build
 
@@ -36,6 +36,7 @@ cmake ${CMAKE_ARGS} ${root}
 sudo mkdir -p /usr/share/reddit_desktop/fonts
 sudo ninja package
 
-mkdir -p /tmp/reddit_desktop/packages
-cp reddit_desktop-*-${distro}.* /tmp/reddit_desktop/packages/
+rm -rf ${root}/packages
+mkdir -p ${root}/packages
+mv reddit_desktop-*-${distro}.* ${root}/packages
 
