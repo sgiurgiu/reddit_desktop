@@ -322,7 +322,7 @@ protected:
 #else
                 std::string val = h.value();
 #endif // BOOST_VERSION < 108000
-#if (defined(__clang__) && __clang_major__ < 16) || (defined(__GNUC__) && __GNUC__ < 11)
+#if (defined(__clang__) && __clang_major__ < 16) || (defined(__GNUC__) && __GNUC__ < 12)
                 try
                 {
                     resp.contentLength = std::stol(val);
