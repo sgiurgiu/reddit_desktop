@@ -31,7 +31,7 @@ distro=freebsd
 CMAKE_ARGS="${CMAKE_ARGS} -DCPACK_DISTRIBUTION=freebsd"
 CMAKE_ARGS="${CMAKE_ARGS} -DCPACK_GENERATOR=FREEBSD"
 
-cmake ${CMAKE_ARGS} /tmp/reddit_desktop
+cmake ${CMAKE_ARGS} ${root}
 
 sudo mkdir -p /usr/share/reddit_desktop/fonts
 sudo ninja package
