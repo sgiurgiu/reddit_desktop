@@ -1061,8 +1061,8 @@ subreddit_stylesheet::subreddit_stylesheet(const nlohmann::json& json)
     }
     if(json.contains("images") && json["images"].is_array())
     {
-        images.reserve(json["images"].size());
-        std::ranges::transform(json["images"],std::back_inserter(images),
+        images.resize(json["images"].size());
+        std::transform(json["images"].begin(), json["images"].end(), images.begin(),
                 [](const auto& jsonImg){
             return stylesheet_image(jsonImg);
         });
