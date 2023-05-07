@@ -39,18 +39,7 @@ void RedditSearchNamesConnection::responseReceivedComplete()
     auto status = responseParser->get().result_int();
     auto body = responseParser->get().body();
     client_response<names_list> resp;
-    for(const auto& h : responseParser->get())
-    {
-        if(h.name() == boost::beast::http::field::content_length)
-        {
-            auto val = h.value();
-            std::from_chars(val.data(),val.data()+val.size(),resp.contentLength);
-        }
-        else if(h.name() == boost::beast::http::field::content_type)
-        {
-            resp.contentType = h.value();
-        }
-    }
+    fillResponseHeaders(resp);
     resp.status = status;
     if(status == 200)
     {

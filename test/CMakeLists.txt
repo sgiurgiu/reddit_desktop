@@ -58,10 +58,5 @@ add_executable(${PROJECT_NAME}
     )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE GTest::gtest GTest::gtest_main)
-target_link_libraries(${PROJECT_NAME} PRIVATE Boost::boost Boost::system Boost::filesystem)
-target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads OpenGL::GL freetype)
-target_link_libraries(${PROJECT_NAME} PRIVATE uriparser::uriparser)
-target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog_header_only fmt::fmt-header-only)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${GUMBO_LIB})
-target_link_libraries(${PROJECT_NAME} PRIVATE OpenSSL::SSL)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${RD_LIBARIES})
 target_compile_definitions(${PROJECT_NAME} PRIVATE "RDTEST_DATA_FOLDER=\"${CMAKE_CURRENT_SOURCE_DIR}/data\"")
