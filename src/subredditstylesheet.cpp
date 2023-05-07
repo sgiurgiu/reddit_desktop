@@ -133,7 +133,7 @@ void SubredditStylesheet::parseStylesheet()
 std::string SubredditStylesheet::getUrlLink(const CSSParser::ValuesType& values)
 {
     std::string url;
-    auto urlIt = std::ranges::find_if(values,[](const auto& val){
+    auto urlIt = std::find_if(values.begin(), values.end(),[](const auto& val){
         return val.find("url(") != std::string::npos && val.find(")") != std::string::npos;
     });
     if(urlIt != values.end())
@@ -143,7 +143,7 @@ std::string SubredditStylesheet::getUrlLink(const CSSParser::ValuesType& values)
         if(urlValueStart != std::string::npos && urlValueEnd != std::string::npos)
         {
             auto urlName = (*urlIt).substr(urlValueStart,urlValueEnd-urlValueStart);
-            auto stylesheetDefinedUrlIt = std::ranges::find_if(stylesheet.images,[&urlName](const auto& img){
+            auto stylesheetDefinedUrlIt = std::find_if(stylesheet.images.begin(), stylesheet.images.end(),[&urlName](const auto& img){
                 return img.name == urlName;
             });
             if(stylesheetDefinedUrlIt != stylesheet.images.end())

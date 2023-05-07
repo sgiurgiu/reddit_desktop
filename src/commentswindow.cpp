@@ -647,7 +647,7 @@ void CommentsWindow::renderCommentActionButtons(DisplayComment& c)
             {
                 auto window = ImGui::GetCurrentWindow();
                 auto minPosX = window->DC.CursorPosPrevLine.x + window->DC.GroupOffset.x + window->DC.ColumnsOffset.x;
-                auto spacing = std::max(c.postReplyTextFieldSize.x + ImGui::GetCursorPosX() - c.commentCharCountTextSize.x, minPosX);
+                auto spacing = std::fmax(c.postReplyTextFieldSize.x + ImGui::GetCursorPosX() - c.commentCharCountTextSize.x, minPosX);
                 ImGui::SameLine(spacing);
                 ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Light)]);
                 ImGui::TextUnformatted(c.commentCharCountText.c_str());
@@ -1108,7 +1108,7 @@ void CommentsWindow::showWindow(int appFrameWidth,int appFrameHeight)
             {
                 auto window = ImGui::GetCurrentWindow();
                 auto minPosX = window->DC.CursorPosPrevLine.x + window->DC.GroupOffset.x + window->DC.ColumnsOffset.x;
-                auto spacing = std::max(postCommentTextFieldSize.x + ImGui::GetCursorPosX() - postReplyCharCountTextSize.x, minPosX);
+                auto spacing = std::fmax(postCommentTextFieldSize.x + ImGui::GetCursorPosX() - postReplyCharCountTextSize.x, minPosX);
                 ImGui::SameLine(spacing);
                 ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Light)]);
                 ImGui::TextUnformatted(postReplyCharCountText.c_str());

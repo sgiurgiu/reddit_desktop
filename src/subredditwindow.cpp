@@ -511,7 +511,7 @@ float SubredditWindow::renderPostThumbnail(PostDisplay& p)
     {
         ImGui::Image((void*)(intptr_t)p.blurredThumbnailPicture->textureId,
                      ImVec2(p.blurredThumbnailPicture->width,p.blurredThumbnailPicture->height));
-        height = std::max(height,ImGui::GetCursorPosY());
+        height = std::fmax(height,ImGui::GetCursorPosY());
         auto rectMin = ImGui::GetItemRectMin();
         auto rectMax = ImGui::GetItemRectMax();
         if(ImGui::IsWindowFocused() && ImGui::IsMouseHoveringRect(rectMin,rectMax))
@@ -533,7 +533,7 @@ float SubredditWindow::renderPostThumbnail(PostDisplay& p)
     {
         ImGui::Image((void*)(intptr_t)p.thumbnailPicture->textureId,
                      ImVec2(p.thumbnailPicture->width,p.thumbnailPicture->height));
-        height = std::max(height,ImGui::GetCursorPosY());
+        height = std::fmax(height,ImGui::GetCursorPosY());
         auto rectMin = ImGui::GetItemRectMin();
         auto rectMax = ImGui::GetItemRectMax();
         if(ImGui::IsWindowFocused() && ImGui::IsMouseHoveringRect(rectMin,rectMax) &&
@@ -550,7 +550,7 @@ float SubredditWindow::renderPostThumbnail(PostDisplay& p)
 
         ImGui::Image((void*)(intptr_t)redditSprites->textureId,
                      p.standardThumbnail->size, p.standardThumbnail->uv0, p.standardThumbnail->uv1);
-        height = std::max(height,ImGui::GetCursorPosY());
+        height = std::fmax(height,ImGui::GetCursorPosY());
         ImGui::SameLine();
     }
     return height;

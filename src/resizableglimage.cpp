@@ -62,8 +62,8 @@ void ImGuiResizableGLImage(ResizableGLImage* img, float maxPictureHeight)
             height = maxPictureHeight;
             width = scale * width;
         }
-        width = std::max(100.f,width);
-        height = std::max(100.f,height);
+        width = std::fmax(100.f,width);
+        height = std::fmax(100.f,height);
         img->resizedWidth = width;
         img->resizedHeight = height;
         img->pictureRatio = width / height;
@@ -87,8 +87,8 @@ void ImGuiResizableGLImage(ResizableGLImage* img, float maxPictureHeight)
         auto new_area = new_width * new_height;
         new_width = std::sqrt(img->pictureRatio * new_area);
         new_height = new_area / new_width;
-        img->resizedWidth = std::max(100.f,new_width);
-        img->resizedHeight = std::max(100.f,new_height);
+        img->resizedWidth = std::fmax(100.f,new_width);
+        img->resizedHeight = std::fmax(100.f,new_height);
     }
 
 }
