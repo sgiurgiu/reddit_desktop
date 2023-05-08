@@ -182,7 +182,16 @@ int main(int /*argc*/, char** argv)
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // Load Fonts
-    Utils::LoadFonts(executablePath);
+    try
+    {
+        Utils::LoadFonts(executablePath);
+    }
+    catch(std::exception const &ex)
+    {
+        std::cerr << ex.what() << std::endl;
+        return EXIT_FAILURE;
+    }
+
     Utils::LoadRedditImages();
 
 #ifdef CMARK_ENABLED

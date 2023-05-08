@@ -175,7 +175,7 @@ else()
 endif(ASAN_ENABLE)
 
 if(PACKAGING)
-    target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "FONTS_DIRECTORY=\"${FONTS_DIRECTORY}\"")
+    target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "FONTS_DIRECTORY=\"${CMAKE_INSTALL_PREFIX}/${FONTS_DIRECTORY}\"")
 endif()
 
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "$<$<C_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>")
