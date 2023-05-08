@@ -20,23 +20,20 @@ if [ -z $CONTAINER_REGISTRY ]; then
     exit 1
 fi
 
-sudo rm -rf /tmp/build
-mkdir -p /tmp/build
-cd /tmp/build
 
-CMAKE_ARGS="-GNinja \
-            -DFONTS_DIRECTORY=/usr/share/reddit_desktop -DCMAKE_BUILD_TYPE=Release \
+
+CMAKE_ARGS="-GNinja -DPACKAGING=ON -DCMAKE_BUILD_TYPE=Release \
             -DENABLE_TESTS=OFF -DENABLE_M4DC=ON -DENABLE_CMARK=OFF"
 distro=freebsd
-CMAKE_ARGS="${CMAKE_ARGS} -DCPACK_DISTRIBUTION=freebsd"
-CMAKE_ARGS="${CMAKE_ARGS} -DCPACK_GENERATOR=FREEBSD"
+CMAKE_ARGS="${CMAKE_ARGS} -DCPACK_DISTRIBUTION=freebsd -DCPACK_GENERATOR=FREEBSD"
 
-cmake ${CMAKE_ARGS} ${root}
+rm -rf ${root}/build
 
-sudo mkdir -p /usr/share/reddit_desktop/fonts
-sudo ninja package
+cmake -B${root}/build -S${root} ${CMAKE_ARGS}
+
+cmake --build ${root}/build -- package
 
 rm -rf ${root}/packages
 mkdir -p ${root}/packages
-sudo mv reddit_desktop-*-${distro}.* ${root}/packages
+mv ${root}/build/reddit_desktop-*-${distro}.* ${root}/packages
 

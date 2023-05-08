@@ -1,9 +1,6 @@
 file(GLOB_RECURSE HEADERS *.h *.hpp *.hxx )
 add_custom_target(Headers SOURCES ${HEADERS})
 
-file(GLOB_RECURSE FONTS "${CMAKE_CURRENT_SOURCE_DIR}/../fonts/*.ttf")
-message("Fonts collected: ${FONTS}")
-
 SET(IMGUI_SRCS
     imgui/imgui.cpp
     imgui/imgui_demo.cpp
@@ -177,7 +174,7 @@ else()
     target_compile_options(${EXECUTABLE_NAME} PUBLIC $<$<AND:$<CONFIG:Debug>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-Wall -pedantic -Wextra>)
 endif(ASAN_ENABLE)
 
-if(FONTS_DIRECTORY)
+if(PACKAGING)
     target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "FONTS_DIRECTORY=\"${FONTS_DIRECTORY}\"")
 endif()
 
@@ -207,11 +204,7 @@ if(WIN32_APP_OPTIONS)
 endif()
 
 install(TARGETS ${EXECUTABLE_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR})
-if(FONTS_DIRECTORY)
-    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fonts DESTINATION ${FONTS_DIRECTORY})
-else()
-    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fonts DESTINATION ${CMAKE_INSTALL_BINDIR})
-endif()
+
 
 if(WIN32)
     file(REAL_PATH ${LIBMPV_DIR} MPV_DIR)    

@@ -4,6 +4,7 @@ option(ENABLE_TESTS "Build tests" ON)
 option(ASAN_ENABLE "Build with sanitization on" OFF)
 option(ENABLE_CMARK "Use cmark as the markdown parser" OFF)
 option(ENABLE_M4DC "Use m4dc as the markdown parser" ON)
+option(PACKAGING "Configure for packaging" OFF)
 
 if(ENABLE_M4DC AND ENABLE_CMARK)
     # TODO: Make this a runtime choice not a compile time one
@@ -167,6 +168,8 @@ include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 set(EXECUTABLE_NAME reddit_desktop)
+file(GLOB_RECURSE FONTS "${CMAKE_CURRENT_SOURCE_DIR}/fonts/*.ttf")
+set(FONTS_DIRECTORY ${CMAKE_INSTALL_DATAROOTDIR}/reddit_desktop)
 
 add_subdirectory(src)
 
@@ -187,7 +190,7 @@ set(CPACK_RPM_PACKAGE_LICENSE "GPLv3")
 SET(CPACK_PACKAGE_VENDOR "Sergiu Giurgiu <sgiurgiu11@gmail.com>")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libmpv1, libssl1.1, libfreetype6, libopengl0, libglew2.1")
 set(CPACK_FREEBSD_PACKAGE_MAINTAINER "Sergiu Giurgiu <sgiurgiu11@gmail.com>")
-set(CPACK_FREEBSD_PACKAGE_DEPS "multimedia/mpv" "security/openssl" "print/freetype2" "graphics/glew")
+set(CPACK_FREEBSD_PACKAGE_DEPS "multimedia/mpv" "security/openssl" "print/freetype2" "graphics/glew" "graphics/mesa-dri")
 set(CPACK_RPM_RELOCATION_PATHS "/${CMAKE_INSTALL_SYSCONFDIR}" "${CMAKE_INSTALL_BINDIR}")
 set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY 0) # don't prepend package name
 #set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
@@ -206,6 +209,7 @@ install(FILES "${CMAKE_SOURCE_DIR}/icons/reddit_icon_64.png"  DESTINATION "${CMA
 install(FILES "${CMAKE_SOURCE_DIR}/icons/reddit_icon_128.png" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/128x128/apps" RENAME "reddit-desktop.png")
 install(FILES "${CMAKE_SOURCE_DIR}/icons/reddit_icon_256.png" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/256x256/apps" RENAME "reddit-desktop.png")
 install(FILES "${CMAKE_SOURCE_DIR}/desktop/reddit_desktop.desktop" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications" RENAME "reddit-desktop.desktop")
+install(FILES ${FONTS} DESTINATION ${FONTS_DIRECTORY}/fonts)
 
 set(CPACK_PACKAGE_EXECUTABLES "${EXECUTABLE_NAME};Reddit Desktop")
 if(CPACK_GENERATOR STREQUAL "WIX")

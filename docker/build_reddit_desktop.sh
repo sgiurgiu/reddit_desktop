@@ -2,14 +2,11 @@
 
 set -x
 
-mkdir /tmp/build
-cd /tmp/build
-
 export VCPKG_BINARY_SOURCES=files,/opt/a,readwrite
 
 CMAKE_ARGS="-GNinja -DVCPKG_INSTALLED_DIR=/opt/vcpkg/installed \
             -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake \
-            -DFONTS_DIRECTORY=/usr/share/reddit_desktop -DCMAKE_BUILD_TYPE=Release \
+            -DPACKAGING=ON -DCMAKE_BUILD_TYPE=Release \
             -DENABLE_TESTS=OFF -DENABLE_M4DC=ON -DENABLE_CMARK=OFF"
 distro=""
 if [ -n "$1" ]
@@ -28,9 +25,8 @@ then
     fi
 fi
 
-cmake ${CMAKE_ARGS} /tmp/reddit_desktop
-
-ninja package
+cmake -B/tmp/build -S/tmp/reddit_desktop ${CMAKE_ARGS}
+cmake --build /tmp/build -- package
 
 mkdir -p /tmp/reddit_desktop/packages
-cp reddit_desktop-*-${distro}.* /tmp/reddit_desktop/packages/
+cp /tmp/build/reddit_desktop-*-${distro}.* /tmp/reddit_desktop/packages/
