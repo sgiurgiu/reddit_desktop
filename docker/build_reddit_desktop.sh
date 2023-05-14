@@ -7,7 +7,7 @@ export VCPKG_BINARY_SOURCES=files,/opt/a,readwrite
 CMAKE_ARGS="-GNinja -DVCPKG_INSTALLED_DIR=/opt/vcpkg/installed \
             -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake \
             -DPACKAGING=ON -DCMAKE_BUILD_TYPE=Release \
-            -DENABLE_TESTS=OFF -DENABLE_M4DC=ON -DENABLE_CMARK=OFF"
+            -DENABLE_TESTS=OFF -DENABLE_M4DC=ON -DENABLE_CMARK=OFF -DCMAKE_INSTALL_PREFIX=/usr"
 distro=""
 if [ -n "$1" ]
 then
