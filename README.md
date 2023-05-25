@@ -113,6 +113,12 @@ The `docker/run_container.sh` script provides an example.
         ibus-devel libXmu-devel libXi-devel mesa-libGL-devel mesa-libGLU-devel \
         mpv-libs-devel
     ```
+  - FreeBSD (13.2)
+    ```
+    pkg install llvm clang boost-all sdl2 sdl2_ttf glew gumbo libfmt spdlog stb freetype2 openssl \
+                git cmake ninja sqlite3 pkgconf mpv uriparser libvdpau libvdpau-va-gl mesa-gallium-vdpau \
+                libva-vdpau-driver mesa-dri
+    ```
 
 ### Actually building the executable
 `cd <projects folder>`
@@ -123,7 +129,7 @@ The `docker/run_container.sh` script provides an example.
 
     `mkdir build && cd build`
 
-    `cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=<vcpkg folder>/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=OFF -DENABLE_M4DC=ON -DENABLE_CMARK=OFF <git cloned folder>`
+    `cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=<vcpkg folder>/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=OFF -DENABLE_M4DC=ON -DENABLE_CMARK=OFF  <git cloned folder>`
 
     `ninja`
 
@@ -137,6 +143,13 @@ The `docker/run_container.sh` script provides an example.
 
 The scripts that build it on windows and linux can be found in the `scripts` folder, as well in the `docker` folder. Those scripts are the authority when it comes to the process of building a package for a particular OS
 should this readme not be updated.
+
+- FreeBSD
+    `mkdir build && cd build`
+
+    `cmake  -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=OFF -DENABLE_M4DC=ON -DENABLE_CMARK=OFF  <git cloned folder>`
+
+    `make`
 
 
 ---
