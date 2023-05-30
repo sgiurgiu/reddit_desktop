@@ -2,7 +2,6 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include "utils.h"
-#include "markdownnodetext.h"
 
 namespace
 {
@@ -42,7 +41,8 @@ void MarkdownNodeLink::componentLinkHandling()
     const ImRect bb (rectMin,rectMax);
     const ImGuiID id = window->GetIDFromRectangle(bb);
     bool hovered, held;
-    if(ImGui::ButtonBehavior(bb, id, &hovered, &held))
+
+    if(ImGui::ButtonBehavior(bb, id, &hovered, &held, ImGuiButtonFlags_PressedOnClick))
     {
         auto fixedHref = href;
         if (href.starts_with("/r/"))

@@ -105,17 +105,16 @@ int main(int /*argc*/, char** argv)
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
 
-    /*{
+    {
         int iconWidth, iconHeight, iconChannels;
         auto iconData = Utils::decodeImageData(_reddit_icon_48_png,_reddit_icon_48_png_len,
                                                &iconWidth,&iconHeight,&iconChannels);
-        auto iconSurface = SDL_CreateRGBSurfaceFrom((void*)iconData.get(),
-                                                    iconWidth,iconHeight,32,iconWidth*4,
-                                                    0x000000ff,0x0000ff00,0x00ff0000,0xff000000);
-
-        SDL_SetWindowIcon(window, iconSurface);
-        SDL_FreeSurface(iconSurface);
-    }*/
+        GLFWimage images[1];
+        images[0].pixels = iconData.get();
+        images[0].width = iconWidth;
+        images[0].height = iconHeight;
+        glfwSetWindowIcon(window, 1, images);
+    }
 
     
     glewInit();
@@ -134,25 +133,25 @@ int main(int /*argc*/, char** argv)
         {
             RDRect monitor;
             glfwGetMonitorWorkarea(monitors[i], &monitor.x, &monitor.y, &monitor.width, &monitor.height);
-            /*SDL_Rect intersect = { 0, 0, 0, 0 };
+
+            auto intersect = getIntersection(windowDimensions, monitor);
+
             //even if we intersect, we want at least 100px of width or height
-            withinBounds = (SDL_IntersectRect(&windowDimensions, &dispBounds, &intersect) &&
-                            (intersect.w >= 0 && intersect.h >= 0) &&
-                            (intersect.w >= 100 || intersect.h >= 100));
-            if (withinBounds) break;*/
+            withinBounds = intersect.has_value() &&
+                            (intersect->width >= 0 && intersect->height >= 0) &&
+                            (intersect->width >= 100 || intersect->height >= 100);
+            if (withinBounds) break;
         }
 
         if (!withinBounds && numDisplays >= 1 /*must be at least one*/)
         {
             //center on the primary screen
-           /* SDL_Rect dispBounds = { 0, 0, 0, 0 };
-            if (SDL_GetDisplayBounds(0, &dispBounds) == 0)
-            {
-                w = std::min(w,dispBounds.w);
-                h = std::min(h, dispBounds.h);
-                x = dispBounds.w / 2 - w / 2;
-                y = dispBounds.h / 2 - h / 2;
-            }*/
+            RDRect monitor;
+            glfwGetMonitorWorkarea(monitors[0], &monitor.x, &monitor.y, &monitor.width, &monitor.height);
+            w = std::min(w,monitor.width);
+            h = std::min(h, monitor.height);
+            x = monitor.width / 2 - w / 2;
+            y = monitor.height / 2 - h / 2;
         }
         glfwSetWindowPos(window,x,y);
         glfwSetWindowSize(window,w,h);

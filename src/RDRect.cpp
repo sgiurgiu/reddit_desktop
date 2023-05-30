@@ -13,5 +13,5 @@ std::optional<RDRect> getIntersection(RDRect const& r1, RDRect const& r2)
         return {};
     }
 
-    return RDRect{x5, y6, x6 - x5, y5 - y6};
+    return RDRect{x5, y5, x6 - x5, y6 - y5};
 }
