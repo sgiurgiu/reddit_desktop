@@ -5,7 +5,7 @@ SET(IMGUI_SRCS
     imgui/imgui.cpp
     imgui/imgui_demo.cpp
     imgui/imgui_draw.cpp
-    imgui/imgui_impl_sdl.cpp
+    imgui/imgui_impl_glfw.cpp
     imgui/imgui_impl_opengl3.cpp
     imgui/imgui_widgets.cpp
     imgui/imgui_stdlib.cpp
@@ -103,6 +103,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         livethreadviewer.cpp
         twitterrenderer.cpp
         uri.cpp
+        RDRect.cpp
         )
 
 if(WIN32)
@@ -165,7 +166,7 @@ endif()
 
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE SPDLOG_FMT_EXTERNAL_HO SPDLOG_FMT_EXTERNAL)
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE GL_GLEXT_PROTOTYPES BOOST_ASIO_NO_DEPRECATED)
-
+target_compile_definitions(${EXECUTABLE_NAME} PRIVATE IMGUI_DEFINE_MATH_OPERATORS)
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE "$<$<CONFIG:Debug>:REDDIT_DESKTOP_DEBUG>")
 if(ASAN_ENABLE)
     target_compile_options(${EXECUTABLE_NAME} PUBLIC $<$<AND:$<CONFIG:Debug>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-Wall -pedantic -Wextra -fsanitize=undefined,address -fno-omit-frame-pointer>)

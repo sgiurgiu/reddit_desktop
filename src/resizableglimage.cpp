@@ -3,6 +3,8 @@
 #include <imgui.h>
 #include <cmath>
 
+#include <fmt/core.h>
+
 ResizableGLImage::ResizableGLImage()
 {        
 }
@@ -72,7 +74,8 @@ void ImGuiResizableGLImage(ResizableGLImage* img, float maxPictureHeight)
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0, 0, 0, 0));
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-    ImGui::ImageButton((void*)(intptr_t)img->textureId,ImVec2(img->resizedWidth,img->resizedHeight));
+    auto id = fmt::format("{}",(void*)img);
+    ImGui::ImageButton(id.c_str(), (void*)(intptr_t)img->textureId,ImVec2(img->resizedWidth,img->resizedHeight));
     ImGui::PopStyleColor(3);
     if(ImGui::IsWindowFocused(ImGuiFocusedFlags_RootWindow) &&
             ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(),ImGui::GetItemRectMax()) &&

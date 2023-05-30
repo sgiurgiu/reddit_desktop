@@ -24,7 +24,7 @@
         "openssl",
         "uriparser",
         "zlib",
-        "sdl2"
+        "glfw3"
   ],
   "features": {
     "app": {

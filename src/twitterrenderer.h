@@ -8,7 +8,8 @@
 #include "entities.h"
 #include "resizableglimage.h"
 #include "utils.h"
-#include <SDL_video.h>
+
+#include "RDRect.h"
 #include "markdownrenderer.h"
 #include "markdown/markdownnodelink.h"
 
@@ -41,7 +42,7 @@ private:
     std::string thumbnailUrl;
     std::optional<tweet_user> author;
     std::vector<ResizableGLImagePtr> images;
-    SDL_DisplayMode displayMode;
+    RDRect windowSize;
     std::string createdAtLocal;
     MarkdownRenderer tweetTextRenderer;
     std::vector<TwitterRenderer> referencedTweets;

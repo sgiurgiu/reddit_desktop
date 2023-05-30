@@ -2,18 +2,17 @@
 
 #include <GL/glew.h>    // Initialize with glewInit()
 
-#include "imgui_impl_sdl.h"
+#include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
 #include <iostream>
 #include <vector>
-#define SDL_MAIN_HANDLED
-#include <SDL.h>
+#define GL_SILENCE_DEPRECATION
 #if defined(IMGUI_IMPL_OPENGL_ES2)
-#include <SDL_opengles2.h>
-#else
-#include <SDL_opengl.h>
+#include <GLES2/gl2.h>
 #endif
+#include <GLFW/glfw3.h> // Will drag system OpenGL headers
+
 
 #include <boost/asio/io_context.hpp>
 #include <memory>
@@ -26,7 +25,7 @@
 #include <Windows.h>
 #endif
 
-
+#include "RDRect.h"
 #include "utils.h"
 #include "database.h"
 #include "redditdesktop.h"
@@ -43,7 +42,12 @@
 #include "markdown/cmarkmarkdownparser.h"
 #endif
 
-void runMainLoop(SDL_Window* window,ImGuiIO& io);
+void runMainLoop(GLFWwindow* window,ImGuiIO& io);
+
+static void glfw_error_callback(int error, const char* description)
+{
+    std::cerr<< "GLFW Error "<< error << ": "<< description << std::endl;
+}
 
 #if defined(WIN32_WINMAIN)
 int WINAPI WinMain(
@@ -62,48 +66,46 @@ int main(int /*argc*/, char** argv)
     std::filesystem::path programPath(argv[0]);
 #endif    
     auto executablePath = programPath.parent_path();
-    SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "1");
-
-    // Setup window
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
+    glfwSetErrorCallback(glfw_error_callback);
+    if (!glfwInit())
     {
-        std::cerr << "Error: "<<SDL_GetError()<<"\n";
         return EXIT_FAILURE;
     }
 
 
-
     // Decide GL+GLSL versions
-#if defined(IMGUI_IMPL_OPENGL_ES2)
-    // GL ES 2.0 + GLSL 100
-    const char* glsl_version = "#version 100";
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-#elif defined(__APPLE__)
-    // GL 3.2 Core + GLSL 150
-    const char* glsl_version = "#version 150";
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-#else
-    // GL 3.0 + GLSL 130
-    const char* glsl_version = "#version 130";
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-#endif
+ #if defined(IMGUI_IMPL_OPENGL_ES2)
+     // GL ES 2.0 + GLSL 100
+     const char* glsl_version = "#version 100";
+     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+ #elif defined(__APPLE__)
+     // GL 3.2 + GLSL 150
+     const char* glsl_version = "#version 150";
+     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
+     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // Required on Mac
+ #else
+     // GL 3.0 + GLSL 130
+     const char* glsl_version = "#version 130";
+     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+     //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
+     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
+ #endif
 
     // Create window with graphics context
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-    SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-    SDL_Window* window = SDL_CreateWindow("Reddit Desktop", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1024, 768, window_flags);
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "Reddit Desktop", nullptr, nullptr);
+    if (window == nullptr)
     {
+      return EXIT_FAILURE;
+    }
+    glfwMakeContextCurrent(window);
+    glfwSwapInterval(1); // Enable vsync
+
+    /*{
         int iconWidth, iconHeight, iconChannels;
         auto iconData = Utils::decodeImageData(_reddit_icon_48_png,_reddit_icon_48_png_len,
                                                &iconWidth,&iconHeight,&iconChannels);
@@ -113,10 +115,8 @@ int main(int /*argc*/, char** argv)
 
         SDL_SetWindowIcon(window, iconSurface);
         SDL_FreeSurface(iconSurface);
-    }
-    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
-    SDL_GL_MakeCurrent(window, gl_context);
-    SDL_GL_SetSwapInterval(1); // Enable vsync
+    }*/
+
     
     glewInit();
 
@@ -126,41 +126,36 @@ int main(int /*argc*/, char** argv)
         int x,y,w,h;
         db->getMainWindowDimensions(&x,&y,&w,&h);
 
-        int numDisplays = SDL_GetNumVideoDisplays();
+        int numDisplays = 0;
+        GLFWmonitor** monitors = glfwGetMonitors(&numDisplays);
         bool withinBounds = false;
-        SDL_Rect windowDimensions;
-        windowDimensions.x = x;
-        windowDimensions.y = y;
-        windowDimensions.w = w;
-        windowDimensions.h = h;
+        RDRect windowDimensions {x, y, w, h};
         for (int i = 0; i < numDisplays; i++)
         {
-            SDL_Rect dispBounds = { 0, 0, 0, 0 };
-            if (SDL_GetDisplayBounds(i, &dispBounds) == 0)
-            {
-                SDL_Rect intersect = { 0, 0, 0, 0 };
-                //even if we intersect, we want at least 100px of width or height
-                withinBounds = (SDL_IntersectRect(&windowDimensions, &dispBounds, &intersect) &&
-                                (intersect.w >= 0 && intersect.h >= 0) &&
-                                (intersect.w >= 100 || intersect.h >= 100));
-                if (withinBounds) break;
-            }
+            RDRect monitor;
+            glfwGetMonitorWorkarea(monitors[i], &monitor.x, &monitor.y, &monitor.width, &monitor.height);
+            /*SDL_Rect intersect = { 0, 0, 0, 0 };
+            //even if we intersect, we want at least 100px of width or height
+            withinBounds = (SDL_IntersectRect(&windowDimensions, &dispBounds, &intersect) &&
+                            (intersect.w >= 0 && intersect.h >= 0) &&
+                            (intersect.w >= 100 || intersect.h >= 100));
+            if (withinBounds) break;*/
         }
 
         if (!withinBounds && numDisplays >= 1 /*must be at least one*/)
         {
             //center on the primary screen
-            SDL_Rect dispBounds = { 0, 0, 0, 0 };
+           /* SDL_Rect dispBounds = { 0, 0, 0, 0 };
             if (SDL_GetDisplayBounds(0, &dispBounds) == 0)
             {
                 w = std::min(w,dispBounds.w);
                 h = std::min(h, dispBounds.h);
                 x = dispBounds.w / 2 - w / 2;
                 y = dispBounds.h / 2 - h / 2;
-            }
+            }*/
         }
-        SDL_SetWindowPosition(window,x,y);
-        SDL_SetWindowSize(window,w,h);
+        glfwSetWindowPos(window,x,y);
+        glfwSetWindowSize(window,w,h);
     }
 
 
@@ -178,7 +173,7 @@ int main(int /*argc*/, char** argv)
     //ImGui::StyleColorsClassic();
 
     // Setup Platform/Renderer backends
-    ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     // Load Fonts
@@ -202,8 +197,8 @@ int main(int /*argc*/, char** argv)
 
     {
         int x,y,w,h;
-        SDL_GetWindowPosition(window,&x,&y);
-        SDL_GetWindowSize(window,&w,&h);
+        glfwGetWindowPos(window, &x,&y);
+        glfwGetFramebufferSize(window,&w,&h);
         db->setMainWindowDimensions(x,y,w,h);
     }
     Utils::ReleaseRedditImages();
@@ -212,12 +207,11 @@ int main(int /*argc*/, char** argv)
 
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplSDL2_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
-    SDL_GL_DeleteContext(gl_context);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+    glfwDestroyWindow(window);
+    glfwTerminate();
 
 #ifdef CMARK_ENABLED
     CMarkMarkdownParser::ReleaseCMarkEngine();
@@ -227,7 +221,7 @@ int main(int /*argc*/, char** argv)
 }
 
 
-void runMainLoop(SDL_Window* window,ImGuiIO& io)
+void runMainLoop(GLFWwindow* window,ImGuiIO& io)
 {
 #ifdef REDDIT_DESKTOP_DEBUG
     bool show_demo_window = true;
@@ -242,7 +236,10 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
     // Main loop
     bool done = false;
     while (!done)
-    {
+    {        
+
+        done = glfwWindowShouldClose(window);
+
         //execute whatever work we have in the UI thread
 
         uiContext.poll_one();
@@ -251,19 +248,11 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
         // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
         // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
         // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
-        SDL_Event event;
-        while (SDL_PollEvent(&event))
-        {
-            ImGui_ImplSDL2_ProcessEvent(&event);
-            if (event.type == SDL_QUIT)
-                 done = true;
-            if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
-                 done = true;
-        }
+        glfwPollEvents();
 
         // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplSDL2_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
 #ifdef REDDIT_DESKTOP_DEBUG
@@ -275,7 +264,7 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
 #endif
         int windowWidth;
         int windowHeight;
-        SDL_GetWindowSize(window,&windowWidth,&windowHeight);
+        glfwGetFramebufferSize(window,&windowWidth,&windowHeight);
 
         desktop->setAppFrameHeight(windowHeight);
         desktop->setAppFrameWidth(windowWidth);
@@ -288,7 +277,7 @@ void runMainLoop(SDL_Window* window,ImGuiIO& io)
         glClearColor(backgroundColor.x, backgroundColor.y, backgroundColor.z, backgroundColor.w);
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        SDL_GL_SwapWindow(window);
+        glfwSwapBuffers(window);
         if(!done)
         {
             done = desktop->quitSelected();

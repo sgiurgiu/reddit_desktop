@@ -4,7 +4,7 @@
 #include <imgui_stdlib.h>
 #include <fmt/format.h>
 #include "fonts/IconsFontAwesome4.h"
-#include <SDL.h>
+
 #include "markdownrenderer.h"
 #include "macros.h"
 #include <iostream>
@@ -676,7 +676,7 @@ bool CommentsWindow::commentNode(DisplayComment& c)
 
     ImVec2 pos = window->DC.CursorPos;
     ImRect bb(pos, ImVec2(pos.x + ImGui::GetContentRegionAvail().x, pos.y + g.FontSize + g.Style.FramePadding.y*2));
-    bool opened = ImGui::TreeNodeBehaviorIsOpen(id, ImGuiTreeNodeFlags_DefaultOpen);
+    bool opened = ImGui::TreeNodeUpdateNextOpen(id, ImGuiTreeNodeFlags_DefaultOpen);
     c.commentVisible = opened;
     bool hovered, held;
     if (ImGui::ButtonBehavior(bb, id, &hovered, &held, 0))

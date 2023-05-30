@@ -1,6 +1,7 @@
 #include "database.h"
-#include <SDL.h>
 #include "utils.h"
+#include "RDRect.h"
+#include <GLFW/glfw3.h>
 
 #define DB_ERR_CHECK(msg) \
     if (rc != SQLITE_OK && rc != SQLITE_DONE) \
@@ -381,13 +382,15 @@ void Database::getMainWindowDimensions(int *x, int *y, int *width,int *height)
                                          "OR NAME='WINDOW_WIDTH' OR NAME='WINDOW_HEIGHT'",-1,&stmt_ptr, nullptr);
     stmt.reset(stmt_ptr);
     DB_ERR_CHECK("Cannot find window dimensions");
-    SDL_DisplayMode displayMode;
-    SDL_GetDesktopDisplayMode(0, &displayMode);
+    RDRect rect;
+    glfwGetWindowPos(glfwGetCurrentContext(), &rect.x, &rect.y);
+    glfwGetFramebufferSize(glfwGetCurrentContext(), &rect.width, &rect.height);
+
     *width = 1024;
     *height = 728;
 
-    *x = (displayMode.w - *width) / 2;
-    *y = (displayMode.h - *height) / 2;
+    *x = (rect.width - *width) / 2;
+    *y = (rect.height - *height) / 2;
     while(sqlite3_step(stmt.get()) == SQLITE_ROW)
     {
        auto name = sqlite3_column_text(stmt.get(),0);

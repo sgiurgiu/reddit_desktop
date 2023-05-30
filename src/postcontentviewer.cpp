@@ -13,7 +13,7 @@
 #include <imgui.h>
 #include <fmt/format.h>
 #include "fonts/IconsFontAwesome4.h"
-#include <SDL.h>
+
 #include <GL/glew.h>
 #include "macros.h"
 #include "utils.h"
@@ -23,6 +23,7 @@
 #include "mediawidget.h"
 #include <spdlog/spdlog.h>
 
+#include <GLFW/glfw3.h>
 
 namespace
 {
@@ -38,7 +39,7 @@ static void* get_proc_address_mpv(void *fn_ctx, const char *name)
 {
     UNUSED(fn_ctx);
     //std::cout << "get_proc_address_mpv:"<<name<<std::endl;
-    return SDL_GL_GetProcAddress(name);
+    return (void*)glfwGetProcAddress(name);
 }
 }
 
@@ -48,7 +49,7 @@ PostContentViewer::PostContentViewer(RedditClientProducer* client,
                                      ):
     client(client),token(token),uiExecutor(uiExecutor)
 {
-    SDL_GetDesktopDisplayMode(0, &displayMode);
+    glfwGetFramebufferSize(glfwGetCurrentContext(), nullptr, &windowHeight);
     mediaState.mediaAudioVolume = Database::getInstance()->getMediaAudioVolume();
     useMediaHwAccel = Database::getInstance()->getUseHWAccelerationForMedia();
     useYoutubeDlder = Database::getInstance()->getUseYoutubeDownloader();
@@ -918,7 +919,7 @@ void PostContentViewer::showPostContent()
 
     if(display_image)
     {
-        ImGuiResizableGLImage(display_image,displayMode.h * 0.5f);
+        ImGuiResizableGLImage(display_image,windowHeight * 0.5f);
 
         if(gif && !display_image->isResized)
         {

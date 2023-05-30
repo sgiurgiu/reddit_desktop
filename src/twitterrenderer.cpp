@@ -9,6 +9,7 @@
 #include "date.h"
 #include <algorithm>
 #include "markdown/markdownnodetext.h"
+#include <GLFW/glfw3.h>
 
 namespace
 {
@@ -28,7 +29,7 @@ TwitterRenderer::TwitterRenderer(RedditClientProducer* client,
     client(client),uiExecutor(uiExecutor),twitterBearerToken(twitterBearerToken)
 {
     twitterConnection = client->makeTwitterConnection(twitterBearerToken);
-    SDL_GetDesktopDisplayMode(0, &displayMode);
+    glfwGetFramebufferSize(glfwGetCurrentContext(), &windowSize.width, &windowSize.height);
 }
 void TwitterRenderer::Render() const
 {
@@ -75,7 +76,7 @@ void TwitterRenderer::Render() const
 
         for(auto&& img : images)
         {
-            ImGuiResizableGLImage(img.get(),displayMode.h * 0.5f);
+            ImGuiResizableGLImage(img.get(),windowSize.height * 0.5f);
         }
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Light)]);
         ImGui::Text("Tweet posted %s",createdAtLocal.c_str());

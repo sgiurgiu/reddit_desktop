@@ -5,7 +5,6 @@
 #include "redditclientproducer.h"
 #include <memory>
 #include "entities.h"
-#include <SDL_video.h>
 #include <atomic>
 #include "resizableglimage.h"
 #include "markdownrenderer.h"
@@ -61,7 +60,7 @@ private:
     const boost::asio::any_io_executor& uiExecutor;
     post_ptr currentPost;    
     std::string errorMessage;
-    SDL_DisplayMode displayMode;
+    int windowHeight;
     bool loadingPostContent = false;
     mpv_handle* mpv = nullptr;
     mpv_render_context *mpvRenderContext = nullptr;
