@@ -115,7 +115,7 @@ The `docker/run_container.sh` script provides an example.
     ```
   - FreeBSD (13.2)
     ```
-    pkg install llvm clang boost-all sdl2 sdl2_ttf glew gumbo libfmt spdlog stb freetype2 openssl \
+    pkg install llvm clang boost-all glfw3 glew gumbo libfmt spdlog stb freetype2 openssl \
                 git cmake ninja sqlite3 pkgconf mpv uriparser libvdpau libvdpau-va-gl mesa-gallium-vdpau \
                 libva-vdpau-driver mesa-dri
     ```
