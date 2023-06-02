@@ -1,4 +1,4 @@
-FROM registry.fedoraproject.org/fedora
+FROM registry.fedoraproject.org/fedora:38
 
 LABEL maintainer="Sergiu Giurgiu <sgiurgiu11@gmail.com>"
 
@@ -17,8 +17,8 @@ RUN dnf install -yq \
 RUN dnf -yq install cmake gcc g++ pkgconf-pkg-config git kernel-headers \
         tar rpm-build ninja-build perl-FindBin perl-English perl-File-Compare perl-IPC-Cmd.noarch \
         perl-File-Copy perl-File-Copy-Recursive perl-File-Copy-Recursive-Reduced \
-        ibus-devel libXmu-devel libXi-devel mesa-libGL-devel mesa-libGLU-devel \
-        mpv-libs-devel && \
+        ibus-devel libXmu-devel libXi-devel mesa-libGL-devel mesa-libGLU-devel libXinerama-devel \
+        libXcursor-devel mpv-libs-devel libXrandr-devel && \
         dnf clean all
 
 

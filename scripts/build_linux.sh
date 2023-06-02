@@ -38,13 +38,12 @@ for distro in "${distros[@]}"; do
             $CONTAINER_REGISTRY/reddit_desktop_$distro:build "${distro}"
 done
 
-# Disabling for now since fedora has issues in podman
 
-#podman rmi -f reddit_desktop_runtime:latest || true
+podman rmi -f reddit_desktop_runtime:latest || true
 
-#buildah bud --build-arg RDRPM=/tmp/reddit_desktop/packages/reddit_desktop-${REDDITDESKTOP_VERSION_MAJOR}.${REDDITDESKTOP_VERSION_MINOR}.${REDDITDESKTOP_VERSION_PATCH}-fedora.rpm \
-#            --build-arg BASE_CONTAINER=$CONTAINER_REGISTRY/reddit_desktop_fedora:runtime \
-#            -v "${root}":/tmp/reddit_desktop/:Z \
-#            -f  ${root}/docker/Dockerfile.fedora.runtime -t reddit_desktop_runtime
-#podman save reddit_desktop_runtime:latest | gzip -9 -n > ${root}/packages/reddit_desktop_runtime.tar.gz
+buildah bud --build-arg RDRPM=/tmp/reddit_desktop/packages/reddit_desktop-${REDDITDESKTOP_VERSION_MAJOR}.${REDDITDESKTOP_VERSION_MINOR}.${REDDITDESKTOP_VERSION_PATCH}-fedora.rpm \
+            --build-arg BASE_CONTAINER=$CONTAINER_REGISTRY/reddit_desktop_fedora:runtime \
+            -v "${root}":/tmp/reddit_desktop/:Z \
+            -f  ${root}/docker/Dockerfile.fedora.runtime -t reddit_desktop_runtime
+podman save reddit_desktop_runtime:latest | gzip -9 -n > ${root}/packages/reddit_desktop_runtime.tar.gz
 

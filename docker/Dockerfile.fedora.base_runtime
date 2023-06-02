@@ -1,20 +1,19 @@
-FROM registry.fedoraproject.org/fedora-minimal
+FROM registry.fedoraproject.org/fedora-minimal:38
 
 LABEL maintainer="Sergiu Giurgiu <sgiurgiu11@gmail.com>"
 
 
-RUN curl -s http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-38.noarch.rpm -o /tmp/rpmfusion-free-release-stable.noarch.rpm && \
-    curl -s http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-38.noarch.rpm -o /tmp/rpmfusion-nonfree-release-stable.noarch.rpm && \
+RUN curl -Ls http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-38.noarch.rpm -o /tmp/rpmfusion-free-release-stable.noarch.rpm && \
+    curl -Ls http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-38.noarch.rpm -o /tmp/rpmfusion-nonfree-release-stable.noarch.rpm && \
     rpm -iv /tmp/rpmfusion-free-release-stable.noarch.rpm && \
     rpm -iv /tmp/rpmfusion-nonfree-release-stable.noarch.rpm && \
     rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-38 && \
     rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-38
 
-RUN  microdnf clean all && \
-      microdnf -y install libglvnd-opengl firefox xdg-utils libSM libICE \
+RUN  dnf5 -y install libglvnd-opengl firefox xdg-utils libSM libICE \
         mpv-libs youtube-dl mesa-libGL mesa-libGLU mesa-dri-drivers && \
-        microdnf -y upgrade && \
-        microdnf clean all
+        dnf5 -y upgrade && \
+        dnf5 clean all
 
 CMD ["fedora"]
 
