@@ -1,7 +1,6 @@
 #include "markdownrenderer.h"
 #include <fmt/format.h>
 #include <imgui.h>
-#define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui_internal.h>
 #include "utils.h"
 #include "markdown/markdownparser.h"
