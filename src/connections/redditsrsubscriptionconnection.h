@@ -10,6 +10,7 @@ class RedditSRSubscriptionConnection :
 public:
     enum class SubscriptionAction
     {
+        NotSet,
         Subscribe,
         Unsubscribe
     };
@@ -23,7 +24,16 @@ public:
 protected:
     virtual void responseReceivedComplete() override;
 private:
+    void subscribeToCurrentChunk();
+private:
     std::string userAgent;
+    int totalRequests = 0;
+    int completedRequests = 0;
+    std::vector<std::vector<std::string>> subredditsChunks;
+    std::vector<std::vector<std::string>>::const_iterator currentPos;
+    SubscriptionAction action = SubscriptionAction::NotSet;
+    access_token token;
+    client_response<bool> resp;
 };
 
 #endif // REDDITSRSUBSCRIPTIONCONNECTION_H

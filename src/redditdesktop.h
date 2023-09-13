@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <map>
+#include <optional>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include "subredditwindow.h"
@@ -60,6 +61,22 @@ private:
     void arrangeWindowsGrid();
     void showMediaDomainsManagementDialog();
     void showTwitterAPIAuthBearerDialog();
+    void showImportSubsDialog();
+    void showImportNotStartedControls();
+    void showImportingControls();
+    void showImportFinishedControls();
+    void startImportingSubs();
+    void importingSubsError(std::string msg);
+    void importingSubsLoginSuccess(access_token token, std::shared_ptr<RedditClientProducer> clientProducer);
+    void loadImportingUserSubreddits(std::string url, access_token token,
+                                     std::shared_ptr<RedditClientProducer> clientProducer,
+                                     RedditClientProducer::RedditListingClientConnection connection = RedditClientProducer::RedditListingClientConnection());
+
+    void collectImportingUserSubreddits(subreddit_list subs, access_token token,
+                                     std::shared_ptr<RedditClientProducer> clientProducer,
+                                     RedditClientProducer::RedditListingClientConnection connection);
+    void subscribeToSubreddits();
+
 private:
     boost::asio::any_io_executor uiExecutor;
     RedditClientProducer client;
@@ -108,6 +125,23 @@ private:
     std::string twitterBearer;
     ImVec4 backgroundColor =  {0.45f, 0.55f, 0.60f, 1.00f};
     bool changeBackgroundColorDialog = false;
+    bool importSubsDialog = false;
+    enum class ImportingState
+    {
+        NotStarted,
+        Importing,
+        FinishedSuccessfully,
+        FinishedWithError
+    };
+    struct ImportingUser
+    {
+        ImportingState importingState = ImportingState::NotStarted;
+        std::string importingStatusMessage;
+        user importUser;
+        subreddit_list subredditsToImport;
+    };
+
+    std::optional<ImportingUser> importingUser;
 };
 
 

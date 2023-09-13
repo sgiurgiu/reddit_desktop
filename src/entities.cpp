@@ -865,6 +865,11 @@ subreddit::subreddit(const nlohmann::json& json)
         iconSize.first = json["icon_size"][0].get<int>();
         iconSize.second = json["icon_size"][1].get<int>();
     }
+    if(json.contains("subreddit_type") && json["subreddit_type"].is_string())
+    {
+        subredditType =json["subreddit_type"].get<std::string>();
+    }
+
 }
 
 multireddit::multireddit(const nlohmann::json& json)

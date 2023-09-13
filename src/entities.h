@@ -320,6 +320,7 @@ struct subreddit
     std::string headerImage;
     std::pair<int,int> iconSize;
     std::pair<int,int> headerSize;
+    std::string subredditType;
 };
 struct multireddit
 {

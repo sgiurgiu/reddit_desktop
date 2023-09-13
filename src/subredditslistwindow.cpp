@@ -138,13 +138,7 @@ void SubredditsListWindow::showSubredditsTab()
 {
     if(ImGui::Button(reinterpret_cast<const char*>(ICON_FA_REFRESH)))
     {
-        //this clear is just for show, to tell the user that we're working, doing something
-        subscribedSubreddits.clear();
-        filteredSubscribedSubreddits.clear();
-        userMultis.clear();
-        filteredUserMultis.clear();
-        loadSubreddits("/subreddits/mine/subscriber?show=all&limit=100",token);
-        loadMultis("/api/multi/mine",token);
+        loadSubredditsList();
     }
     ImGui::SameLine();
     if(ImGui::InputTextWithHint("##filtersubreddits","Filter",&subredditsFilter))

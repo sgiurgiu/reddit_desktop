@@ -1,8 +1,7 @@
 #include "redditdesktop.h"
-#include "imgui.h"
+#include "imgui_internal.h"
 #include "fonts/IconsFontAwesome4.h"
 #include "utils.h"
-#include "imgui_internal.h"
 #include "imgui_stdlib.h"
 #include <fmt/format.h>
 #include <algorithm>
@@ -13,6 +12,7 @@
 namespace
 {
 constexpr auto OPENSUBREDDIT_WINDOW_POPUP_TITLE = "Open Subreddit";
+constexpr auto IMPORTSUBS_WINDOW_POPUP_TITLE = "Import Subs";
 constexpr auto ERROR_WINDOW_POPUP_TITLE = "Error Occurred";
 constexpr auto MEDIA_DOMAINS_POPUP_TITLE = "Media Domains Management";
 constexpr auto TWITTER_API_BEARER_TITLE = "Twitter API Auth Bearer";
@@ -363,6 +363,7 @@ void RedditDesktop::showDesktop()
     }
     showMediaDomainsManagementDialog();
     showTwitterAPIAuthBearerDialog();
+    showImportSubsDialog();
     aboutWindow.showAboutWindow(appFrameWidth,appFrameHeight);
 
     ImGui::PopFont();
@@ -721,6 +722,22 @@ void RedditDesktop::showMenuFile()
         }
         ImGui::EndMenu();
     }
+    if(ImGui::BeginMenu("Import Subs"))
+    {
+        for(const auto& u : registeredUsers)
+        {
+            auto current = currentUser.has_value() && currentUser->username == u.username;
+            if (!current && ImGui::MenuItem(u.username.c_str()))
+            {
+                importSubsDialog = true;
+                importingUser = std::make_optional<ImportingUser>();
+                importingUser->importUser = u;
+                importingUser->importingState = ImportingState::NotStarted;
+                importingUser->importingStatusMessage = fmt::format("Importing subscriptions from user {}. Click Import to proceed.",u.username);
+            }
+        }
+        ImGui::EndMenu();
+    }
     if (ImGui::MenuItem("Logout",nullptr,false,currentUser.has_value()))
     {
         subredditsListWindow.reset();
@@ -872,4 +889,220 @@ void RedditDesktop::setSearchResultsNames(names_list names)
 void RedditDesktop::saveBackgroundColor()
 {
     Database::getInstance()->setColor(BACKGROUND_COLOR_NAME,{backgroundColor.x,backgroundColor.y,backgroundColor.z,backgroundColor.w});
+}
+void RedditDesktop::showImportSubsDialog()
+{
+    if(importSubsDialog && importingUser)
+    {
+        importSubsDialog = false;
+        ImGui::OpenPopup(IMPORTSUBS_WINDOW_POPUP_TITLE);
+    }
+    if(importingUser.has_value() && ImGui::BeginPopupModal(IMPORTSUBS_WINDOW_POPUP_TITLE,nullptr,ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        if(importingUser->importingState == ImportingState::FinishedWithError)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+        }
+        ImGui::Text("%s",importingUser->importingStatusMessage.c_str());
+        if(importingUser->importingState == ImportingState::FinishedWithError)
+        {
+            ImGui::PopStyleColor();
+        }
+
+        switch(importingUser->importingState)
+        {
+        case ImportingState::NotStarted:
+            showImportNotStartedControls();
+            break;
+        case ImportingState::Importing:
+            showImportingControls();
+            break;
+        case ImportingState::FinishedSuccessfully:
+            [[fallthrough]];
+        case ImportingState::FinishedWithError:
+            showImportFinishedControls();
+            break;
+        }
+        ImGui::EndPopup();
+    }
+
+}
+
+void RedditDesktop::showImportNotStartedControls()
+{
+    ImGui::Separator();
+    if (ImGui::Button("Import", ImVec2(120, 0)))
+    {
+        startImportingSubs();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Close", ImVec2(120, 0)) ||
+        ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+    {
+        importingUser.reset();
+        ImGui::CloseCurrentPopup();
+    }
+}
+void RedditDesktop::showImportingControls()
+{
+    ImGui::Separator();
+    if (ImGui::Button("Cancel", ImVec2(120, 0))) /*IsKeyPressed is intentionally removed in this state*/
+    {
+        importingUser.reset();
+        ImGui::CloseCurrentPopup();
+    }
+}
+void RedditDesktop::showImportFinishedControls()
+{
+    ImGui::Separator();
+    if (ImGui::Button("Finish", ImVec2(120, 0)) ||
+        ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+    {
+        importingUser.reset();
+        ImGui::CloseCurrentPopup();
+    }
+}
+
+void RedditDesktop::startImportingSubs()
+{
+    importingUser->importingState = ImportingState::Importing;
+    importingUser->importingStatusMessage = fmt::format("Logging in as {} ...",importingUser->importUser.username);
+    auto clientProducer = std::make_shared<RedditClientProducer>("api.reddit.com","oauth.reddit.com",2);
+    auto importLoginConnection = clientProducer->makeLoginClientConnection();
+    importLoginConnection->connectionCompleteHandler([weak=weak_from_this(), clientProducer]
+                           (const boost::system::error_code& ec, client_response<access_token> token){
+           auto self = weak.lock();
+           if(!self) return;
+           if(ec)
+           {
+               boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::importingSubsError,self,ec.message()));
+           }
+           else
+           {
+               if(token.status >= 400)
+               {
+                   boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::importingSubsError,self,token.body));
+               }
+               else
+               {
+                   boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::importingSubsLoginSuccess,self,std::move(token.data), clientProducer));
+               }
+           }
+    });
+    clientProducer->setUserAgent(make_user_agent(importingUser->importUser));
+    importLoginConnection->login(importingUser->importUser);
+}
+void RedditDesktop::importingSubsError(std::string msg)
+{
+    if(!importingUser) return;
+    importingUser->importingState = ImportingState::FinishedWithError;
+    importingUser->importingStatusMessage = fmt::format("Error occurred: {}",std::move(msg));
+}
+void RedditDesktop::importingSubsLoginSuccess(access_token token, std::shared_ptr<RedditClientProducer> clientProducer)
+{
+    if(!importingUser) return;
+    importingUser->importingStatusMessage = fmt::format("Loading {} subreddits ...",importingUser->importUser.username);
+    loadImportingUserSubreddits("/subreddits/mine/subscriber?show=all&limit=100",std::move(token), clientProducer);
+}
+
+void RedditDesktop::loadImportingUserSubreddits(std::string url, access_token token,
+                                 std::shared_ptr<RedditClientProducer> clientProducer,
+                                 RedditClientProducer::RedditListingClientConnection connection)
+{
+    if(!connection)
+    {
+        connection = clientProducer->makeListingClientConnection();
+        connection->connectionCompleteHandler([weak=weak_from_this(),clientProducer, connection, token]
+                                              (const boost::system::error_code& ec,
+                                                 client_response<listing> response)
+        {
+            auto self = weak.lock();
+            if(!self) return;
+            if(ec)
+            {
+                boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::importingSubsError,self,ec.message()));
+            }
+            else
+            {
+                if(response.status >= 400)
+                {
+                    boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::importingSubsError,self,response.body));
+                }
+                else
+                {
+                    auto listingChildren = response.data.json["data"]["children"];
+                    subreddit_list srs;
+                    for(const auto& child: listingChildren)
+                    {
+                        subreddit sr{child["data"]};
+                        if(sr.subredditType == "public")
+                        {
+                            srs.push_back(std::move(sr));
+                        }
+                    }
+
+                    boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::collectImportingUserSubreddits,self,
+                                                                  std::move(srs),std::move(token), std::move(clientProducer), std::move(connection)));
+                }
+            }
+        });
+    }
+
+    connection->list(url, token);
+}
+void RedditDesktop::collectImportingUserSubreddits(subreddit_list subs, access_token token,
+                                    std::shared_ptr<RedditClientProducer> clientProducer,
+                                    RedditClientProducer::RedditListingClientConnection connection)
+{
+    if(!importingUser) return;
+    if(!subs.empty())
+    {
+        auto url = fmt::format("/subreddits/mine/subscriber?show=all&limit=100&after={}&count={}",subs.back().name,importingUser->subredditsToImport.size());
+        loadImportingUserSubreddits(url,std::move(token), std::move(clientProducer), std::move(connection));
+        std::move(subs.begin(), subs.end(), std::back_inserter(importingUser->subredditsToImport));
+    }
+    else
+    {
+        importingUser->importingStatusMessage = fmt::format("Subscribing {} to {} subreddits ...",currentUser->username,importingUser->subredditsToImport.size());
+        //we're done, we now subscribe to them
+        subscribeToSubreddits();
+    }
+}
+
+void RedditDesktop::subscribeToSubreddits()
+{
+    if(!importingUser) return;
+    if(importingUser->subredditsToImport.empty())
+    {
+        importingSubsError(fmt::format("Could not load any subreddits from {}",importingUser->importUser.username));
+        return;
+    }
+    auto srSubscriptionConnection = client.makeRedditRedditSRSubscriptionClientConnection();
+    srSubscriptionConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
+                                                                                  client_response<bool> response)
+    {
+        auto self = weak.lock();
+        if(!self) return;
+        if(!ec && response.data)
+        {
+            boost::asio::post(self->uiExecutor,[w = self->weak_from_this()]()
+            {
+                auto self = w.lock();
+                if(!self || !self->importingUser) return;
+                self->importingUser->importingStatusMessage = "Imported successfully";
+                self->importingUser->importingState = ImportingState::FinishedSuccessfully;
+                self->subredditsListWindow->loadSubredditsList();
+            });
+        }
+        else
+        {
+            auto message = ec ? ec.message() : response.body;
+            boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::importingSubsError,self,message));
+        }
+    });
+    std::vector<std::string> subreddits;
+    subreddits.reserve(importingUser->subredditsToImport.size());
+    std::transform(importingUser->subredditsToImport.cbegin(),importingUser->subredditsToImport.cend(),
+                   std::back_inserter(subreddits),[](const auto& el){return el.name;});
+    srSubscriptionConnection->updateSrSubscription(subreddits,RedditSRSubscriptionConnection::SubscriptionAction::Subscribe,currentAccessToken.data);
 }
