@@ -111,3 +111,7 @@ RedditClientProducer::TwitterClientConnection RedditClientProducer::makeTwitterC
 {
     return std::make_shared<TwitterConnection>(executor,ssl_context,userAgent,twitterBearer);
 }
+RedditClientProducer::IpInfoClientConnection RedditClientProducer::makeIpInfoClientConnection()
+{
+    return std::make_shared<IPInfoConnection>(executor,ssl_context,userAgent);
+}

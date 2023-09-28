@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <memory>
-#include <map>
 #include <optional>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/steady_timer.hpp>
@@ -76,6 +75,7 @@ private:
                                      std::shared_ptr<RedditClientProducer> clientProducer,
                                      RedditClientProducer::RedditListingClientConnection connection);
     void subscribeToSubreddits();
+    void showNetworkInformationDialog();
 
 private:
     boost::asio::any_io_executor uiExecutor;
@@ -142,6 +142,9 @@ private:
     };
 
     std::optional<ImportingUser> importingUser;
+    bool showNetworkInfomation = false;
+    std::optional<IpInfo> ipInfo;
+    std::string ipInfoRetreivalErrorMessage;
 };
 
 

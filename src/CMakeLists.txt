@@ -1,6 +1,11 @@
 file(GLOB_RECURSE HEADERS *.h *.hpp *.hxx )
 add_custom_target(Headers SOURCES ${HEADERS})
 
+target_sources(Headers
+  PRIVATE
+    connections/ipinfoconnection.h connections/ipinfoconnection.cpp
+)
+
 SET(IMGUI_SRCS
     imgui/imgui.cpp
     imgui/imgui_demo.cpp
@@ -71,6 +76,7 @@ set(REDDIT_CONNECTIONS_SRCS
     connections/redditsrsubscriptionconnection.cpp
     connections/redditlivethreadconnection.cpp
     connections/twitterconnection.cpp
+    connections/ipinfoconnection.cpp
     )
 
 set(REDDIT_DESKTOP_LOG_SRCS

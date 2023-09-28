@@ -1,7 +1,6 @@
 #ifndef REDDITCLIENTPRODUCER_H
 #define REDDITCLIENTPRODUCER_H
 
-#include "entities.h"
 #include "connections/redditloginconnection.h"
 #include "connections/redditlistingconnection.h"
 #include "connections/redditresourceconnection.h"
@@ -15,13 +14,12 @@
 #include "connections/redditsrsubscriptionconnection.h"
 #include "connections/redditlivethreadconnection.h"
 #include "connections/twitterconnection.h"
+#include "connections/ipinfoconnection.h"
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/thread_pool.hpp>
-#include <thread>
 #include <boost/asio/ssl/context.hpp>
 #include <string_view>
 #include <string>
-#include <vector>
 
 class RedditClientProducer
 {
@@ -41,6 +39,7 @@ public:
     using RedditSRSubscriptionClientConnection = std::shared_ptr<RedditSRSubscriptionConnection>;
     using RedditLiveThreadClientConnection = std::shared_ptr<RedditLiveThreadConnection>;
     using TwitterClientConnection = std::shared_ptr<TwitterConnection>;
+    using IpInfoClientConnection = std::shared_ptr<IPInfoConnection>;
     RedditLoginClientConnection makeLoginClientConnection();
     RedditListingClientConnection makeListingClientConnection();
     RedditResourceClientConnection makeResourceClientConnection();
@@ -54,6 +53,7 @@ public:
     RedditSRSubscriptionClientConnection makeRedditRedditSRSubscriptionClientConnection();
     RedditLiveThreadClientConnection makeRedditLiveThreadClientConnection();
     TwitterClientConnection makeTwitterConnection(const std::string& twitterBearer);
+    IpInfoClientConnection makeIpInfoClientConnection();
     void setUserAgent(const std::string& userAgent);
 
 private:

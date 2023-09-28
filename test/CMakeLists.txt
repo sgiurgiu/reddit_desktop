@@ -39,6 +39,7 @@ set(REDDIT_CONNECTIONS_SRCS
     ${CMAKE_SOURCE_DIR}/src/connections/redditsrsubscriptionconnection.cpp
     ${CMAKE_SOURCE_DIR}/src/connections/redditlivethreadconnection.cpp
     ${CMAKE_SOURCE_DIR}/src/connections/twitterconnection.cpp
+    ${CMAKE_SOURCE_DIR}/src/connections/ipinfoconnection.cpp
     ${CMAKE_SOURCE_DIR}/src/redditclientproducer.cpp
     )
 

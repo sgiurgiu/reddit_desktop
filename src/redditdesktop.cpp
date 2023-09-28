@@ -6,7 +6,6 @@
 #include <fmt/format.h>
 #include <algorithm>
 #include "database.h"
-#include <iostream>
 #include <boost/algorithm/string.hpp>
 
 namespace
@@ -18,6 +17,7 @@ constexpr auto MEDIA_DOMAINS_POPUP_TITLE = "Media Domains Management";
 constexpr auto TWITTER_API_BEARER_TITLE = "Twitter API Auth Bearer";
 constexpr auto BACKGROUND_COLOR_MENU = "Background Color";
 constexpr auto BACKGROUND_COLOR_NAME = "BACKGROUND";
+constexpr auto IPINFO_WINDOW_POPUP_TITLE = "Network Information";
 }
 
 RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
@@ -364,6 +364,7 @@ void RedditDesktop::showDesktop()
     showMediaDomainsManagementDialog();
     showTwitterAPIAuthBearerDialog();
     showImportSubsDialog();
+    showNetworkInformationDialog();
     aboutWindow.showAboutWindow(appFrameWidth,appFrameHeight);
 
     ImGui::PopFont();
@@ -645,6 +646,10 @@ void RedditDesktop::showMainMenuBar()
         }
         if(ImGui::BeginMenu("Help"))
         {
+            if(ImGui::MenuItem("Network Information"))
+            {
+                showNetworkInfomation = true;
+            }
             if(ImGui::MenuItem("About"))
             {
                 aboutWindow.setWindowShowing(true);
@@ -1105,4 +1110,71 @@ void RedditDesktop::subscribeToSubreddits()
     std::transform(importingUser->subredditsToImport.cbegin(),importingUser->subredditsToImport.cend(),
                    std::back_inserter(subreddits),[](const auto& el){return el.name;});
     srSubscriptionConnection->updateSrSubscription(subreddits,RedditSRSubscriptionConnection::SubscriptionAction::Subscribe,currentAccessToken.data);
+}
+
+void RedditDesktop::showNetworkInformationDialog()
+{
+    if(showNetworkInfomation)
+    {
+        showNetworkInfomation = false;
+        ImGui::OpenPopup(IPINFO_WINDOW_POPUP_TITLE);
+        auto ipInfoConnection = client.makeIpInfoClientConnection();
+        ipInfoConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
+                                                       IpInfoResponse response){
+            auto self = weak.lock();
+            if(!self) return;
+            if(ec || response.status >= 400)
+            {
+                boost::asio::post(self->uiExecutor,[w = self->weak_from_this(),ec](){
+                    auto self = w.lock();
+                    if(!self) return;
+                    self->ipInfoRetreivalErrorMessage = ec.message();
+                });
+            }
+            else
+            {
+                boost::asio::post(self->uiExecutor,[w = self->weak_from_this(), response](){
+                    auto self = w.lock();
+                    if(!self) return;
+                    self->ipInfoRetreivalErrorMessage = "";
+                    self->ipInfo = response.data;
+                });
+            }
+        });
+        ipInfoConnection->LoadIpInfo();
+    }
+    if(ImGui::BeginPopupModal(IPINFO_WINDOW_POPUP_TITLE,nullptr,ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        if(!ipInfoRetreivalErrorMessage.empty())
+        {
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f),"%s",ipInfoRetreivalErrorMessage.c_str());
+        }
+        else
+        {
+            if(ipInfo)
+            {
+                ImGui::Text("IP: %s", ipInfo->ip.c_str());
+                ImGui::Text("Host: %s", ipInfo->hostname.c_str());
+                ImGui::Text("ISP: %s", ipInfo->org.c_str());
+                ImGui::Text("City: %s", ipInfo->city.c_str());
+                ImGui::Text("Region: %s", ipInfo->region.c_str());
+                ImGui::Text("Country: %s", ipInfo->country.c_str());
+                ImGui::Text("Timezone: %s", ipInfo->timezone.c_str());
+            }
+            else
+            {
+                ImGui::Text("Loading Network Information...");
+            }
+        }
+
+        ImGui::Separator();
+        if (ImGui::Button("Close", ImVec2(120, 0)) ||
+            ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+        {
+            ipInfo.reset();
+            ipInfoRetreivalErrorMessage.clear();
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
 }
