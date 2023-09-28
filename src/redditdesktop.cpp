@@ -4,9 +4,10 @@
 #include "utils.h"
 #include "imgui_stdlib.h"
 #include <fmt/format.h>
-#include <algorithm>
 #include "database.h"
 #include <boost/algorithm/string.hpp>
+#include <algorithm>
+#include <thread>
 
 namespace
 {
