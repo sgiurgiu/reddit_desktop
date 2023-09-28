@@ -1125,10 +1125,10 @@ void RedditDesktop::showNetworkInformationDialog()
             if(!self) return;
             if(ec || response.status >= 400)
             {
-                boost::asio::post(self->uiExecutor,[w = self->weak_from_this(),ec](){
+                boost::asio::post(self->uiExecutor,[w = self->weak_from_this(),message = ec.message()](){
                     auto self = w.lock();
                     if(!self) return;
-                    self->ipInfoRetreivalErrorMessage = ec.message();
+                    self->ipInfoRetreivalErrorMessage = message;
                 });
             }
             else
