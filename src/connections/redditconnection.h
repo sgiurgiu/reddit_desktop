@@ -16,7 +16,8 @@
 #include <optional>
 #include <deque>
 #include <mutex>
-#include <any>
+
+#define MAX_RETRIES_ON_ERROR 5
 
 template<typename RequestBody,typename ResponseBody, typename ClientResponse>
 class RedditConnection :
@@ -156,14 +157,23 @@ protected:
 
     virtual void onError(const boost::system::error_code& ec,request_t request)
     {
-        if(boost::beast::http::error::end_of_stream == ec)
-        {
+        if(boost::beast::http::error::end_of_stream == ec ||
+            boost::asio::ssl::error::stream_truncated == ec)
+        {            
             //we got the connection closed on us, reconnect
             connected = false;
             stream.emplace(strand, ssl_context);
             responseParser.reset();
             responseParser.emplace();
-            resolveHost(std::move(request));
+            if(retriesOnError < MAX_RETRIES_ON_ERROR)
+            {
+                retriesOnError++;
+                resolveHost(std::move(request));
+            }
+            else
+            {
+                signal(ec,{});
+            }
         }
         else
         {
@@ -210,7 +220,7 @@ protected:
             onError(ec,std::move(this->privateRequest));
             return;
         }
-
+        retriesOnError = 0;
         using namespace std::placeholders;
         auto readMethod = std::bind(&RedditConnection::onReadHeader,this->shared_from_this(),_1,_2);
         if(isSsl)
@@ -362,6 +372,7 @@ protected:
     request_t privateRequest;
     std::deque<queued_request_t> queuedRequests;
     std::mutex queuedRequestsMutex;
+    int retriesOnError = 0;
 };
 
 template<typename T>
