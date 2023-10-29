@@ -26,6 +26,7 @@ public:
     void showPostContent();
     void stopPlayingMedia(bool flag = true);    
     void loadContent(post_ptr currentPost);
+    void loadCommentContent(const comment_media_metadata& commentMediaMetadata);
     bool isCurrentPostSet() const
     {
         return currentPostSet;
@@ -106,9 +107,10 @@ private:
     };
     post_gallery gallery;
     std::unique_ptr<MarkdownRenderer> markdown;
-    bool currentPostSet = false;
     std::atomic_bool destroying = {false};
     bool useMediaHwAccel = true;
+    bool currentPostSet = false;
+    bool justPlayMedia = false;
     std::string mediaButtonRestartText;
     std::string mediaButtonFastBackwardText;
     std::string mediaButtonBackwardText;

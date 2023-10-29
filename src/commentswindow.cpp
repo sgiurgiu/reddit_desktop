@@ -37,7 +37,7 @@ CommentsWindow::CommentsWindow(const std::string& postId,
                                RedditClientProducer* client,
                                const boost::asio::any_io_executor& executor):
     postId(postId),title(title),token(token),client(client),
-    uiExecutor(executor)
+    uiExecutor(executor),postPreviewRenderer(client,executor)
 {    
     windowName = fmt::format("{}##{}",title,postId);
 }
@@ -47,7 +47,7 @@ CommentsWindow::CommentsWindow(const std::string& commentContext,
                                RedditClientProducer* client,
                                const boost::asio::any_io_executor& executor):
     commentContext(commentContext),token(token),client(client),
-    uiExecutor(executor)
+    uiExecutor(executor),postPreviewRenderer(client,executor)
 {
     windowName = fmt::format("{}##{}",commentContext,commentContext);
 }
@@ -468,7 +468,16 @@ void CommentsWindow::renderCommentContents(DisplayComment& c, int level)
     ImGui::NextColumn();
     auto markdownYPos = ImGui::GetCursorScreenPos().y;
     c.commentPosition = window->DC.CursorPos;
-    c.renderer.RenderMarkdown();
+
+    if(c.mediaViewer)
+    {
+        c.mediaViewer->showPostContent();
+    }
+    else
+    {
+        c.renderer.RenderMarkdown();
+    }
+
     c.markdownHeight = ImGui::GetCursorScreenPos().y - markdownYPos;
 
     ImGui::Columns(1);

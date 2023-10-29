@@ -5,10 +5,8 @@
 #include "json.hpp"
 #include <vector>
 #include <memory>
-#include <chrono>
 #include <optional>
 #include <any>
-#include <queue>
 
 struct user
 {
@@ -231,6 +229,20 @@ struct unloaded_children
 
 struct comment;
 using comments_list = std::vector<comment>;
+struct comment_media_metadata
+{
+    comment_media_metadata(){}
+    comment_media_metadata(const nlohmann::json& json);
+    std::string status; // valid?
+    std::string e; // AnimatedImage
+    std::string m; // media type, image/gif
+    std::string ext; // url
+    std::string t; // provider (giphy)
+    std::string id;
+    std::optional<media> commentMedia;
+    std::optional<image_target> image;
+};
+
 struct comment
 {
     comment(){}
@@ -268,6 +280,7 @@ struct comment
     std::string authorFlairBackgroundColor;
     std::string authorFlairCSSClass;
     std::string authorFlairTextColor;
+    std::map<std::string, comment_media_metadata> mediaMetadata;
 };
 
 struct user_info

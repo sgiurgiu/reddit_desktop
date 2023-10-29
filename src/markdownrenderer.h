@@ -6,14 +6,19 @@
 
 #include "markdown/markdownnode.h"
 #include "markdown/markdownparser.h"
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <vector>
+
+#include "redditclientproducer.h"
 
 class MarkdownRenderer
 {
 public:
-    MarkdownRenderer();
-    MarkdownRenderer(const std::string& textToRender);
+    MarkdownRenderer(RedditClientProducer* client,
+                     const boost::asio::any_io_executor& uiExecutor);
+    MarkdownRenderer(const std::string& textToRender, RedditClientProducer* client,
+                     const boost::asio::any_io_executor& uiExecutor);
     void RenderMarkdown() const;
     MarkdownNode* GetDocument() const;
     MarkdownNode* GetCurrentNode() const;

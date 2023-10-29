@@ -3,11 +3,13 @@
 
 #include "markdownnode.h"
 #include <string>
+#include "../postcontentviewer.h"
+
 
 class MarkdownNodeImage : public MarkdownNode
 {
 public:
-    MarkdownNodeImage(std::string src, std::string title);
+    MarkdownNodeImage(std::string src, std::string title, RedditClientProducer* client, const boost::asio::any_io_executor& uiExecutor);
     void Render() override;
     NodeType GetNodeType() const override
     {
@@ -16,6 +18,7 @@ public:
 private:
     std::string src;
     std::string title;
+    std::shared_ptr<PostContentViewer> postContentViewer;
 };
 
 #endif // MARKDOWNNODEIMAGE_H

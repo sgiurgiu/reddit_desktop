@@ -11,8 +11,12 @@
 class M4DCMarkdownParser : public MarkdownParser
 {
 public:
-    M4DCMarkdownParser();
+    M4DCMarkdownParser(RedditClientProducer* client,
+                       const boost::asio::any_io_executor& uiExecutor);
     std::unique_ptr<MarkdownNode> ParseText(const std::string& text) override;
+public:
+    RedditClientProducer* client;
+    const boost::asio::any_io_executor& uiExecutor;
 };
 
 #endif // M4DCMARKDOWNPARSER_H

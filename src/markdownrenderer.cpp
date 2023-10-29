@@ -10,10 +10,12 @@ namespace
     static const ImVec4 highlightColor(0.8f,0.5f,0.5f,1.f);
 }
 
-MarkdownRenderer::MarkdownRenderer(): MarkdownRenderer("")
+MarkdownRenderer::MarkdownRenderer(RedditClientProducer* client,
+                                   const boost::asio::any_io_executor& uiExecutor): MarkdownRenderer("",client,uiExecutor)
 {}
-MarkdownRenderer::MarkdownRenderer(const std::string& textToRender):
-    text(textToRender), parser(MarkdownParser::GetParser())
+MarkdownRenderer::MarkdownRenderer(const std::string& textToRender,RedditClientProducer* client,
+                                   const boost::asio::any_io_executor& uiExecutor):
+    text(textToRender), parser(MarkdownParser::GetParser(client,uiExecutor))
 
 {
     ParseCurrentText();

@@ -225,7 +225,8 @@ int enter_span_callback(MD_SPANTYPE type, void* detail, void* userdata)
             auto img_detail = (const MD_SPAN_IMG_DETAIL*) detail;
             newNode = std::make_unique<MarkdownNodeImage>(
                         std::string(img_detail->src.text,img_detail->src.size),
-                        std::string(img_detail->title.text,img_detail->title.size)
+                        std::string(img_detail->title.text,img_detail->title.size),
+                        r->client, r->uiExecutor
                         );
         }
         break;
@@ -338,7 +339,9 @@ void debug_log(const char* /*msg*/, void* /*userdata*/)
 
 } //anonymous namespace
 
-M4DCMarkdownParser::M4DCMarkdownParser()
+M4DCMarkdownParser::M4DCMarkdownParser(RedditClientProducer* client,
+                                       const boost::asio::any_io_executor& uiExecutor):
+    client(client), uiExecutor(uiExecutor)
 {
 }
 

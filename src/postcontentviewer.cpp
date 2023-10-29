@@ -58,6 +58,39 @@ PostContentViewer::PostContentViewer(RedditClientProducer* client,
     useMediaHwAccel = true;
 #endif
 }
+void PostContentViewer::loadCommentContent(const comment_media_metadata& commentMediaMetadata)
+{
+    mediaButtonRestartText = fmt::format("{}##_restartMedia_{}",reinterpret_cast<const char*>(ICON_FA_REPEAT),commentMediaMetadata.id);
+    mediaButtonFastBackwardText = fmt::format("{}##_fastBackward_{}",reinterpret_cast<const char*>(ICON_FA_FAST_BACKWARD),commentMediaMetadata.id);
+    mediaButtonBackwardText = fmt::format("{}##_Backward_{}",reinterpret_cast<const char*>(ICON_FA_BACKWARD),commentMediaMetadata.id);
+    mediaButtonPlayText = fmt::format("{}##_playMedia_{}",reinterpret_cast<const char*>(ICON_FA_PLAY),commentMediaMetadata.id);
+    mediaButtonPauseText = fmt::format("{}##_pauseMedia_{}",reinterpret_cast<const char*>(ICON_FA_PAUSE),commentMediaMetadata.id);
+    mediaButtonForwardText = fmt::format("{}##_Forward_{}",reinterpret_cast<const char*>(ICON_FA_FORWARD),commentMediaMetadata.id);
+    mediaButtonFastForwardText = fmt::format("{}##_fastForward_{}",reinterpret_cast<const char*>(ICON_FA_FAST_FORWARD),commentMediaMetadata.id);
+    mediaSliderVolumeText = fmt::format("##_volumeMedia_{}",commentMediaMetadata.id);
+    galleryButtonPreviousText = fmt::format("{}##_previmage_{}",reinterpret_cast<const char*>(ICON_FA_ARROW_LEFT),commentMediaMetadata.id);
+    galleryButtonNextText = fmt::format("{}##_nextimage_{}",reinterpret_cast<const char*>(ICON_FA_ARROW_RIGHT),commentMediaMetadata.id);
+    loopCheckboxText = fmt::format("Loop##_loop_{}",commentMediaMetadata.id);
+    mediaProgressSliderText = fmt::format("##_progressSlider_{}", commentMediaMetadata.id);
+
+    if(commentMediaMetadata.commentMedia)
+    {
+        if(commentMediaMetadata.commentMedia->oemEmbed)
+        {
+            justPlayMedia = true;
+            setupMediaContext(commentMediaMetadata.commentMedia->oemEmbed->providerUrl, true);
+        }
+    }
+    else if(commentMediaMetadata.image)
+    {
+        downloadPostImage(commentMediaMetadata.image->url);
+    }
+    else if(!commentMediaMetadata.ext.empty())
+    {
+        justPlayMedia = true;
+        setupMediaContext(commentMediaMetadata.ext, false);
+    }
+}
 void PostContentViewer::loadContent(post_ptr currentPost)
 {
     this->currentPost = currentPost;
@@ -77,7 +110,7 @@ void PostContentViewer::loadContent(post_ptr currentPost)
 
     if(!currentPost->selfText.empty())
     {
-        markdown = std::make_unique<MarkdownRenderer>(currentPost->selfText);
+        markdown = std::make_unique<MarkdownRenderer>(currentPost->selfText,client,uiExecutor);
         loadingPostContent = false;
     }
     if(currentPost->isGallery && !currentPost->gallery.empty())
@@ -431,7 +464,7 @@ void PostContentViewer::downloadPostImage(std::string url)
 }
 void PostContentViewer::setupMediaContext(std::string file, bool useProvidedFile)
 {
-    if(file.empty())
+    if(file.empty() && currentPost)
     {
         file = currentPost->url;
     }
@@ -707,7 +740,7 @@ void PostContentViewer::mpvDoublePropertyChanged(std::string name, double value)
 //}
 void PostContentViewer::setPostMediaFrame()
 {
-    if(!currentPost || !mpvRenderContext || destroying) return;
+    if((!justPlayMedia && !currentPost) || !mpvRenderContext || destroying) return;
     uint64_t flags = mpv_render_context_update(mpvRenderContext);
     if (!(flags & MPV_RENDER_UPDATE_FRAME))
     {

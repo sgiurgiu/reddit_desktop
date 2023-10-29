@@ -43,7 +43,8 @@ private:
     struct DisplayMessage
     {
         DisplayMessage(message message):
-            msg(std::move(message)),renderer(this->msg.body)
+            msg(std::move(message)),renderer(this->msg.body, nullptr, {}),
+            previewRenderer("", nullptr, {})
         {
             updateButtonsText();
         }

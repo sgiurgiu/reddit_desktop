@@ -106,8 +106,8 @@ private:
     struct AboutDisplay
     {
         AboutDisplay(subreddit& about):
-            description(about.description),
-            submit(about.submitText)
+            description(about.description, nullptr, {}),
+            submit(about.submitText, nullptr, {})
         {}
         MarkdownRenderer description;
         MarkdownRenderer submit;

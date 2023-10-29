@@ -516,6 +516,67 @@ flair_richtext::flair_richtext(const nlohmann::json& json)
 
 }
 
+comment_media_metadata::comment_media_metadata(const nlohmann::json& json)
+{
+    if(json.contains("id") && json["id"].is_string())
+    {
+        id =json["id"].get<std::string>();
+    }
+    if(json.contains("status") && json["status"].is_string())
+    {
+        status =json["status"].get<std::string>();
+    }
+    if(json.contains("e") && json["e"].is_string())
+    {
+        e =json["e"].get<std::string>();
+    }
+    if(json.contains("m") && json["m"].is_string())
+    {
+        m =json["m"].get<std::string>();
+    }
+    if(json.contains("ext") && json["ext"].is_string())
+    {
+        ext=json["ext"].get<std::string>();
+    }
+    if(json.contains("t") && json["t"].is_string())
+    {
+        t =json["t"].get<std::string>();
+    }
+
+    if(json.contains("s") && json["s"].is_object())
+    {
+        if(e == "AnimatedImage")
+        {
+            commentMedia = std::make_optional<media>();
+            commentMedia->type = m;
+            commentMedia->oemEmbed = std::make_optional<oembed>();
+            commentMedia->oemEmbed->type = m;
+            commentMedia->oemEmbed->width = json["s"]["x"].get<int>();
+            commentMedia->oemEmbed->height = json["s"]["y"].get<int>();
+            if(json["s"].contains("mp4") && json["s"]["mp4"].is_string())
+            {
+                commentMedia->oemEmbed->providerUrl = json["s"]["mp4"].get<std::string>();
+                commentMedia->oemEmbed->type = "mp4";
+            }
+            else if(json["s"].contains("gif") && json["s"]["gif"].is_string())
+            {
+                commentMedia->oemEmbed->providerUrl = json["s"]["gif"].get<std::string>();
+                commentMedia->oemEmbed->type = "gif";
+            }
+        }
+        else if(e == "Image")
+        {
+            image = std::make_optional<image_target>();
+            image->width = json["s"]["x"].get<int>();
+            image->height = json["s"]["y"].get<int>();
+
+            if(json["s"].contains("u") && json["s"]["u"].is_string())
+            {
+                image->url = json["s"]["u"].get<std::string>();
+            }
+        }
+    }
+}
 comment::comment(const nlohmann::json& json, const user& currentUser)
 {
     if(json.contains("id") && json["id"].is_string())
@@ -675,6 +736,13 @@ comment::comment(const nlohmann::json& json, const user& currentUser)
             {
                 replies.emplace_back(child["data"], currentUser);
             }
+        }
+    }
+    if(json.contains("media_metadata"))
+    {
+        for(const auto& mm : json["media_metadata"].items())
+        {
+            mediaMetadata[mm.key()] = comment_media_metadata{mm.value()};
         }
     }
 }

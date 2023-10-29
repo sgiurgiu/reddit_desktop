@@ -224,7 +224,7 @@ void runMainLoop(GLFWwindow* window,ImGuiIO& io)
 {
 #ifdef REDDIT_DESKTOP_DEBUG
     bool show_demo_window = true;
-    bool show_markdown_window = false;
+    bool show_markdown_window = true;
 #endif
     boost::asio::io_context uiContext;    
     auto work = boost::asio::make_work_guard(uiContext);
@@ -314,8 +314,8 @@ void ShowMarkdownWindow(bool *open)
         return;
     }
     ImGui::SetWindowFocus();
-    ImGui::TextUnformatted(reinterpret_cast<const char*>("Bla"  u8"\u1F004" u8"\uFE0F"));
-
+    //ImGui::TextUnformatted(reinterpret_cast<const char*>("Bla"  u8"\u1F004" u8"\uFE0F"));
+    body = "![gif](giphy|9V1F9o1pBjsxFzHzBr)";
     //MarkdownRenderer markdown(body);
     //markdown.RenderMarkdown();
     ImGui::End();

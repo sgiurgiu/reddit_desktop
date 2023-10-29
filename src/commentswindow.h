@@ -71,7 +71,8 @@ private:
         DisplayComment(comment cmt, const access_token& token,
                        RedditClientProducer* client,
                        const boost::asio::any_io_executor& executor):
-        commentData(std::move(cmt)),renderer(this->commentData.body),
+        commentData(std::move(cmt)),renderer(this->commentData.body, client, executor),
+          previewRenderer(client, executor),
           awardsRenderer(std::make_shared<AwardsRenderer>(commentData)),
           flairRenderer(std::make_shared<FlairRenderer>(commentData))
         {
@@ -88,9 +89,16 @@ private:
                 //that a comment has been deleted. It's ... weird.
                 state = CommentState::DELETED;
             }
+            if(!commentData.mediaMetadata.empty())
+            {
+                // just render the first, for now (and ever)
+                mediaViewer = std::make_shared<PostContentViewer>(client,token,executor);
+                mediaViewer->loadCommentContent(commentData.mediaMetadata.begin()->second);
+            }
         }
         comment commentData;
         MarkdownRenderer renderer;
+        std::shared_ptr<PostContentViewer> mediaViewer;
         std::string upvoteButtonText;
         std::string downvoteButtonText;
         std::string saveButtonText;

@@ -57,7 +57,7 @@ private:
                      RedditClientProducer* client,
                      const boost::asio::any_io_executor& uiExecutor):
             event(std::move(event)),
-            bodyRenderer(this->event.body)
+            bodyRenderer(this->event.body,client,uiExecutor)
         {
             updateHumanTime();
             for(const auto& em : this->event.embeds)

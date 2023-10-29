@@ -7,7 +7,7 @@
 #include "globalresourcescache.h"
 #include "fonts/IconsFontAwesome4.h"
 #include "date.h"
-#include <algorithm>
+#include <queue>
 #include "markdown/markdownnodetext.h"
 #include <GLFW/glfw3.h>
 
@@ -26,7 +26,8 @@ namespace
 TwitterRenderer::TwitterRenderer(RedditClientProducer* client,
                                  const boost::asio::any_io_executor& uiExecutor,
                                  const std::string& twitterBearerToken):
-    client(client),uiExecutor(uiExecutor),twitterBearerToken(twitterBearerToken)
+    client(client),uiExecutor(uiExecutor),twitterBearerToken(twitterBearerToken),
+    tweetTextRenderer(client,uiExecutor)
 {
     twitterConnection = client->makeTwitterConnection(twitterBearerToken);
     glfwGetFramebufferSize(glfwGetCurrentContext(), &windowSize.width, &windowSize.height);
