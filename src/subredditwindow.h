@@ -133,7 +133,7 @@ private:
     void clearExistingPostsData();
     void votePost(post_ptr p,Voted voted);
     void updatePostVote(std::string postName,Voted voted);
-    void pauseAllPosts();
+    void pauseAllMedia();
     void setPostErrorMessage(std::string postName,std::string msg);
     void lookAndDestroyPostsContents();
     void refreshPosts();

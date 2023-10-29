@@ -11,7 +11,7 @@ RUN curl -Ls http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-3
     rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-38
 
 RUN  dnf5 -y install libglvnd-opengl firefox xdg-utils libSM libICE \
-        mpv-libs youtube-dl mesa-libGL mesa-libGLU mesa-dri-drivers && \
+        mpv-libs youtube-dl mesa-libGL mesa-libGLU mesa-dri-drivers dbus dbus-x11 && \
         dnf5 -y upgrade && \
         dnf5 clean all
 

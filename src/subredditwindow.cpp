@@ -418,7 +418,7 @@ void SubredditWindow::updatePostVote(std::string postName,Voted voted)
         it->post->humanScore = Utils::CalculateScore(it->post->score,oldVoted,voted);
     }
 }
-void SubredditWindow::pauseAllPosts()
+void SubredditWindow::pauseAllMedia()
 {
     for(auto&& p : posts)
     {
@@ -657,13 +657,13 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
 
     if(!ImGui::Begin(windowName.c_str(),&windowOpen,ImGuiWindowFlags_HorizontalScrollbar))
     {
-        pauseAllPosts();
+        pauseAllMedia();
         ImGui::End();
         return;
     }
     if(!windowOpen)
     {
-        pauseAllPosts();
+        pauseAllMedia();
         ImGui::End();
         return;
     }
@@ -674,7 +674,7 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
     }
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_W)) && ImGui::GetIO().KeyCtrl && ImGui::IsWindowFocused())
     {
-        pauseAllPosts();
+        pauseAllMedia();
         windowOpen = false;
     }
     if(windowPositionAndSizeSet)
@@ -880,7 +880,8 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
         ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[Utils::GetFontIndex(Utils::Fonts::Noto_Medium_Big)]);
         if(!p.post->title.empty())
         {
-            //ImGui::SetNextItemWidth(ImGui::GetWindowContentRegionMax().x-(ImGui::GetStyle().FramePadding.x)-ImGui::GetFontSize());
+            //ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x-(ImGui::GetStyle().FramePadding.x*2.0f) - ImGui::GetStyle().ScrollbarSize);
+            //ImGui::SetNextItemWidth(sortPostsLabelWidth + ImGui::GetFrameHeight() + ImGui::GetStyle().FramePadding.x*2.0f);
             ImGui::TextWrapped("%s",p.post->title.c_str());
         }
         else
