@@ -1,38 +1,38 @@
 {
-  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "reddit-desktop",
   "version-string": "0.0.1",
   "dependencies": [
-        "boost-asio",
-        "boost-algorithm",
-        "boost-beast",
-        "boost-system",
-        "boost-filesystem",
-        "boost-program-options",
-        "boost-process",
-        "boost-serialization",
-        "boost-signals2",
-        "boost-spirit",
-        "glew",
-        "gumbo",
-        "fmt",
-        "spdlog",
-        "stb",
-        "sqlite3",
-        "freetype",
-        "opengl",
-        "openssl",
-        "uriparser",
-        "zlib",
-        "glfw3"
+    "boost-asio",
+    "boost-algorithm",
+    "boost-beast",
+    "boost-system",
+    "boost-filesystem",
+    "boost-program-options",
+    "boost-process",
+    "boost-serialization",
+    "boost-signals2",
+    "boost-spirit",
+    "glew",
+    "gumbo",
+    "fmt",
+    "spdlog",
+    "stb",
+    "sqlite3",
+    "freetype",
+    "opengl",
+    "openssl",
+    "uriparser",
+    "zlib",
+    "glfw3"
   ],
   "features": {
     "app": {
-        "description": "The Reddit Desktop App"
+      "description": "The Reddit Desktop App"
     },
     "tests": {
-        "description": "Build tests",
-        "dependencies": ["gtest"]
+      "description": "Build tests",
+      "dependencies": [ "gtest" ]
     }
   }
 }

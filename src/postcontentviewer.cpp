@@ -1,12 +1,7 @@
 #include "postcontentviewer.h"
 
-#ifdef WIN32
-#include <client.h>
-#include <render_gl.h>
-#else
 #include <mpv/client.h>
 #include <mpv/render_gl.h>
-#endif // WIN32
 
 #include "database.h"
 #include "spinner/spinner.h"
