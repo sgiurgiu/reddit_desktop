@@ -44,6 +44,8 @@ Database::Database():db(nullptr,connection_deleter())
     DB_ERR_CHECK("Cannot create table MEDIA_DOMAINS");
     rc = sqlite3_exec(db.get(),"CREATE TABLE IF NOT EXISTS COLORS(NAME TEXT, RED FLOAT, GREEN FLOAT, BLUE FLOAT, ALPHA FLOAT)",nullptr,nullptr,nullptr);
     DB_ERR_CHECK("Cannot create table COLORS");
+    rc = sqlite3_exec(db.get(), "CREATE TABLE IF NOT EXISTS PROXY(HOST TEXT, PORT INT, USERNAME TEXT, PASSWORD TEXT, PROXY_TYPE TEXT, USE_PROXY BOOLEAN)", nullptr, nullptr, nullptr);
+    DB_ERR_CHECK("Cannot create table PROXY");
 
     int version = getSchemaVersion();
     if(version < 1)

@@ -224,7 +224,7 @@ void runMainLoop(GLFWwindow* window,ImGuiIO& io)
 {
 #ifdef REDDIT_DESKTOP_DEBUG
     bool show_demo_window = true;
-    bool show_markdown_window = true;
+    bool show_markdown_window = false;
 #endif
     boost::asio::io_context uiContext;    
     auto work = boost::asio::make_work_guard(uiContext);
