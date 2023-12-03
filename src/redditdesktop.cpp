@@ -29,16 +29,13 @@ RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
 {
     auto db = Database::getInstance();
     registeredUsers = db->getRegisteredUsers();
-    if(!registeredUsers.empty())
-    {
-        currentUser = registeredUsers.front();
-    }
     shouldBlurPictures= db->getBlurNSFWPictures();
     useMediaHwAccel = db->getUseHWAccelerationForMedia();
     subredditsAutoRefreshTimeout = db->getAutoRefreshTimeout();
     showRandomNSFW = db->getShowRandomNSFW();
     automaticallyArangeWindowsInGrid = db->getAutoArangeWindowsGrid();
     useYoutubeDl = db->getUseYoutubeDownloader();
+    automaticallyLogIn = db->getAutomaticallyLogIn();
     auto bCol = db->getColor(BACKGROUND_COLOR_NAME,{backgroundColor.x,backgroundColor.y,backgroundColor.z,backgroundColor.w});
     backgroundColor.x = bCol[0];
     backgroundColor.y = bCol[1];
@@ -46,6 +43,14 @@ RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
     backgroundColor.w = bCol[3];
     loggingWindow->setupLogging();
     loggingWindow->setWindowOpen(showLoggingWindow);
+}
+
+void RedditDesktop::automaticallySetCurrentUser()
+{
+    if(!registeredUsers.empty())
+    {
+        currentUser = registeredUsers.front();
+    }
 }
 
 void RedditDesktop::loginCurrentUser()
@@ -61,6 +66,7 @@ void RedditDesktop::loginCurrentUser()
 }
 void RedditDesktop::refreshLoginToken()
 {
+    if(!currentUser) return;
     auto loginConnection = client.makeLoginClientConnection();
     loginConnection->connectionCompleteHandler([weak=weak_from_this()]
                                                (const boost::system::error_code& ec,
@@ -368,6 +374,17 @@ void RedditDesktop::showDesktop()
     showNetworkInformationDialog();
     aboutWindow.showAboutWindow(appFrameWidth,appFrameHeight);
 
+    if(proxySettingsWindow.showProxySettingsWindow())
+    {
+        subredditsListWindow.reset();
+        subredditWindows.clear();
+        commentsWindows.clear();
+        userInfoWindow.reset();
+        searchNamesConnection.reset();
+        loggedInFirstTime = true;
+        refreshLoginToken();
+    }
+
     ImGui::PopFont();
 }
 void RedditDesktop::showTwitterAPIAuthBearerDialog()
@@ -548,6 +565,10 @@ void RedditDesktop::showMainMenuBar()
         }
         if (ImGui::BeginMenu("Options"))
         {
+            if (ImGui::Checkbox("Automatically Login", &automaticallyLogIn))
+            {
+                Database::getInstance()->setAutomaticallyLogIn(automaticallyLogIn);
+            }
             if(ImGui::Checkbox("Blur NSFW Thumbnails", &shouldBlurPictures))
             {
                 Database::getInstance()->setBlurNSFWPictures(shouldBlurPictures);
@@ -619,6 +640,10 @@ void RedditDesktop::showMainMenuBar()
                     backgroundColor.w = 1.f;
                 }
                 ImGui::EndMenu();
+            }
+            if(ImGui::MenuItem("Proxy Settings"))
+            {
+                proxySettingsWindow.setShowProxySettingsWindow(true);
             }
             ImGui::EndMenu();
         }

@@ -17,6 +17,11 @@
 #include <deque>
 #include <mutex>
 
+#include "proxy/proxy.h"
+#include "proxy/socks5.hpp"
+#include "proxy/socks4.hpp"
+#include "../database.h"
+
 #define MAX_RETRIES_ON_ERROR 5
 
 template<typename RequestBody,typename ResponseBody, typename ClientResponse>
@@ -35,9 +40,12 @@ public:
                      boost::asio::ssl::context& ssl_context,const std::string& host,
                      const std::string& service):
         ssl_context(ssl_context),strand(boost::asio::make_strand(executor)),
-        resolver(strand),stream(std::make_optional<stream_t>(strand, ssl_context)),
-        host(host),service(service),responseParser(std::make_optional<response_parser_t>())
+        stream(std::make_optional<stream_t>(strand, ssl_context)),
+        responseParser(std::make_optional<response_parser_t>()),host(host),service(service),
+        resolver(strand)
     {
+        proxy = Database::getInstance()->getProxy();
+                //std::make_optional<proxy_t>("localhost", "1080", "", "", PROXY_TYPE_SOCKS5,true);
     }
     virtual ~RedditConnection()
     {
@@ -99,10 +107,62 @@ private:
         }
         // Set a timeout on the operation
         boost::beast::get_lowest_layer(stream.value()).expires_after(streamTimeout);
-        using namespace std::placeholders;
-        auto connectMethod = std::bind(&RedditConnection::onConnect,this->shared_from_this(),_1,_2,std::move(request));
-        // Make the connection on the IP address we get from a lookup
-        boost::beast::get_lowest_layer(stream.value()).async_connect(results,connectMethod);
+
+        if(proxy && proxy->useProxy)
+        {
+            boost::system::error_code proxyEc;
+            boost::asio::ip::tcp::resolver::results_type::endpoint_type connectedEndpoint;
+            auto proxyResults = resolver.resolve(proxy->host, proxy->port);
+            for(const auto& hostResult : results)
+            {
+                if(proxy->proxyType == proxy::PROXY_TYPE_SOCKS5)
+                {
+                    socks5::proxy_connect(stream->next_layer(),hostResult.endpoint(),proxyResults, proxyEc);
+                }
+                else if(proxy->proxyType == proxy::PROXY_TYPE_SOCKS4)
+                {
+                    socks4::proxy_connect(stream->next_layer(),hostResult.endpoint(),proxyResults, proxy->username, proxyEc);
+                }
+                else
+                {
+                    proxyEc = socks5::make_error_code(socks5::result_code::invalid_version);
+                }
+                if(proxyEc)
+                {
+                    auto& cat = proxyEc.category();
+                    if(&cat == &socks5::get_result_category() || &cat == &socks4::get_result_category())
+                    {
+                        //it means the proxy cannot connect to the host
+                        continue;
+                    }
+                    else
+                    {
+                        //there's a problem connecting to the proxy
+                        onError(proxyEc,std::move(request));
+                        return;
+                    }
+                }
+                connectedEndpoint = hostResult.endpoint();
+                break;
+            }
+            if(proxyEc)
+            {
+                onError(proxyEc,std::move(request));
+                return;
+            }
+            boost::asio::post(stream->get_executor(),[self = this->shared_from_this(),
+                              proxyEc = std::move(proxyEc), connectedEndpoint = std::move(connectedEndpoint), request = std::move(request)]() mutable
+            {
+                self->onConnect(std::move(proxyEc), std::move(connectedEndpoint), std::move(request));
+            });
+        }
+        else
+        {
+            using namespace std::placeholders;
+            auto connectMethod = std::bind(&RedditConnection::onConnect,this->shared_from_this(),_1,_2,std::move(request));
+            // Make the connection on the IP address we get from a lookup
+            boost::beast::get_lowest_layer(stream.value()).async_connect(results,connectMethod);
+        }
     }
 
     void onHandshake(const boost::system::error_code& ec,request_t request)
@@ -232,6 +292,7 @@ protected:
             resolveHost(std::move(request));
         }
     }
+
     template<typename Derived>
     std::shared_ptr<Derived> shared_from_base()
     {
@@ -360,28 +421,31 @@ protected:
         }
     }
 
-protected:    
+protected:
     boost::asio::ssl::context& ssl_context;
     boost::asio::strand<boost::asio::any_io_executor> strand;
-    boost::asio::ip::tcp::resolver resolver;
     std::optional<stream_t> stream;
-    boost::beast::flat_buffer readBuffer; // (Must persist between reads)
+    std::optional<response_parser_t> responseParser;
     std::string host;
     std::string service;
-    boost::signals2::signal<void(const boost::system::error_code&,ClientResponse)> signal;
-    std::optional<response_parser_t> responseParser;
+    boost::beast::flat_buffer readBuffer; // (Must persist between reads)
     bool isSsl = true;
+    using queued_request_t = queued_request<typename ClientResponse::user_type>;
+    std::deque<queued_request_t> queuedRequests;
+    boost::signals2::signal<void(const boost::system::error_code&,ClientResponse)> signal;
+    std::mutex queuedRequestsMutex;
     bool connected = false;
+
+private:
+    boost::asio::ip::tcp::resolver resolver;
 #ifdef REDDIT_DESKTOP_DEBUG
     std::chrono::seconds streamTimeout{120};
 #else
     std::chrono::seconds streamTimeout{30};
 #endif
-    using queued_request_t = queued_request<typename ClientResponse::user_type>;
     request_t privateRequest;
-    std::deque<queued_request_t> queuedRequests;
-    std::mutex queuedRequestsMutex;
     int retriesOnError = 0;
+    std::optional<proxy::proxy_t> proxy;
 };
 
 template<typename T>

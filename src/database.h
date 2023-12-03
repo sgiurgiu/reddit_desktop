@@ -8,7 +8,7 @@
 #include <array>
 #include <sqlite3.h>
 #include "entities.h"
-
+#include "connections/proxy/proxy.h"
 
 class database_exception : public std::runtime_error
 {
@@ -48,6 +48,9 @@ public:
     void setAutoRefreshTimeout(int value);
     void setShowRandomNSFW(bool flag);
     bool getShowRandomNSFW() const;
+    void setAutomaticallyLogIn(bool flag);
+    bool getAutomaticallyLogIn() const;
+
     void setAutoArangeWindowsGrid(bool flag);
     bool getAutoArangeWindowsGrid() const;
     void setUseYoutubeDownloader(bool flag);
@@ -60,6 +63,8 @@ public:
     std::optional<std::string> getTwitterAuthBearer();
     void setColor(const std::string& name, const std::array<float,4>& col);
     std::array<float,4> getColor(const std::string& name, const std::array<float,4>& defaultColor) const;
+    void setProxy(const proxy::proxy_t& proxy) const;
+    std::optional<proxy::proxy_t> getProxy() const;
 private:
     void setBoolProperty(bool flag, const std::string& propName);
     bool getBoolProperty(const std::string& propName, bool defaultValue) const;

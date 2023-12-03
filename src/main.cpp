@@ -230,7 +230,11 @@ void runMainLoop(GLFWwindow* window,ImGuiIO& io)
     auto work = boost::asio::make_work_guard(uiContext);
     auto desktop = std::make_shared<RedditDesktop>(uiContext);
 
-    desktop->loginCurrentUser();
+    if(Database::getInstance()->getAutomaticallyLogIn())
+    {
+        desktop->automaticallySetCurrentUser();
+        desktop->loginCurrentUser();
+    }
 
     // Main loop
     bool done = false;

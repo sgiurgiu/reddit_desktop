@@ -14,6 +14,7 @@
 #include "subredditslistwindow.h"
 #include "log/loggingwindow.h"
 #include "aboutwindow.h"
+#include "networkproxysettingswindow.h"
 
 class RedditDesktop : public std::enable_shared_from_this<RedditDesktop>
 {
@@ -21,6 +22,7 @@ public:
     RedditDesktop(boost::asio::io_context& uiContext);
 
     void loginCurrentUser();
+    void automaticallySetCurrentUser();
     void showDesktop();
     void closeWindow();
     bool quitSelected() const
@@ -108,6 +110,7 @@ private:
     names_list searchedNamesList;
     int subredditsAutoRefreshTimeout;
     bool showRandomNSFW = false;
+    bool automaticallyLogIn = false;
     bool automaticallyArangeWindowsInGrid = false;
     bool useYoutubeDl = false;
     std::shared_ptr<LoggingWindow> loggingWindow;
@@ -145,6 +148,7 @@ private:
     bool showNetworkInfomation = false;
     std::optional<IpInfo> ipInfo;
     std::string ipInfoRetreivalErrorMessage;
+    NetworkProxySettingsWindow proxySettingsWindow;
 };
 
 

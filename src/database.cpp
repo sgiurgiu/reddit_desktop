@@ -44,7 +44,7 @@ Database::Database():db(nullptr,connection_deleter())
     DB_ERR_CHECK("Cannot create table MEDIA_DOMAINS");
     rc = sqlite3_exec(db.get(),"CREATE TABLE IF NOT EXISTS COLORS(NAME TEXT, RED FLOAT, GREEN FLOAT, BLUE FLOAT, ALPHA FLOAT)",nullptr,nullptr,nullptr);
     DB_ERR_CHECK("Cannot create table COLORS");
-    rc = sqlite3_exec(db.get(), "CREATE TABLE IF NOT EXISTS PROXY(HOST TEXT, PORT INT, USERNAME TEXT, PASSWORD TEXT, PROXY_TYPE TEXT, USE_PROXY BOOLEAN)", nullptr, nullptr, nullptr);
+    rc = sqlite3_exec(db.get(), "CREATE TABLE IF NOT EXISTS PROXY(HOST TEXT, PORT TEXT, USERNAME TEXT, PASSWORD TEXT, PROXY_TYPE TEXT, USE_PROXY BOOLEAN)", nullptr, nullptr, nullptr);
     DB_ERR_CHECK("Cannot create table PROXY");
 
     int version = getSchemaVersion();
@@ -318,6 +318,14 @@ std::optional<std::string> Database::getStringProperty(const std::string& propNa
     }
     return value;
 }
+void Database::setAutomaticallyLogIn(bool flag)
+{
+    setBoolProperty(flag, "AUTOMATICALLY_LOG_IN");
+}
+bool Database::getAutomaticallyLogIn() const
+{
+    return getBoolProperty("AUTOMATICALLY_LOG_IN", false);
+}
 
 void Database::setShowRandomNSFW(bool flag)
 {
@@ -563,4 +571,54 @@ user Database::getLoggedInUser() const
     }
 
     return user;
+}
+void Database::setProxy(const proxy::proxy_t& proxy) const
+{
+    sqlite3_exec(db.get(),"DELETE FROM PROXY",nullptr,nullptr,nullptr);
+    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
+    sqlite3_stmt *stmt_ptr = nullptr;
+    int rc = sqlite3_prepare_v2(db.get(),"INSERT INTO PROXY(HOST,PORT,USERNAME,PASSWORD,PROXY_TYPE,USE_PROXY) VALUES(?,?,?,?,?,?)",-1,&stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot insert new proxy");
+    rc = sqlite3_bind_text(stmt.get(),1,proxy.host.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to proxy");
+    rc = sqlite3_bind_text(stmt.get(),2,proxy.port.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to proxy");
+    rc = sqlite3_bind_text(stmt.get(),3,proxy.username.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to proxy");
+    rc = sqlite3_bind_text(stmt.get(),4,proxy.password.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to proxy");
+    rc = sqlite3_bind_text(stmt.get(),5,proxy.proxyType.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to proxy");
+    rc = sqlite3_bind_int(stmt.get(),6,proxy.useProxy?1:0);
+    DB_ERR_CHECK("Cannot bind values to proxy");
+    rc = sqlite3_step(stmt.get());
+    DB_ERR_CHECK("Cannot insert proxy");
+}
+std::optional<proxy::proxy_t> Database::getProxy() const
+{
+    std::optional<proxy::proxy_t> proxy;
+    std::unique_ptr<sqlite3_stmt, statement_finalizer> stmt;
+    sqlite3_stmt* stmt_ptr;
+    int rc = sqlite3_prepare_v2(db.get(), "SELECT HOST,PORT,USERNAME,PASSWORD,PROXY_TYPE,USE_PROXY FROM PROXY", -1, &stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot find proxy");
+
+    if (sqlite3_step(stmt.get()) == SQLITE_ROW)
+    {
+        proxy = std::make_optional<proxy::proxy_t>();
+        proxy->host = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 0)),
+            sqlite3_column_bytes(stmt.get(), 0));
+        proxy->port = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 1)),
+            sqlite3_column_bytes(stmt.get(), 1));
+        proxy->username = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 2)),
+            sqlite3_column_bytes(stmt.get(), 2));
+        proxy->password = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 3)),
+            sqlite3_column_bytes(stmt.get(), 3));
+        proxy->proxyType = std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt.get(), 4)),
+            sqlite3_column_bytes(stmt.get(), 4));
+        proxy->useProxy = sqlite3_column_int(stmt.get(), 5) != 0;
+    }
+
+    return proxy;
 }

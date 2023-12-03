@@ -1,6 +1,7 @@
 file(GLOB_RECURSE HEADERS *.h *.hpp *.hxx )
 add_custom_target(Headers SOURCES ${HEADERS})
 
+
 SET(IMGUI_SRCS
     imgui/imgui.cpp
     imgui/imgui_demo.cpp
@@ -72,6 +73,9 @@ set(REDDIT_CONNECTIONS_SRCS
     connections/redditlivethreadconnection.cpp
     connections/twitterconnection.cpp
     connections/ipinfoconnection.cpp
+    connections/proxy/socks5.cpp
+    connections/proxy/socks4.cpp
+    connections/proxy/proxy.cpp
     )
 
 set(REDDIT_DESKTOP_LOG_SRCS
@@ -105,6 +109,7 @@ set(REDDIT_DESKTOP_SRCS main.cpp
         twitterrenderer.cpp
         uri.cpp
         RDRect.cpp
+        networkproxysettingswindow.cpp
         )
 
 if(WIN32)

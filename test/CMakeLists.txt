@@ -41,9 +41,12 @@ set(REDDIT_CONNECTIONS_SRCS
     ${CMAKE_SOURCE_DIR}/src/connections/twitterconnection.cpp
     ${CMAKE_SOURCE_DIR}/src/connections/ipinfoconnection.cpp
     ${CMAKE_SOURCE_DIR}/src/redditclientproducer.cpp
+    ${CMAKE_SOURCE_DIR}/src/connections/proxy/socks5.cpp
+    ${CMAKE_SOURCE_DIR}/src/connections/proxy/socks4.cpp
     )
 
 set(TESTING_RD_CLASSES
+    ${CMAKE_SOURCE_DIR}/src/database.cpp
     ${CMAKE_SOURCE_DIR}/src/htmlparser.cpp
     ${CMAKE_SOURCE_DIR}/src/uri.cpp
     ${CMAKE_SOURCE_DIR}/src/entities.cpp

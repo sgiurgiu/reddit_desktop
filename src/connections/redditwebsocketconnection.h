@@ -14,6 +14,11 @@
 #include <optional>
 #include <chrono>
 
+#include "proxy/proxy.h"
+#include "proxy/socks5.hpp"
+#include "proxy/socks4.hpp"
+#include "../database.h"
+
 template<typename ClientUpdate>
 class RedditWebSocketConnection :
         public std::enable_shared_from_this<RedditWebSocketConnection<ClientUpdate>>
@@ -27,6 +32,8 @@ public:
         ssl_context(ssl_context),strand(boost::asio::make_strand(executor)),
         resolver(strand),stream(strand, ssl_context)
     {
+        proxy = Database::getInstance()->getProxy();
+        //proxy = std::make_optional<proxy_t>("localhost", "1080", "", "", PROXY_TYPE_SOCKS5,true);
     }
     virtual ~RedditWebSocketConnection()
     {
@@ -59,11 +66,62 @@ private:
             onError(ec);
             return;
         }
-
         boost::beast::get_lowest_layer(stream).expires_after(streamTimeout);
-        boost::beast::get_lowest_layer(stream).async_connect(
-            results,
-            boost::beast::bind_front_handler(&RedditWebSocketConnection::onConnect,this->shared_from_this()));
+        if(proxy && proxy->useProxy)
+        {
+            boost::system::error_code proxyEc;
+            boost::asio::ip::tcp::resolver::results_type::endpoint_type connectedEndpoint;
+            auto proxyResults = resolver.resolve(proxy->host, proxy->port);
+            for(const auto& hostResult : results)
+            {
+                if(proxy->proxyType == proxy::PROXY_TYPE_SOCKS5)
+                {
+                    socks5::proxy_connect(boost::beast::get_lowest_layer(stream),hostResult.endpoint(),proxyResults, proxyEc);
+                }
+                else if(proxy->proxyType == proxy::PROXY_TYPE_SOCKS4)
+                {
+                    socks4::proxy_connect(boost::beast::get_lowest_layer(stream),hostResult.endpoint(),proxyResults, proxy->username, proxyEc);
+                }
+                else
+                {
+                    proxyEc = socks5::make_error_code(socks5::result_code::invalid_version);
+                }
+                if(proxyEc)
+                {
+                    auto& cat = proxyEc.category();
+                    if(&cat == &socks5::get_result_category() || &cat == &socks4::get_result_category())
+                    {
+                        //it means the proxy cannot connect to the host
+                        continue;
+                    }
+                    else
+                    {
+                        //there's a problem connecting to the proxy
+                        onError(proxyEc);
+                        return;
+                    }
+                }
+                connectedEndpoint = hostResult.endpoint();
+                break;
+            }
+            if(proxyEc)
+            {
+                onError(proxyEc);
+                return;
+            }
+            boost::asio::post(stream.get_executor(),[self = this->shared_from_this(),
+                              proxyEc = std::move(proxyEc), connectedEndpoint = std::move(connectedEndpoint)]() mutable
+            {
+                self->onConnect(std::move(proxyEc), std::move(connectedEndpoint));
+            });
+        }
+        else
+        {
+            boost::beast::get_lowest_layer(stream).async_connect(
+                results,
+                boost::beast::bind_front_handler(&RedditWebSocketConnection::onConnect,this->shared_from_this()));
+        }
+
     }
 protected:
     template<typename Derived>
@@ -199,7 +257,7 @@ protected:
 #else
     std::chrono::seconds streamTimeout{30};
 #endif
-
+    std::optional<proxy::proxy_t> proxy;
 };
 
 #endif // REDDITWEBSOCKETCONNECTION_H
