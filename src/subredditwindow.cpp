@@ -222,41 +222,6 @@ void SubredditWindow::setupConnections()
                 self, std::move(newTarget)));
         });
     }
-
-    if(!resourceConnection)
-    {
-        resourceConnection = client->makeResourceClientConnection();
-        resourceConnection->connectionCompleteHandler(
-                    [weak=weak_from_this()](const boost::system::error_code& ec,
-                         resource_response response)
-        {
-            auto self = weak.lock();
-            if(!self) return;
-            std::string postName = "";
-            if(response.userData.has_value() && response.userData.type() == typeid(std::string))
-            {
-                postName = std::any_cast<std::string>(response.userData);
-            }
-            if(ec)
-            {
-                auto message = "Cannot load thumbnail:" + ec.message();
-                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,std::move(postName),std::move(message)));
-            }
-            else if(response.status >= 400)
-            {
-                auto message = "Cannot load thumbnail:" + response.body;
-                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,std::move(postName),std::move(message)));
-            }
-            else if(response.status == 200 )
-            {
-
-                int width, height, channels;
-                auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
-                boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,self,
-                                                             std::move(postName),std::move(data),width,height,channels));
-            }
-        });
-    }
     if (!voteConnection)
     {
         voteConnection = client->makeRedditVoteClientConnection();
@@ -334,6 +299,41 @@ void SubredditWindow::loadListingsFromConnection(listing listingResponse)
                 std::move(listingResponse.json["data"]["before"]),
                 std::move(listingResponse.json["data"]["after"]));
 }
+RedditClientProducer::RedditResourceClientConnection SubredditWindow::makeResourceConnection()
+{
+    auto resourceConnection = client->makeResourceClientConnection();
+    resourceConnection->connectionCompleteHandler(
+                [weak=weak_from_this()](const boost::system::error_code& ec,
+                     resource_response response)
+    {
+        auto self = weak.lock();
+        if(!self) return;
+        std::string postName = "";
+        if(response.userData.has_value() && response.userData.type() == typeid(std::string))
+        {
+            postName = std::any_cast<std::string>(response.userData);
+        }
+        if(ec)
+        {
+            auto message = "Cannot load thumbnail:" + ec.message();
+            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,std::move(postName),std::move(message)));
+        }
+        else if(response.status >= 400)
+        {
+            auto message = "Cannot load thumbnail:" + response.body;
+            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostErrorMessage,self,std::move(postName),std::move(message)));
+        }
+        else if(response.status == 200 )
+        {
+
+            int width, height, channels;
+            auto data = Utils::decodeImageData(response.data.data(),response.data.size(),&width,&height,&channels);
+            boost::asio::post(self->uiExecutor,std::bind(&SubredditWindow::setPostThumbnail,self,
+                                                         std::move(postName),std::move(data),width,height,channels));
+        }
+    });
+    return resourceConnection;
+}
 void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json beforeJson,nlohmann::json afterJson)
 {
     before.reset();
@@ -369,7 +369,7 @@ void SubredditWindow::setListings(posts_list receivedPosts,nlohmann::json before
             p.standardThumbnail = Utils::GetRedditThumbnail(p.post->thumbnail);
             if(!p.standardThumbnail)
             {
-                resourceConnection->getResource(p.post->thumbnail,p.post->name);
+                makeResourceConnection()->getResource(p.post->thumbnail,p.post->name);
             }
         }
     }

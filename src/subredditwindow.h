@@ -147,6 +147,7 @@ private:
     void loadAbout(listing aboutData);
     void showAboutWindow();
     void updateWindowsNames();
+    RedditClientProducer::RedditResourceClientConnection makeResourceConnection();
 private:
     using CommentsSignal = boost::signals2::signal<void(std::string id,std::string title)>;
     using SubredditSignal = boost::signals2::signal<void(std::string)>;
@@ -168,7 +169,6 @@ private:
     const boost::asio::any_io_executor& uiExecutor;
     RedditClientProducer::RedditListingClientConnection listingConnection;
     RedditClientProducer::RedditListingClientConnection aboutConnection;
-    RedditClientProducer::RedditResourceClientConnection resourceConnection;
     RedditClientProducer::RedditVoteClientConnection voteConnection;
     RedditClientProducer::RedditSRSubscriptionClientConnection srSubscriptionConnection;
     float maxScoreWidth = 0.f;
