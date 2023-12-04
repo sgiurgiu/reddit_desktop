@@ -209,7 +209,9 @@ install(FILES "${CMAKE_SOURCE_DIR}/icons/reddit_icon_64.png"  DESTINATION "${CMA
 install(FILES "${CMAKE_SOURCE_DIR}/icons/reddit_icon_128.png" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/128x128/apps" RENAME "reddit-desktop.png")
 install(FILES "${CMAKE_SOURCE_DIR}/icons/reddit_icon_256.png" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/256x256/apps" RENAME "reddit-desktop.png")
 install(FILES "${CMAKE_SOURCE_DIR}/desktop/reddit_desktop.desktop" DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/applications" RENAME "reddit-desktop.desktop")
+if(NOT WIN32)
 install(FILES ${FONTS} DESTINATION ${FONTS_DIRECTORY}/fonts)
+endif()
 
 set(CPACK_PACKAGE_EXECUTABLES "${EXECUTABLE_NAME};Reddit Desktop")
 if(CPACK_GENERATOR STREQUAL "WIX")
