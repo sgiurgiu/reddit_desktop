@@ -146,16 +146,20 @@ void SubredditWindow::loadSubredditListings(const std::string& target,const acce
         sort = sortPostsIt->sort;
     }
     listingConnection->list(target+sort,token);
-    spdlog::debug("Loading about data of : {} ", target );
-    if( target != "/r/random" && 
-        target != "/r/randnsfw" && 
+    downloadSubredditAbout();
+}
+void SubredditWindow::downloadSubredditAbout()
+{
+    spdlog::debug("Loading about data of : {} ", target);
+    if (target != "/r/random" &&
+        target != "/r/randnsfw" &&
         target != "/" &&
         target != "/r/all" &&
         target.find("/m/") == target.npos &&
         target.find("/user/") == target.npos
         )
     {
-        aboutConnection->list(target+"/about",token);
+        aboutConnection->list(target + "/about", token);
     }
 }
 void SubredditWindow::setupConnections()
@@ -280,7 +284,6 @@ void SubredditWindow::loadAbout(listing aboutData)
     }
 
     subredditAbout = std::make_optional<subreddit>(aboutData.json["data"]);
-    subredditAboutDisplay = std::make_optional<AboutDisplay>(subredditAbout.value());
     updateWindowsNames();
 }
 void SubredditWindow::loadListingsFromConnection(listing listingResponse)
@@ -1003,7 +1006,11 @@ void SubredditWindow::showWindow(int appFrameWidth,int appFrameHeight)
 
 void SubredditWindow::showAboutWindow()
 {
-    if (!subredditAbout || !subredditAboutDisplay || !aboutSubredditWindowOpen) return;
+    if (!subredditAbout || !aboutSubredditWindowOpen) return;
+    if (!subredditAboutDisplay)
+    {
+        subredditAboutDisplay = std::make_optional<AboutDisplay>(subredditAbout.value());
+    }
 
     ImGui::SetNextWindowSize(ImVec2(400, 400), ImGuiCond_FirstUseEver);
 

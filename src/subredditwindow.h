@@ -148,6 +148,7 @@ private:
     void showAboutWindow();
     void updateWindowsNames();
     RedditClientProducer::RedditResourceClientConnection makeResourceConnection();
+    void downloadSubredditAbout();
 private:
     using CommentsSignal = boost::signals2::signal<void(std::string id,std::string title)>;
     using SubredditSignal = boost::signals2::signal<void(std::string)>;
