@@ -209,6 +209,14 @@ void SubredditsListWindow::showSubredditsNodes()
         }
     }
 }
+std::vector<subreddit> SubredditsListWindow::getLoadedSubscribedSubreddits() const
+{
+    std::vector<subreddit> subreddits;
+    std::transform(subscribedSubreddits.begin(),subscribedSubreddits.end(),std::back_inserter(subreddits),[](const auto& dsr){
+        return dsr.sr;
+    });
+    return subreddits;
+}
 void SubredditsListWindow::setErrorMessage(std::string message)
 {
     errorMessage = std::move(message);

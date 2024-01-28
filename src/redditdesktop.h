@@ -78,7 +78,8 @@ private:
                                      RedditClientProducer::RedditListingClientConnection connection);
     void subscribeToSubreddits();
     void showNetworkInformationDialog();
-
+    void showExportSubsDialog();
+    void showImportFromFileSubsDialog();
 private:
     boost::asio::any_io_executor uiExecutor;
     RedditClientProducer client;
@@ -149,6 +150,9 @@ private:
     std::optional<IpInfo> ipInfo;
     std::string ipInfoRetreivalErrorMessage;
     NetworkProxySettingsWindow proxySettingsWindow;
+    bool exportSubsDialog = false;
+    bool importSubsFromFileDialog = false;
+    std::string exportSubsFile;
 };
 
 

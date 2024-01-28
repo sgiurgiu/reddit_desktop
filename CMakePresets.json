@@ -1,0 +1,126 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 25,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "default",
+            "binaryDir": "${sourceDir}/build",
+            "description": "Default build using Ninja generator",
+            "generator": "Ninja",
+            "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+            "environment": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "ENABLE_TESTS": "ON"
+            }
+        },
+        {
+            "name": "release",
+            "binaryDir": "${sourceDir}/build-release",
+            "description": "Release build using Ninja generator",
+            "generator": "Ninja",
+            "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+            "environment": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "ENABLE_TESTS": "OFF"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default",
+            "jobs": 8
+        },
+        {
+            "name": "release",
+            "configurePreset": "release",
+            "jobs": 8
+        }
+    ],
+    "packagePresets": [
+        {
+            "name": "default",
+            "configurePreset": "default",
+            "generators": [
+                "RPM"
+            ]
+        },
+        {
+            "name": "release",
+            "configurePreset": "release",
+            "generators": [
+                "RPM"
+            ]
+        },
+        {
+            "name": "release-deb",
+            "configurePreset": "release",
+            "generators": [
+                "DEB"
+            ]
+        }
+    ],
+    "workflowPresets": [
+        {
+            "name": "default",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "default"
+                },
+                {
+                    "type": "build",
+                    "name": "default"
+                },
+                {
+                    "type": "package",
+                    "name": "default"
+                }
+            ]
+        },
+        {
+            "name": "release",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "release"
+                },
+                {
+                    "type": "build",
+                    "name": "release"
+                },
+                {
+                    "type": "package",
+                    "name": "release"
+                }
+            ]
+        },
+        {
+            "name": "release-deb",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "release"
+                },
+                {
+                    "type": "build",
+                    "name": "release"
+                },
+                {
+                    "type": "package",
+                    "name": "release-deb"
+                }
+            ]
+        }
+    ]
+}

@@ -65,6 +65,8 @@ public:
     std::array<float,4> getColor(const std::string& name, const std::array<float,4>& defaultColor) const;
     void setProxy(const proxy::proxy_t& proxy) const;
     std::optional<proxy::proxy_t> getProxy() const;
+    std::string getLastExportedSubsFile() const;
+    void setLastExportedSubsFile(const std::string& file);
 private:
     void setBoolProperty(bool flag, const std::string& propName);
     bool getBoolProperty(const std::string& propName, bool defaultValue) const;
@@ -74,7 +76,7 @@ private:
     std::optional<std::string> getStringProperty(const std::string& propName) const;
     int getSchemaVersion();
     void incrementSchemaVersion(int version);
-    std::filesystem::path getAppConfigFolder();
+    
 
 private:
     std::unique_ptr<sqlite3,connection_deleter> db;

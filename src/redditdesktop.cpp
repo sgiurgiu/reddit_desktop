@@ -8,17 +8,20 @@
 #include <boost/algorithm/string.hpp>
 #include <algorithm>
 #include <thread>
+#include <fstream>
 
 namespace
 {
 constexpr auto OPENSUBREDDIT_WINDOW_POPUP_TITLE = "Open Subreddit";
-constexpr auto IMPORTSUBS_WINDOW_POPUP_TITLE = "Import Subs";
+constexpr auto IMPORTSUBS_WINDOW_POPUP_TITLE = "Import Subreddits from account";
 constexpr auto ERROR_WINDOW_POPUP_TITLE = "Error Occurred";
 constexpr auto MEDIA_DOMAINS_POPUP_TITLE = "Media Domains Management";
 constexpr auto TWITTER_API_BEARER_TITLE = "Twitter API Auth Bearer";
 constexpr auto BACKGROUND_COLOR_MENU = "Background Color";
 constexpr auto BACKGROUND_COLOR_NAME = "BACKGROUND";
 constexpr auto IPINFO_WINDOW_POPUP_TITLE = "Network Information";
+constexpr auto EXPORT_SUBS_POPUP_TITLE = "Export Subscribed Subreddits";
+constexpr auto IMPORT_FILE_SUBS_POPUP_TITLE = "Import Subreddits from file";
 }
 
 RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
@@ -41,6 +44,7 @@ RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext):
     backgroundColor.y = bCol[1];
     backgroundColor.z = bCol[2];
     backgroundColor.w = bCol[3];
+    exportSubsFile = Database::getInstance()->getLastExportedSubsFile();
     loggingWindow->setupLogging();
     loggingWindow->setWindowOpen(showLoggingWindow);
 }
@@ -372,6 +376,8 @@ void RedditDesktop::showDesktop()
     showTwitterAPIAuthBearerDialog();
     showImportSubsDialog();
     showNetworkInformationDialog();
+    showExportSubsDialog();
+    showImportFromFileSubsDialog();
     aboutWindow.showAboutWindow(appFrameWidth,appFrameHeight);
 
     if(proxySettingsWindow.showProxySettingsWindow())
@@ -753,8 +759,13 @@ void RedditDesktop::showMenuFile()
         }
         ImGui::EndMenu();
     }
-    if(ImGui::BeginMenu("Import Subs"))
+    if(ImGui::BeginMenu("Import Subs", currentUser.has_value()))
     {
+        if (ImGui::MenuItem("From File..."))
+        {
+            importSubsFromFileDialog = true;
+        }
+        ImGui::Separator();
         for(const auto& u : registeredUsers)
         {
             auto current = currentUser.has_value() && currentUser->username == u.username;
@@ -769,7 +780,11 @@ void RedditDesktop::showMenuFile()
         }
         ImGui::EndMenu();
     }
-    if (ImGui::MenuItem("Logout",nullptr,false,currentUser.has_value()))
+    if (ImGui::MenuItem("Export Subs", nullptr, false, currentUser.has_value()))
+    {
+        exportSubsDialog = true;
+    }
+    if (ImGui::MenuItem("Logout", nullptr, false, currentUser.has_value()))
     {
         subredditsListWindow.reset();
         subredditWindows.clear();
@@ -779,7 +794,7 @@ void RedditDesktop::showMenuFile()
         currentUser.reset();
     }
     ImGui::Separator();
-    if (ImGui::MenuItem(reinterpret_cast<const char*>(ICON_FA_POWER_OFF " Quit"), "Ctrl+Q"))
+    if (ImGui::MenuItem(reinterpret_cast<const char *>(ICON_FA_POWER_OFF " Quit"), "Ctrl+Q"))
     {
         shouldQuit = true;
     }
@@ -1199,6 +1214,146 @@ void RedditDesktop::showNetworkInformationDialog()
         {
             ipInfo.reset();
             ipInfoRetreivalErrorMessage.clear();
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+}
+
+void RedditDesktop::showExportSubsDialog()
+{
+    if(exportSubsDialog && currentUser)
+    {
+        exportSubsDialog = false;
+        ImGui::OpenPopup(EXPORT_SUBS_POPUP_TITLE);
+    }
+    if(currentUser.has_value() && ImGui::BeginPopupModal(EXPORT_SUBS_POPUP_TITLE,nullptr,ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::InputText("Export",&exportSubsFile);
+        ImGui::Separator();
+        if (ImGui::Button("Save", ImVec2(120, 0)))
+        {
+            Database::getInstance()->setLastExportedSubsFile(exportSubsFile);
+            auto subscriptions = subredditsListWindow->getLoadedSubscribedSubreddits();
+            nlohmann::json subredditsArray = nlohmann::json::array();
+            for(const auto& sr:subscriptions)
+            {
+                nlohmann::json subredditJsonObject = nlohmann::json::object();
+                subredditJsonObject["id"] = sr.id;
+                subredditJsonObject["name"] = sr.name;
+                subredditJsonObject["display_name"] = sr.displayName;
+                subredditJsonObject["display_name_prefixed"] = sr.displayNamePrefixed;
+                subredditJsonObject["url"] = sr.url;
+                subredditJsonObject["title"] = sr.title;
+                subredditsArray.push_back(std::move(subredditJsonObject));
+            }
+            nlohmann::json outputJson = nlohmann::json::object();
+            outputJson["subreddits"] = std::move(subredditsArray);
+            try
+            {
+                std::ofstream out;
+                out.open(exportSubsFile);
+                if(!out)
+                {
+                    throw std::system_error(errno, std::system_category());
+                }
+                out << std::setw(4) << outputJson << std::endl;
+            }
+            catch(const std::exception& ex)
+            {
+                setConnectionErrorMessage(fmt::format("Cannot write to file {}, error {}",exportSubsFile,ex.what()));
+            }
+            catch(...)
+            {
+                setConnectionErrorMessage(fmt::format("Cannot write to file {}",exportSubsFile));
+            }
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0)) ||
+                ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+       ImGui::EndPopup();
+    }
+}
+
+void RedditDesktop::showImportFromFileSubsDialog()
+{
+    if(importSubsFromFileDialog && currentUser)
+    {
+        importSubsFromFileDialog = false;
+        ImGui::OpenPopup(IMPORT_FILE_SUBS_POPUP_TITLE);
+    }
+    if(currentUser.has_value() && ImGui::BeginPopupModal(IMPORT_FILE_SUBS_POPUP_TITLE,nullptr,ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::InputText("Import",&exportSubsFile);
+        ImGui::Separator();
+        if (ImGui::Button("Open", ImVec2(120, 0)))
+        {
+            try
+            {
+                std::ifstream in;
+                in.open(exportSubsFile);
+                if(!in)
+                {
+                    throw std::system_error(errno, std::system_category());
+                }
+                auto json = nlohmann::json::parse(in);
+                if(json.contains("subreddits") && json["subreddits"].is_array())
+                {
+                    std::vector<std::string> names;
+                    std::transform(json["subreddits"].begin(),json["subreddits"].end(),std::back_inserter(names),
+                        [](const auto& sr){
+                            if(sr.is_object() && sr.contains("name") && sr["name"].is_string()) {
+                                return sr["name"].template get<std::string>();
+                            } else {
+                                throw std::runtime_error("Invalid subreddits file");
+                            }
+                        });
+                    auto srSubscriptionConnection = client.makeRedditRedditSRSubscriptionClientConnection();
+                    srSubscriptionConnection->connectionCompleteHandler([weak=weak_from_this()](const boost::system::error_code& ec,
+                                                                                                client_response<bool> response)
+                    {
+                        auto self = weak.lock();
+                        if(!self) return;
+                        if(!ec && response.data)
+                        {
+                            boost::asio::post(self->uiExecutor,[w = self->weak_from_this()]()
+                            {
+                                auto self = w.lock();
+                                if(!self) return;
+                                self->subredditsListWindow->loadSubredditsList();
+                            });
+                        }
+                        else
+                        {
+                            auto message = ec ? ec.message() : response.body;
+                            boost::asio::post(self->uiExecutor,std::bind(&RedditDesktop::importingSubsError,self,message));
+                        }
+                    });
+                    srSubscriptionConnection->updateSrSubscription(std::move(names),RedditSRSubscriptionConnection::SubscriptionAction::Subscribe,currentAccessToken.data);
+                }
+                else
+                {
+                    throw std::runtime_error("Invalid subreddits file");
+                }
+            }
+            catch(const std::exception& ex)
+            {
+                setConnectionErrorMessage(fmt::format("Cannot read from file {}, error {}",exportSubsFile,ex.what()));
+            }
+            catch(...)
+            {
+                setConnectionErrorMessage(fmt::format("Cannot read from file {}",exportSubsFile));
+            }
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0)) ||
+                ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape)))
+        {
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();

@@ -77,3 +77,6 @@ CMakeSettings.json
 packages/
 build_version
 build/
+.vscode/
+build-release/
+

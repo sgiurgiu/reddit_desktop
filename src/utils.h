@@ -59,8 +59,10 @@ public:
     static ResizableGLImagePtr GetApplicationIcon();
     static ResizableGLImagePtr GetStrickenImage();
     static std::filesystem::path GetAppConfigFolder();
+    static std::filesystem::path GetHomeFolder();
     static ResizableGLImageSharedPtr GetRedditDefaultSprites();
     static ImVec4 GetHTMLColor(const std::string& strColor);
+
 private:
     static ImFont* AddFont(const std::filesystem::path& fontsFolder,
                            const std::string& font,

@@ -539,18 +539,15 @@ std::string Utils::CalculateScore(int& score,Voted originalVote,Voted newVote)
     }
     return Utils::getHumanReadableNumber(score);
 }
-
-std::filesystem::path Utils::GetAppConfigFolder()
+std::filesystem::path Utils::GetHomeFolder()
 {
     std::filesystem::path homePath;
-    std::string relativeConfigFolder;
 #ifdef RD_WINDOWS
     char homeDirStr[MAX_PATH];
     if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, homeDirStr)))
     {
         homePath = homeDirStr;
     }
-    relativeConfigFolder = "reddit_desktop";
 #else
     auto pwd = getpwuid(getuid());
     if (pwd)
@@ -562,7 +559,6 @@ std::filesystem::path Utils::GetAppConfigFolder()
         // try the $HOME environment variable
         homePath = getenv("HOME");
     }
-    relativeConfigFolder = ".config/reddit_desktop";
 #endif
 
 
@@ -570,6 +566,17 @@ std::filesystem::path Utils::GetAppConfigFolder()
     {
         homePath = "./";
     }
+    return homePath;
+}
+std::filesystem::path Utils::GetAppConfigFolder()
+{
+    auto homePath = GetHomeFolder();
+    std::string relativeConfigFolder;
+#ifdef RD_WINDOWS
+    relativeConfigFolder = "reddit_desktop";
+#else
+    relativeConfigFolder = ".config/reddit_desktop";
+#endif
 
     std::filesystem::path  configFolder = homePath / relativeConfigFolder;
     std::filesystem::create_directories(configFolder);

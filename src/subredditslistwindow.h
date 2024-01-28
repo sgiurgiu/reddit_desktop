@@ -36,6 +36,7 @@ public:
         showRandomNSFW = flag;
         loadSubredditsList();
     }
+    std::vector<subreddit> getLoadedSubscribedSubreddits() const;
 private:
     void loadSubscribedSubreddits(subreddit_list srs);
     void loadSubreddits(const std::string& url, const access_token& token);

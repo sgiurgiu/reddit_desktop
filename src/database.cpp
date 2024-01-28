@@ -31,7 +31,11 @@ Database::Database():db(nullptr,connection_deleter())
 {
     auto appConfigFolder = Utils::GetAppConfigFolder();
     sqlite3* db_ptr;
+#ifdef REDDIT_DESKTOP_DEBUG
+    int rc = sqlite3_open((appConfigFolder / "rd.debug.db").string().c_str(),&db_ptr);
+#else
     int rc = sqlite3_open((appConfigFolder / "rd.db").string().c_str(),&db_ptr);
+#endif
     db.reset(db_ptr);
     DB_ERR_CHECK("Cannot open database");
     rc = sqlite3_exec(db.get(),"CREATE TABLE IF NOT EXISTS USER(USERNAME TEXT, PASSWORD TEXT, CLIENT_ID TEXT, SECRET TEXT, WEBSITE TEXT, APP_NAME TEXT)",nullptr,nullptr,nullptr);
@@ -384,6 +388,16 @@ std::optional<std::string> Database::getTwitterAuthBearer()
 {
     return getStringProperty("TWITTER_BEARER");
 }
+std::string Database::getLastExportedSubsFile() const
+{
+    auto file = getStringProperty("LAST_EXPORT_SUBS_FILE");
+    return file.value_or(Utils::GetHomeFolder() / "subreddits.json");
+}
+void Database::setLastExportedSubsFile(const std::string& file)
+{
+    setStringProperty(file, "LAST_EXPORT_SUBS_FILE");
+}
+
 void Database::getMainWindowDimensions(int *x, int *y, int *width,int *height)
 {
     std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
