@@ -391,7 +391,7 @@ std::optional<std::string> Database::getTwitterAuthBearer()
 std::string Database::getLastExportedSubsFile() const
 {
     auto file = getStringProperty("LAST_EXPORT_SUBS_FILE");
-    return file.value_or(Utils::GetHomeFolder() / "subreddits.json");
+    return file.value_or((Utils::GetHomeFolder() / "subreddits.json").string());
 }
 void Database::setLastExportedSubsFile(const std::string& file)
 {
