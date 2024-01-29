@@ -3,6 +3,7 @@
 
 #include <map>
 #include <string>
+#include "macros.h"
 
 namespace
 {
@@ -11,6 +12,8 @@ static std::map<std::string,std::string> providers = {{"giphy","https://giphy.co
 MarkdownNodeImage::MarkdownNodeImage(std::string src, std::string title, RedditClientProducer* client, const boost::asio::any_io_executor& uiExecutor):
     src(std::move(src)),title(std::move(title))
 {
+    UNUSED(client);
+    UNUSED(uiExecutor);
     //src can be <provider>|<ID>
     //TODO : can do this later
     /*auto index = this->src.find('|');
