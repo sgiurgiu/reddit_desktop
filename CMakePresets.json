@@ -7,14 +7,19 @@
     },
     "configurePresets": [
         {
-            "name": "default",
-            "binaryDir": "${sourceDir}/build",
+            "name": "base",
             "description": "Default build using Ninja generator",
             "generator": "Ninja",
             "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
             "environment": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-            },
+            }
+        },
+        {
+            "name": "default",
+            "binaryDir": "${sourceDir}/build",
+            "inherits": "base",
+            "description": "Default build using Ninja generator",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "ENABLE_TESTS": "ON"
@@ -22,17 +27,33 @@
         },
         {
             "name": "release",
+            "inherits": "base",
             "binaryDir": "${sourceDir}/build-release",
             "description": "Release build using Ninja generator",
-            "generator": "Ninja",
-            "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-            "environment": {
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-            },
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "ENABLE_TESTS": "OFF",
-                "PACKAGING": "ON"
+                "PACKAGING": "ON",
+                "CMAKE_INSTALL_PREFIX": "/usr"
+            }
+        },
+        {
+            "name": "release-windows",
+            "inherits": "base",
+            "binaryDir": "${sourceDir}/build-release",
+            "description": "Windows release build using Ninja generator",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "ENABLE_TESTS": "OFF",
+                "PACKAGING": "ON",
+                "LIBMPV_DIR": "$env{libMpvDir}",
+                "LIBMPV_INCLUDE": "$env{libMpvIncludeDir}",
+                "YOUTUBE_DL": "$env{youtubeDlExe}"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
             }
         }
     ],
@@ -46,6 +67,11 @@
             "name": "release",
             "configurePreset": "release",
             "jobs": 8
+        },
+        {
+            "name": "release-windows",
+            "configurePreset": "release-windows",
+            "jobs": 4
         }
     ],
     "packagePresets": [
@@ -69,6 +95,18 @@
             "generators": [
                 "DEB"
             ]
+        },
+        {
+            "name": "release-windows",
+            "configurePreset": "release-windows",
+            "generators": [
+                "WIX"
+            ],
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
         }
     ],
     "workflowPresets": [
@@ -120,6 +158,23 @@
                 {
                     "type": "package",
                     "name": "release-deb"
+                }
+            ]
+        },
+        {
+            "name": "release-windows",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "release-windows"
+                },
+                {
+                    "type": "build",
+                    "name": "release-windows"
+                },
+                {
+                    "type": "package",
+                    "name": "release-windows"
                 }
             ]
         }
