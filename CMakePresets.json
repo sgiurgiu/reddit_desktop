@@ -31,7 +31,8 @@
             },
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "ENABLE_TESTS": "OFF"
+                "ENABLE_TESTS": "OFF",
+                "PACKAGING": "ON"
             }
         }
     ],
