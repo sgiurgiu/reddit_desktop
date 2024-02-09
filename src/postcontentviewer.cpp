@@ -947,6 +947,11 @@ void PostContentViewer::showPostContent()
 
     if(display_image)
     {
+        if(currentPost && currentPost->isGallery && !gallery.images.empty())
+        {
+            showGalleryControls(display_image->resizedWidth);
+        }
+
         ImGuiResizableGLImage(display_image,windowHeight * 0.5f);
 
         if(gif && !display_image->isResized)
@@ -969,10 +974,6 @@ void PostContentViewer::showPostContent()
         {            
             showMediaControls(display_image->resizedWidth);
         }
-        if(currentPost && currentPost->isGallery && !gallery.images.empty())
-        {
-            showGalleryControls(display_image->resizedWidth);
-        }
     }
 
     if(liveThreadViewer)
@@ -992,22 +993,17 @@ void PostContentViewer::showPostContent()
         ImGui::Spinner("###spinner_loading_data",50.f,1,ImGui::GetColorU32(ImGuiCol_ButtonActive));
     }
 }
-void PostContentViewer::showGalleryControls(int width)
+void PostContentViewer::showGalleryControls(int)
 {
     if(ImGui::Button(galleryButtonPreviousText.c_str()))
     {
         gallery.currentImage--;
         if(gallery.currentImage < 0) gallery.currentImage = (int)gallery.images.size() - 1;
     }
-    auto btnSize = ImGui::GetItemRectSize();
     auto text = fmt::format("{}/{}",gallery.currentImage+1,gallery.images.size());
-    auto textSize = ImGui::CalcTextSize(text.c_str());
-    auto space = (width - btnSize.x * 2.f);
-    ImGui::SameLine((space - textSize.x / 2.f)/2.f);
+    ImGui::SameLine();
     ImGui::Text("%s",text.c_str());
-    auto windowWidth = ImGui::GetWindowContentRegionMax().x;
-    auto remainingWidth = windowWidth - width;
-    ImGui::SameLine(windowWidth-remainingWidth-btnSize.x*2.f/3.f);
+    ImGui::SameLine();
     if(ImGui::Button(galleryButtonNextText.c_str()))
     {
         gallery.currentImage++;
