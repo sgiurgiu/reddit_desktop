@@ -373,7 +373,7 @@ void RedditDesktop::showDesktop()
         loggingWindow->showWindow(appFrameWidth,appFrameHeight);
     }
     showMediaDomainsManagementDialog();
-    showTwitterAPIAuthBearerDialog();
+    //showTwitterAPIAuthBearerDialog();
     showImportSubsDialog();
     showNetworkInformationDialog();
     showExportSubsDialog();
@@ -627,10 +627,10 @@ void RedditDesktop::showMainMenuBar()
             {
                 mediaDomainsManagementDialog = true;
             }
-            if(ImGui::MenuItem(TWITTER_API_BEARER_TITLE))
+            /*if(ImGui::MenuItem(TWITTER_API_BEARER_TITLE))
             {
                 twitterAPIAuthBearerDialog = true;
-            }
+            }*/
             if(ImGui::BeginMenu(BACKGROUND_COLOR_MENU))
             {
                 float col[3] = { backgroundColor.x, backgroundColor.y,

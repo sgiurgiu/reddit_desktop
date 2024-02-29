@@ -12,7 +12,7 @@
 namespace
 {
 constexpr std::string_view LOGIN_WINDOW_POPUP_TITLE = "Reddit Login";
-constexpr std::string_view LABEL_TEMPLATE = "XXXXXXXXXXX";
+constexpr std::string_view LABEL_TEMPLATE = "XXXXXXXXXXXXXXXXX";
 constexpr std::string_view FIELD_TEMPLATE = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 constexpr std::string_view LINK_TEXT = "Reddit preferences";
 constexpr std::string_view HELP1_TEXT = "To obtain this information, go to";
@@ -87,7 +87,7 @@ bool LoginWindow::showLoginWindow()
         ImGui::InputText("##login_password",password,IM_ARRAYSIZE(password),ImGuiInputTextFlags_Password);
         ImGui::PopItemWidth();
 
-        ImGui::Text("Client Id:");
+        ImGui::Text("Personal use script:");
         ImGui::SameLine(fieldsPosition);
         ImGui::PushItemWidth(ImGui::CalcTextSize(FIELD_TEMPLATE.data()).x - maskSize.x - ImGui::GetStyle().ItemSpacing.x * 2.f);
         {
