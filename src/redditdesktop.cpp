@@ -1359,3 +1359,4 @@ void RedditDesktop::showImportFromFileSubsDialog()
         ImGui::EndPopup();
     }
 }
+
