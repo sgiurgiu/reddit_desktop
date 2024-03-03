@@ -45,7 +45,6 @@ public:
         resolver(strand)
     {
         proxy = Database::getInstance()->getProxy();
-                //std::make_optional<proxy_t>("localhost", "1080", "", "", PROXY_TYPE_SOCKS5,true);
     }
     virtual ~RedditConnection()
     {
@@ -112,40 +111,47 @@ private:
         {
             boost::system::error_code proxyEc;
             boost::asio::ip::tcp::resolver::results_type::endpoint_type connectedEndpoint;
-            auto proxyResults = resolver.resolve(proxy->host, proxy->port);
-            for(const auto& hostResult : results)
+            auto proxyResults = resolver.resolve(proxy->host, proxy->port, proxyEc);
+            if(proxyResults.empty() && !proxyEc)
             {
-                if(proxy->proxyType == proxy::PROXY_TYPE_SOCKS5)
+                proxyEc = socks5::make_error_code(socks5::result_code::network_unreachable);
+            }
+            if(!proxyEc)
+            {
+                for(const auto& hostResult : results)
                 {
-                    socks5::proxy_connect(stream->next_layer(),hostResult.endpoint(),proxyResults, proxyEc);
-                }
-                else if(proxy->proxyType == proxy::PROXY_TYPE_SOCKS4)
-                {
-                    socks4::proxy_connect(stream->next_layer(),hostResult.endpoint(),proxyResults, proxy->username, proxyEc);
-                }
-                else
-                {
-                    proxyEc = socks5::make_error_code(socks5::result_code::invalid_version);
-                }
-                if(proxyEc)
-                {
-                    auto& cat = proxyEc.category();
-                    if(&cat == &socks5::get_result_category() || &cat == &socks4::get_result_category())
+                    if(proxy->proxyType == proxy::PROXY_TYPE_SOCKS5)
                     {
-                        //it means the proxy cannot connect to the host
-                        continue;
+                        socks5::proxy_connect(stream->next_layer(),hostResult.endpoint(),proxyResults, proxyEc);
+                    }
+                    else if(proxy->proxyType == proxy::PROXY_TYPE_SOCKS4)
+                    {
+                        socks4::proxy_connect(stream->next_layer(),hostResult.endpoint(),proxyResults, proxy->username, proxyEc);
                     }
                     else
                     {
-                        //there's a problem connecting to the proxy
-                        onError(proxyEc,std::move(request));
-                        return;
+                        proxyEc = socks5::make_error_code(socks5::result_code::invalid_version);
                     }
+                    if(proxyEc)
+                    {
+                        auto& cat = proxyEc.category();
+                        if(&cat == &socks5::get_result_category() || &cat == &socks4::get_result_category())
+                        {
+                            //it means the proxy cannot connect to the host
+                            continue;
+                        }
+                        else
+                        {
+                            //there's a problem connecting to the proxy
+                            onError(proxyEc,std::move(request));
+                            return;
+                        }
+                    }
+                    connectedEndpoint = hostResult.endpoint();
+                    break;
                 }
-                connectedEndpoint = hostResult.endpoint();
-                break;
             }
-            if(proxyEc)
+            else
             {
                 onError(proxyEc,std::move(request));
                 return;
