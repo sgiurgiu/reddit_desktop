@@ -12,6 +12,8 @@
 #include "livethreadviewer.h"
 #include "twitterrenderer.h"
 
+#include <mutex>
+
 struct mpv_handle;
 struct mpv_render_context;
 
@@ -129,6 +131,7 @@ private:
     std::vector<std::string> mediaDomains;
     std::shared_ptr<LiveThreadViewer> liveThreadViewer;
     std::shared_ptr<TwitterRenderer> twitterRenderer;
+    std::mutex mediaMutex;
 };
 
 #endif // POSTCONTENTVIEWER_H

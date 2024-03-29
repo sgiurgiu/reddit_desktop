@@ -463,6 +463,7 @@ void PostContentViewer::setupMediaContext(std::string file, bool useProvidedFile
     {
         file = currentPost->url;
     }
+    std::lock_guard<std::mutex> _(mediaMutex);
     mpv = mpv_create();
     //mpv_set_option_string(mpv, "idle", "no");
     mpv_set_option_string(mpv, "config", "no");
@@ -571,6 +572,7 @@ void PostContentViewer::onMpvEvents(void* context)
 void PostContentViewer::handleMpvEvents()
 {
     if(destroying) return;
+    std::lock_guard<std::mutex> _(mediaMutex);
     while (true)
     {
        mpv_event *mp_event = mpv_wait_event(mpv, 0);
@@ -736,6 +738,7 @@ void PostContentViewer::mpvDoublePropertyChanged(std::string name, double value)
 void PostContentViewer::setPostMediaFrame()
 {
     if((!justPlayMedia && !currentPost) || !mpvRenderContext || destroying) return;
+    std::lock_guard<std::mutex> _(mediaMutex);
     uint64_t flags = mpv_render_context_update(mpvRenderContext);
     if (!(flags & MPV_RENDER_UPDATE_FRAME))
     {
