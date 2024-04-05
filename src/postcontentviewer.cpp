@@ -299,6 +299,8 @@ PostContentViewer::~PostContentViewer()
 {
     spdlog::debug("PostcontentViewer going down: {} ", (currentPost ? currentPost->title : "<no post>") );
     //stopPlayingMedia();
+    std::lock_guard<std::mutex> _(mediaMutex);
+
     destroying = true;
 
     if(mpv)
