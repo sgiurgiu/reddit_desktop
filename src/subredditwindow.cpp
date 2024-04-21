@@ -509,6 +509,7 @@ void SubredditWindow::pauseAllMedia()
 }
 void SubredditWindow::refreshPosts()
 {
+    shouldBlurPictures = Database::getInstance()->getBlurNSFWPictures();
     listingErrorMessage.clear();
     clearExistingPostsData();
     posts.clear();
@@ -600,7 +601,8 @@ float SubredditWindow::renderPostThumbnail(PostDisplay& p)
     ImVec2 size;
     ImVec2 uv0(0, 0);
     ImVec2 uv1(1, 1);
-    if (p.post->over18 && shouldBlurPictures && p.blurredThumbnailPicture)
+    if (p.post->over18 && shouldBlurPictures && p.blurredThumbnailPicture &&
+        !p.shouldShowUnblurredImage)
     {
         textureId = p.blurredThumbnailPicture->textureId;
         size = ImVec2(p.blurredThumbnailPicture->width,
@@ -630,8 +632,23 @@ float SubredditWindow::renderPostThumbnail(PostDisplay& p)
     height = std::fmax(height, ImGui::GetCursorPosY());
     auto rectMin = ImGui::GetItemRectMin();
     auto rectMax = ImGui::GetItemRectMax();
-    if (ImGui::IsWindowFocused() && ImGui::IsMouseHoveringRect(rectMin, rectMax) &&
-        clicked && !ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+
+    if (p.post->over18 && shouldBlurPictures && p.blurredThumbnailPicture &&
+        !p.shouldShowUnblurredImage && ImGui::IsWindowFocused() &&
+        ImGui::IsMouseHoveringRect(rectMin, rectMax))
+    {
+        ImGui::BeginTooltip();
+        ImGui::TextUnformatted("Hold down Ctrl to unblur");
+        ImGui::EndTooltip();
+    }
+    // if Ctrl is pressed, next render it will show the unblurred version
+    p.shouldShowUnblurredImage =
+        ImGui::IsWindowFocused() &&
+        ImGui::IsMouseHoveringRect(rectMin, rectMax) &&
+        (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_LeftCtrl)) ||
+         ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_RightCtrl)));
+    if (ImGui::IsWindowFocused() &&
+        ImGui::IsMouseHoveringRect(rectMin, rectMax) && clicked)
     {
         p.showingContent = !p.showingContent;
         p.updateShowContentText();
