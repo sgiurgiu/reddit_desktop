@@ -92,6 +92,7 @@ private:
         std::string upvoteButtonText;
         std::string downvoteButtonText;
         std::string showContentButtonText;
+        std::string showContentThumbnailId;
         std::string openLinkButtonText;
         std::string errorMessageText;
         std::string votesChildText;
