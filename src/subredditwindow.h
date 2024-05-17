@@ -1,44 +1,48 @@
 #ifndef SUBREDDITWINDOW_H
 #define SUBREDDITWINDOW_H
 
-#include <boost/asio/any_io_executor.hpp>
-#include <string>
-#include <memory>
-#include <chrono>
-#include <boost/signals2.hpp>
-#include <boost/asio/steady_timer.hpp>
-#include <imgui.h>
+#include "awardsrenderer.h"
 #include "entities.h"
+#include "flairrenderer.h"
+#include "markdownrenderer.h"
+#include "postcontentviewer.h"
 #include "redditclientproducer.h"
 #include "resizableglimage.h"
-#include "postcontentviewer.h"
-#include "utils.h"
 #include "subredditstylesheet.h"
-#include "markdownrenderer.h"
-#include "awardsrenderer.h"
-#include "flairrenderer.h"
+#include "utils.h"
+#include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/steady_timer.hpp>
+#include <boost/signals2.hpp>
+#include <chrono>
+#include <imgui.h>
+#include <memory>
+#include <string>
 
 class SubredditWindow : public std::enable_shared_from_this<SubredditWindow>
 {
 public:
-    SubredditWindow(int id, const std::string& subreddit,
+    SubredditWindow(int id,
+                    const std::string& subreddit,
                     const access_token& token,
                     RedditClientProducer* client,
                     const boost::asio::any_io_executor& executor);
     void loadSubreddit();
-    bool isWindowOpen() const {return windowOpen;}
-    void showWindow(int appFrameWidth,int appFrameHeight);
-    template<typename S>
+    bool isWindowOpen() const
+    {
+        return windowOpen;
+    }
+    void showWindow(int appFrameWidth, int appFrameHeight);
+    template <typename S>
     void showCommentsListener(S slot)
     {
         commentsSignal.connect(slot);
     }
-    template<typename S>
+    template <typename S>
     void showSubredditListener(S slot)
     {
         subredditSignal.connect(slot);
     }
-    template<typename S>
+    template <typename S>
     void subscriptionChangedListener(S slot)
     {
         subscriptionChangedSignal.connect(slot);
@@ -63,24 +67,26 @@ public:
         this->token = token;
         this->subredditStylesheet->setAccessToken(token);
     }
-    void setWindowPositionAndSize(ImVec2 pos,ImVec2 size)
+    void setWindowPositionAndSize(ImVec2 pos, ImVec2 size)
     {
         windowPositionAndSizeSet = true;
         windowPos = pos;
         windowSize = size;
     }
+
 private:
     struct PostDisplay
     {
-        PostDisplay(post_ptr p,const access_token& token,
+        PostDisplay(post_ptr p,
+                    const access_token& token,
                     RedditClientProducer* client,
-                    const boost::asio::any_io_executor& executor):
-            post(std::move(p)),
-            awardsRenderer(std::make_shared<AwardsRenderer>(post)),
-            flairRenderer(std::make_shared<FlairRenderer>(post))
+                    const boost::asio::any_io_executor& executor)
+        : post(std::move(p))
+        , awardsRenderer(std::make_shared<AwardsRenderer>(post))
+        , flairRenderer(std::make_shared<FlairRenderer>(post))
         {
-            awardsRenderer->LoadAwards(token,client,executor);
-            flairRenderer->LoadFlair(token,client,executor);
+            awardsRenderer->LoadAwards(token, client, executor);
+            flairRenderer->LoadFlair(token, client, executor);
         }
         post_ptr post;
         std::optional<StandardRedditThumbnail> standardThumbnail;
@@ -106,10 +112,11 @@ private:
 
     struct AboutDisplay
     {
-        AboutDisplay(subreddit& about):
-            description(about.description, nullptr, {}),
-            submit(about.submitText, nullptr, {})
-        {}
+        AboutDisplay(subreddit& about)
+        : description(about.description, nullptr, {})
+        , submit(about.submitText, nullptr, {})
+        {
+        }
         MarkdownRenderer description;
         MarkdownRenderer submit;
     };
@@ -123,19 +130,26 @@ private:
 
     void showWindowMenu();
     void setupConnections();
-    void loadSubredditListings(const std::string& target,const access_token& token);
+    void loadSubredditListings(const std::string& target,
+                               const access_token& token);
     void loadListingsFromConnection(listing listingResponse);
-    void setListings(posts_list receivedPosts, nlohmann::json beforeJson,nlohmann::json afterJson);
+    void setListings(posts_list receivedPosts,
+                     nlohmann::json beforeJson,
+                     nlohmann::json afterJson);
     void setErrorMessage(std::string errorMessage);
-    void setPostThumbnail(std::string postName,Utils::STBImagePtr data, int width, int height, int channels);
+    void setPostThumbnail(std::string postName,
+                          Utils::STBImagePtr data,
+                          int width,
+                          int height,
+                          int channels);
     void showNewTextPostDialog();
     void showNewLinkPostDialog();
     void submitNewPost(const post_ptr& p);
     void clearExistingPostsData();
-    void votePost(post_ptr p,Voted voted);
-    void updatePostVote(std::string postName,Voted voted);
+    void votePost(post_ptr p, Voted voted);
+    void updatePostVote(std::string postName, Voted voted);
     void pauseAllMedia();
-    void setPostErrorMessage(std::string postName,std::string msg);
+    void setPostErrorMessage(std::string postName, std::string msg);
     void lookAndDestroyPostsContents();
     void refreshPosts();
     void rearmRefreshTimer();
@@ -149,9 +163,13 @@ private:
     void showAboutWindow();
     void updateWindowsNames();
     RedditClientProducer::RedditResourceClientConnection makeResourceConnection();
+    RedditClientProducer::RedditSRSubscriptionClientConnection
+    makeSubscriptionConnection();
     void downloadSubredditAbout();
+
 private:
-    using CommentsSignal = boost::signals2::signal<void(std::string id,std::string title)>;
+    using CommentsSignal =
+        boost::signals2::signal<void(std::string id, std::string title)>;
     using SubredditSignal = boost::signals2::signal<void(std::string)>;
     using SubscriptionChangedSignal = boost::signals2::signal<void(void)>;
     int id;
@@ -167,12 +185,8 @@ private:
     std::string title;
     std::string listingErrorMessage;
     posts_list posts;
-    std::string target;    
+    std::string target;
     const boost::asio::any_io_executor& uiExecutor;
-    RedditClientProducer::RedditListingClientConnection listingConnection;
-    RedditClientProducer::RedditListingClientConnection aboutConnection;
-    RedditClientProducer::RedditVoteClientConnection voteConnection;
-    RedditClientProducer::RedditSRSubscriptionClientConnection srSubscriptionConnection;
     float maxScoreWidth = 0.f;
     float upvotesButtonsIdent = 0.f;
     CommentsSignal commentsSignal;
@@ -201,12 +215,12 @@ private:
     bool aboutSubredditWindowOpen = false;
     std::string aboutSubredditWindowName;
     std::vector<SortPosts> sortPosts = {
-        {"Default","",true},
-        {"Hot","/hot",false},
-        {"New","/new",false},
-        {"Rising","/rising",false},
-        {"Controversial","/controversial",false},
-        {"Top","/top",false},
+        { "Default", "", true },
+        { "Hot", "/hot", false },
+        { "New", "/new", false },
+        { "Rising", "/rising", false },
+        { "Controversial", "/controversial", false },
+        { "Top", "/top", false },
     };
     std::string currentlySelectedSortPostLabel = "Default";
     float sortPostsLabelWidth = -1.f;

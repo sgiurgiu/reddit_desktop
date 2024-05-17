@@ -150,7 +150,45 @@ void SubredditWindow::lookAndDestroyPostsContents()
 void SubredditWindow::loadSubredditListings(const std::string& target,
                                             const access_token& token)
 {
-    setupConnections();
+    auto listingConnection = client->makeListingClientConnection();
+    listingConnection->connectionCompleteHandler(
+        [weak = weak_from_this()](const boost::system::error_code& ec,
+                                  client_response<listing> response)
+        {
+            auto self = weak.lock();
+            if (!self)
+                return;
+            if (ec)
+            {
+                boost::asio::post(self->uiExecutor,
+                                  std::bind(&SubredditWindow::setErrorMessage,
+                                            self, ec.message()));
+            }
+            else if (response.status >= 400)
+            {
+                boost::asio::post(self->uiExecutor,
+                                  std::bind(&SubredditWindow::setErrorMessage,
+                                            self, std::move(response.body)));
+            }
+            else
+            {
+                boost::asio::post(
+                    self->uiExecutor,
+                    std::bind(&SubredditWindow::loadListingsFromConnection,
+                              self, std::move(response.data)));
+            }
+        });
+    listingConnection->targetChangedHandler(
+        [weak = weak_from_this()](std::string newTarget, std::any)
+        {
+            auto self = weak.lock();
+            if (!self)
+                return;
+
+            boost::asio::post(self->uiExecutor,
+                              std::bind(&SubredditWindow::changeSubreddit, self,
+                                        std::move(newTarget)));
+        });
     std::string sort = "";
     auto sortPostsIt = std::find_if(sortPosts.begin(), sortPosts.end(),
                                     [](const auto& s) { return s.selected; });
@@ -168,14 +206,7 @@ void SubredditWindow::downloadSubredditAbout()
         target != "/r/all" && target.find("/m/") == target.npos &&
         target.find("/user/") == target.npos)
     {
-        aboutConnection->list(target + "/about", token);
-    }
-}
-void SubredditWindow::setupConnections()
-{
-    if (!aboutConnection)
-    {
-        aboutConnection = client->makeListingClientConnection();
+        auto aboutConnection = client->makeListingClientConnection();
         aboutConnection->connectionCompleteHandler(
             [weak = weak_from_this()](const boost::system::error_code& ec,
                                       client_response<listing> response)
@@ -191,105 +222,47 @@ void SubredditWindow::setupConnections()
                                                 self, std::move(response.data)));
                 }
             });
+        aboutConnection->list(target + "/about", token);
     }
-    if (!srSubscriptionConnection)
-    {
-        srSubscriptionConnection =
-            client->makeRedditRedditSRSubscriptionClientConnection();
-        srSubscriptionConnection->connectionCompleteHandler(
-            [weak = weak_from_this()](const boost::system::error_code& ec,
-                                      client_response<bool> response)
+}
+RedditClientProducer::RedditSRSubscriptionClientConnection
+SubredditWindow::makeSubscriptionConnection()
+{
+    auto srSubscriptionConnection =
+        client->makeRedditRedditSRSubscriptionClientConnection();
+    srSubscriptionConnection->connectionCompleteHandler(
+        [weak = weak_from_this()](const boost::system::error_code& ec,
+                                  client_response<bool> response)
+        {
+            auto self = weak.lock();
+            if (!self)
+                return;
+            if (!ec && response.data)
             {
-                auto self = weak.lock();
-                if (!self)
-                    return;
-                if (!ec && response.data)
-                {
-
-                    self->aboutConnection->list(self->target + "/about",
-                                                self->token);
-                    self->subscriptionChangedSignal();
-                }
-            });
-    }
-    if (!listingConnection)
-    {
-        listingConnection = client->makeListingClientConnection();
-        listingConnection->connectionCompleteHandler(
-            [weak = weak_from_this()](const boost::system::error_code& ec,
-                                      client_response<listing> response)
-            {
-                auto self = weak.lock();
-                if (!self)
-                    return;
-                if (ec)
-                {
-                    boost::asio::post(self->uiExecutor,
-                                      std::bind(&SubredditWindow::setErrorMessage,
-                                                self, ec.message()));
-                }
-                else if (response.status >= 400)
-                {
-                    boost::asio::post(self->uiExecutor,
-                                      std::bind(&SubredditWindow::setErrorMessage,
-                                                self, std::move(response.body)));
-                }
-                else
-                {
-                    boost::asio::post(
-                        self->uiExecutor,
-                        std::bind(&SubredditWindow::loadListingsFromConnection,
-                                  self, std::move(response.data)));
-                }
-            });
-        listingConnection->targetChangedHandler(
-            [weak = weak_from_this()](std::string newTarget, std::any)
-            {
-                auto self = weak.lock();
-                if (!self)
-                    return;
-
-                boost::asio::post(self->uiExecutor,
-                                  std::bind(&SubredditWindow::changeSubreddit,
-                                            self, std::move(newTarget)));
-            });
-    }
-    if (!voteConnection)
-    {
-        voteConnection = client->makeRedditVoteClientConnection();
-        voteConnection->connectionCompleteHandler(
-            [weak = weak_from_this()](const boost::system::error_code& ec,
-                                      client_response<std::string> response)
-            {
-                auto self = weak.lock();
-                if (!self)
-                    return;
-
-                if (ec)
-                {
-                    boost::asio::post(self->uiExecutor,
-                                      std::bind(&SubredditWindow::setErrorMessage,
-                                                self, ec.message()));
-                }
-                else if (response.status >= 400)
-                {
-                    boost::asio::post(self->uiExecutor,
-                                      std::bind(&SubredditWindow::setErrorMessage,
-                                                self, std::move(response.body)));
-                }
-                else if (response.userData.has_value() &&
-                         response.userData.type() ==
-                             typeid(std::pair<std::string, Voted>))
-                {
-                    auto p = std::any_cast<std::pair<std::string, Voted>>(
-                        response.userData);
-                    boost::asio::post(self->uiExecutor,
-                                      std::bind(&SubredditWindow::updatePostVote,
-                                                self, std::move(p.first),
-                                                p.second));
-                }
-            });
-    }
+                auto aboutConnection =
+                    self->client->makeListingClientConnection();
+                aboutConnection->connectionCompleteHandler(
+                    [weak = self->weak_from_this()](
+                        const boost::system::error_code& ec,
+                        client_response<listing> response)
+                    {
+                        auto self = weak.lock();
+                        if (!self)
+                            return;
+                        spdlog::debug("Loaded about data : {} ", response.body);
+                        if (!ec)
+                        {
+                            boost::asio::post(
+                                self->uiExecutor,
+                                std::bind(&SubredditWindow::loadAbout, self,
+                                          std::move(response.data)));
+                        }
+                    });
+                aboutConnection->list(self->target + "/about", self->token);
+                self->subscriptionChangedSignal();
+            }
+        });
+    return srSubscriptionConnection;
 }
 void SubredditWindow::changeSubreddit(std::string newSubreddit)
 {
@@ -482,6 +455,38 @@ void SubredditWindow::votePost(post_ptr p, Voted voted)
 {
     listingErrorMessage.clear();
     std::pair<std::string, Voted> pair = std::make_pair<>(p->name, voted);
+    auto voteConnection = client->makeRedditVoteClientConnection();
+    voteConnection->connectionCompleteHandler(
+        [weak = weak_from_this()](const boost::system::error_code& ec,
+                                  client_response<std::string> response)
+        {
+            auto self = weak.lock();
+            if (!self)
+                return;
+
+            if (ec)
+            {
+                boost::asio::post(self->uiExecutor,
+                                  std::bind(&SubredditWindow::setErrorMessage,
+                                            self, ec.message()));
+            }
+            else if (response.status >= 400)
+            {
+                boost::asio::post(self->uiExecutor,
+                                  std::bind(&SubredditWindow::setErrorMessage,
+                                            self, std::move(response.body)));
+            }
+            else if (response.userData.has_value() &&
+                     response.userData.type() ==
+                         typeid(std::pair<std::string, Voted>))
+            {
+                auto p = std::any_cast<std::pair<std::string, Voted>>(
+                    response.userData);
+                boost::asio::post(self->uiExecutor,
+                                  std::bind(&SubredditWindow::updatePostVote,
+                                            self, std::move(p.first), p.second));
+            }
+        });
     voteConnection->vote(p->name, token, voted, std::move(pair));
 }
 void SubredditWindow::updatePostVote(std::string postName, Voted voted)
@@ -915,7 +920,7 @@ void SubredditWindow::showWindow(int appFrameWidth, int appFrameHeight)
             if (subredditAbout && !subredditAbout->userIsSubscriber &&
                 ImGui::Selectable("Subscribe"))
             {
-                srSubscriptionConnection->updateSrSubscription(
+                makeSubscriptionConnection()->updateSrSubscription(
                     { subredditAbout->name },
                     RedditSRSubscriptionConnection::SubscriptionAction::Subscribe,
                     token);
@@ -923,7 +928,7 @@ void SubredditWindow::showWindow(int appFrameWidth, int appFrameHeight)
             if (subredditAbout && subredditAbout->userIsSubscriber &&
                 ImGui::Selectable("Unsubscribe"))
             {
-                srSubscriptionConnection->updateSrSubscription(
+                makeSubscriptionConnection()->updateSrSubscription(
                     { subredditAbout->name },
                     RedditSRSubscriptionConnection::SubscriptionAction::Unsubscribe,
                     token);
