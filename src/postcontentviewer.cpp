@@ -20,6 +20,11 @@
 
 #include <GLFW/glfw3.h>
 
+#ifdef RD_LINUX
+#define GLFW_EXPOSE_NATIVE_X11
+#include <GLFW/glfw3native.h>
+#endif
+
 namespace
 {
 const std::vector<std::string> mediaExtensions = { ".gif",  ".gifv", ".mp4",
@@ -571,10 +576,11 @@ void PostContentViewer::setupMediaContext(std::string file, bool useProvidedFile
     }
     std::lock_guard<std::mutex> _(mediaMutex);
     mpv = mpv_create();
-    // mpv_set_option_string(mpv, "idle", "no");
-    mpv_set_option_string(mpv, "config", "no");
-    mpv_set_option_string(mpv, "terminal", "yes");
-    mpv_set_option_string(mpv, "msg-level", "all=v");
+    mpv_set_property_string(mpv, "sub-create-cc-track", "yes");
+    mpv_set_property_string(mpv, "input-default-bindings", "no");
+    mpv_set_property_string(mpv, "config", "no");
+    mpv_set_property_string(mpv, "input-vo-keyboard", "no");
+    mpv_set_property_string(mpv, "vo", "libmpv");
     if (useYoutubeDlder && !useProvidedFile)
     {
         file = "ytdl://" + currentPost->url;
@@ -588,7 +594,6 @@ void PostContentViewer::setupMediaContext(std::string file, bool useProvidedFile
     // int64_t maxBytes = 1024*1024*10;
     // mpv_set_option(mpv, "demuxer-max-bytes", MPV_FORMAT_INT64,&maxBytes);
 
-    mpv_initialize(mpv);
     // int64_t cacheDefault = 150000;
     // int64_t cacheBackBuffer = 150000;
     int64_t cacheSecs = 30;
@@ -596,6 +601,29 @@ void PostContentViewer::setupMediaContext(std::string file, bool useProvidedFile
     // mpv_set_property(mpv, "cache-backbuffer", MPV_FORMAT_INT64, &cacheBackBuffer);
     mpv_set_property(mpv, "cache-secs", MPV_FORMAT_INT64, &cacheSecs);
     mpv_set_property(mpv, "demuxer-readahead-secs", MPV_FORMAT_INT64, &cacheSecs);
+    mpv_observe_property(mpv, 0, "duration", MPV_FORMAT_DOUBLE);
+    mpv_observe_property(mpv, 0, "time-pos", MPV_FORMAT_DOUBLE);
+    mpv_observe_property(mpv, 0, "height", MPV_FORMAT_DOUBLE);
+    mpv_observe_property(mpv, 0, "width", MPV_FORMAT_DOUBLE);
+    mpv_observe_property(mpv, 0, "pause", MPV_FORMAT_FLAG);
+    // mpv_observe_property(mpv, 0, "demuxer-cache-state", MPV_FORMAT_NODE);
+    mpv_observe_property(mpv, 0, "demuxer-cache-time", MPV_FORMAT_DOUBLE);
+    mpv_observe_property(mpv, 0, "demuxer-cache-duration", MPV_FORMAT_DOUBLE);
+
+    if (mpv_initialize(mpv) < 0)
+    {
+        setErrorMessage("Could not initialize mpv");
+        return;
+    }
+
+    mediaState.finished = false;
+    double vol = mediaState.mediaAudioVolume;
+    mpv_set_property(mpv, "volume", MPV_FORMAT_DOUBLE, &vol);
+    mpv_observe_property(mpv, 0, "volume", MPV_FORMAT_DOUBLE);
+    // TODO: figure out a way to pass these to a std::function bound to a
+    // shared_from_this or weak_from_this
+    mpv_set_wakeup_callback(mpv, &PostContentViewer::onMpvEvents, this);
+
     // mpv_set_property_string(mpv, "demuxer-cache-wait", "yes");
 
     // demuxer-cache-wait="yes|no
@@ -607,15 +635,22 @@ void PostContentViewer::setupMediaContext(std::string file, bool useProvidedFile
     // mpv_set_property(mpv, "gpu-hwdec-interop",MPV_FORMAT_STRING,
     // &hwdecInteropProp);
 
-    int mpv_advanced_control = 1;
+    int mpv_advanced_control = 0;
     if (useMediaHwAccel)
     {
+#ifdef RD_LINUX
+        mpv_render_param display{ MPV_RENDER_PARAM_X11_DISPLAY,
+                                  glfwGetX11Display() };
+#endif
         mpv_opengl_init_params gl_params = { get_proc_address_mpv, nullptr };
         mpv_render_param params[] = {
             { MPV_RENDER_PARAM_API_TYPE,
               const_cast<char*>(MPV_RENDER_API_TYPE_OPENGL) },
             { MPV_RENDER_PARAM_OPENGL_INIT_PARAMS, &gl_params },
             { MPV_RENDER_PARAM_ADVANCED_CONTROL, &mpv_advanced_control },
+#ifdef RD_LINUX
+            { display },
+#endif
             { MPV_RENDER_PARAM_INVALID, 0 }
         };
         mpv_render_context_create(&mpvRenderContext, mpv, params);
@@ -632,22 +667,6 @@ void PostContentViewer::setupMediaContext(std::string file, bool useProvidedFile
         mpv_render_context_create(&mpvRenderContext, mpv, params);
 #endif
     }
-    mpv_observe_property(mpv, 0, "duration", MPV_FORMAT_DOUBLE);
-    mpv_observe_property(mpv, 0, "time-pos", MPV_FORMAT_DOUBLE);
-    mpv_observe_property(mpv, 0, "height", MPV_FORMAT_DOUBLE);
-    mpv_observe_property(mpv, 0, "width", MPV_FORMAT_DOUBLE);
-    mpv_observe_property(mpv, 0, "pause", MPV_FORMAT_FLAG);
-    // mpv_observe_property(mpv, 0, "demuxer-cache-state", MPV_FORMAT_NODE);
-    mpv_observe_property(mpv, 0, "demuxer-cache-time", MPV_FORMAT_DOUBLE);
-    mpv_observe_property(mpv, 0, "demuxer-cache-duration", MPV_FORMAT_DOUBLE);
-
-    mediaState.finished = false;
-    double vol = mediaState.mediaAudioVolume;
-    mpv_set_property(mpv, "volume", MPV_FORMAT_DOUBLE, &vol);
-    mpv_observe_property(mpv, 0, "volume", MPV_FORMAT_DOUBLE);
-    // TODO: figure out a way to pass these to a std::function bound to a
-    // shared_from_this or weak_from_this
-    mpv_set_wakeup_callback(mpv, &PostContentViewer::onMpvEvents, this);
     mpv_render_context_set_update_callback(
         mpvRenderContext, &PostContentViewer::mpvRenderUpdate, this);
     spdlog::debug("playing URL: {}", file);
