@@ -675,7 +675,8 @@ void PostContentViewer::setupMediaContext(std::string file, bool useProvidedFile
     if (mediaState.paused)
     {
         int shouldPause = mediaState.paused;
-        mpv_set_property_async(mpv, 0, "pause", MPV_FORMAT_FLAG, &shouldPause);
+        mediaState.paused = false;
+        // mpv_set_property_async(mpv, 0, "pause", MPV_FORMAT_FLAG, &shouldPause);
     }
 }
 
