@@ -146,8 +146,7 @@ private:
                     else if (proxy->proxyType == proxy::PROXY_TYPE_HTTP)
                     {
                         proxyEc.clear();
-                        auto proxyEndpoint =
-                            stream->next_layer().connect(proxyResults, proxyEc);
+                        stream->next_layer().connect(proxyResults, proxyEc);
                         if (proxyEc)
                         {
                             onError(proxyEc, std::move(request));
