@@ -830,8 +830,9 @@ void SubredditWindow::showWindow(int appFrameWidth, int appFrameHeight)
 
     if (!listingErrorMessage.empty())
     {
-        ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "%s",
-                           listingErrorMessage.c_str());
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+        ImGui::TextWrapped("%s", listingErrorMessage.c_str());
+        ImGui::PopStyleColor();
     }
 
     if (subredditAbout)
