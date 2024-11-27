@@ -118,7 +118,7 @@ void RedditDesktop::loginSuccessful(client_response<access_token> token)
     Database::getInstance()->setLoggedInUser(currentUser.value());
     currentAccessToken = token;
     loginTokenRefreshTimer.expires_after(std::chrono::seconds(
-        std::min(currentAccessToken.data.expires, 60 * 60)));
+        std::max(currentAccessToken.data.expires, 60 * 60)));
     loginTokenRefreshTimer.async_wait(
         [weak = weak_from_this()](const boost::system::error_code& ec)
         {
