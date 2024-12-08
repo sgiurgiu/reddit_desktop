@@ -102,11 +102,22 @@ ImFont* Utils::AddFont(const std::filesystem::path& fontsFolder,
         fontSize; // Use if you want to make the icon monospaced
     fontAwesomeConfig.FontDataOwnedByAtlas = false;
     static const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
-    static const ImWchar romanian_ranges[] = { 0x0100, 0x017F, 0x0180, 0x024F, 0 };
 
     ImFontConfig config;
-    config.MergeMode = true;
-
+    config.MergeMode = false;
+    // clang-format off
+    static const ImWchar font_ranges[] = { 0x0020, 0x052F,
+                                           0x1AB0, 0x1ABE,
+                                           0x1C80, 0x1C88,
+                                           0x1D00, 0x1DFF,
+                                           0x1E00, 0x1FFE,
+                                           0x2000, 0x2189,
+                                           0x2C60, 0x2E44,
+                                           0xA640, 0xAB65,
+                                           0xFB00, 0xFB06,
+                                           0xFE00, 0xFEFF,
+                                           0 };
+    // clang-format on
     auto fontFile = fontsFolder / font;
 
     if (!std::filesystem::exists(fontFile))
@@ -116,12 +127,12 @@ ImFont* Utils::AddFont(const std::filesystem::path& fontsFolder,
     auto fontFilenameString = fontFile.string();
     const char* fontFilename = fontFilenameString.c_str();
 
-    auto fontData =
-        ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFilename, fontSize);
+    auto fontData = ImGui::GetIO().Fonts->AddFontFromFileTTF(
+        fontFilename, fontSize, &config, font_ranges);
     if (!fontData)
         throw std::runtime_error(
             fmt::format("Unable to load font {}", fontFile.string()));
-    ImGui::GetIO().Fonts->AddFontFromFileTTF(
+    /*ImGui::GetIO().Fonts->AddFontFromFileTTF(
         fontFilename, fontSize, &config,
         ImGui::GetIO().Fonts->GetGlyphRangesChineseFull());
     ImGui::GetIO().Fonts->AddFontFromFileTTF(
@@ -140,7 +151,7 @@ ImFont* Utils::AddFont(const std::filesystem::path& fontsFolder,
         fontFilename, fontSize, &config,
         ImGui::GetIO().Fonts->GetGlyphRangesVietnamese());
     ImGui::GetIO().Fonts->AddFontFromFileTTF(fontFilename, fontSize, &config,
-                                             romanian_ranges);
+                                             romanian_ranges);*/
 
     static ImFontConfig emojiConfig;
     emojiConfig.MergeMode = true;
