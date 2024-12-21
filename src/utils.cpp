@@ -96,11 +96,15 @@ ImFont* Utils::AddFont(const std::filesystem::path& fontsFolder,
                        const std::string& font,
                        float fontSize)
 {
+    float iconFontSize = fontSize * 2.f / 3.f;
+
     static ImFontConfig fontAwesomeConfig;
     fontAwesomeConfig.MergeMode = true;
     fontAwesomeConfig.GlyphMinAdvanceX =
-        fontSize; // Use if you want to make the icon monospaced
+        iconFontSize; // Use if you want to make the icon monospaced
     fontAwesomeConfig.FontDataOwnedByAtlas = false;
+    fontAwesomeConfig.PixelSnapH = true;
+
     static const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
 
     ImFontConfig config;
@@ -159,16 +163,16 @@ ImFont* Utils::AddFont(const std::filesystem::path& fontsFolder,
     emojiConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_Bitmap;
     emojiConfig.OversampleH = emojiConfig.OversampleV = 1;
     emojiConfig.FontDataOwnedByAtlas = false;
-    // emojiConfig.GlyphMinAdvanceX = fontSize;
+    emojiConfig.GlyphMinAdvanceX = iconFontSize;
     static const ImWchar emoji_icon_ranges[] = { 0x1, 0x1FFFF, 0 };
 
     /*ImGui::GetIO().Fonts->AddFontFromMemoryTTF(seguiemjFileData,seguiemjFileDataSize,
        fontSize, &emojiConfig,emoji_icon_ranges);*/
-    ImGui::GetIO().Fonts->AddFontFromMemoryTTF(twColorEmojiFileData,
-                                               twColorEmojiFileDataSize, fontSize,
-                                               &emojiConfig, emoji_icon_ranges);
+    ImGui::GetIO().Fonts->AddFontFromMemoryTTF(
+        twColorEmojiFileData, twColorEmojiFileDataSize, iconFontSize,
+        &emojiConfig, emoji_icon_ranges);
     return ImGui::GetIO().Fonts->AddFontFromMemoryTTF(
-        fontAwesomeFileData, fontAwesomeFileDataSize, fontSize,
+        fontAwesomeFileData, fontAwesomeFileDataSize, iconFontSize,
         &fontAwesomeConfig, icon_ranges);
 }
 

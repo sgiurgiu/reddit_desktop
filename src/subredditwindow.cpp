@@ -671,6 +671,10 @@ float SubredditWindow::renderPostThumbnail(PostDisplay& p)
 }
 void SubredditWindow::renderPostShowContentButton(PostDisplay& p)
 {
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, 0x0);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, 0x0);
+    ImGui::PushStyleColor(ImGuiCol_Button, 0x0);
+
     if (ImGui::Button(p.showContentButtonText.c_str()))
     {
         p.showingContent = !p.showingContent;
@@ -684,6 +688,7 @@ void SubredditWindow::renderPostShowContentButton(PostDisplay& p)
             p.postContentViewer->stopPlayingMedia(false);
         }
     }
+    ImGui::PopStyleColor(3);
     if (ImGui::IsItemHovered())
     {
         ImGui::BeginTooltip();
