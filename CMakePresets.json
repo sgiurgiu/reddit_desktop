@@ -97,6 +97,13 @@
             ]
         },
         {
+            "name": "release-appimage",
+            "configurePreset": "release",
+            "generators": [
+                "TGZ"
+            ]
+        },
+        {
             "name": "release-windows",
             "configurePreset": "release-windows",
             "generators": [
@@ -158,6 +165,23 @@
                 {
                     "type": "package",
                     "name": "release-deb"
+                }
+            ]
+        },
+        {
+            "name": "release-appimage",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "release"
+                },
+                {
+                    "type": "build",
+                    "name": "release"
+                },
+                {
+                    "type": "package",
+                    "name": "release-appimage"
                 }
             ]
         },
