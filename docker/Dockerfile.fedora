@@ -1,4 +1,4 @@
-FROM registry.fedoraproject.org/fedora:38
+FROM registry.fedoraproject.org/fedora:42
 
 LABEL maintainer="Sergiu Giurgiu <sgiurgiu11@gmail.com>"
 
@@ -7,12 +7,13 @@ COPY build_reddit_desktop.sh /tmp/workdir/
 COPY prepare_vcpkg.sh /tmp/workdir/
 
 RUN dnf install -yq \
-    http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-38.noarch.rpm \
-    http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-38.noarch.rpm && \
-    rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-38 && \
-    rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-38 && \
+    https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-42.noarch.rpm \
+    https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-42.noarch.rpm && \
+    rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-latest && \
+    rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-latest && \
     dnf upgrade -y && \
     dnf clean all
+
 
 RUN dnf -yq install cmake gcc g++ pkgconf-pkg-config git kernel-headers \
         tar rpm-build ninja-build perl-FindBin perl-English perl-File-Compare perl-IPC-Cmd.noarch \

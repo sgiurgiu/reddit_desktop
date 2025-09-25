@@ -1,4 +1,4 @@
-FROM docker.io/debian:11
+FROM docker.io/debian:12
 
 LABEL maintainer="Sergiu Giurgiu <sgiurgiu11@gmail.com>"
 
