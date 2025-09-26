@@ -13,6 +13,7 @@
 #include <boost/archive/iterators/base64_from_binary.hpp>
 #include <boost/archive/iterators/binary_from_base64.hpp>
 #include <boost/archive/iterators/transform_width.hpp>
+#include <boost/version.hpp>
 #include <chrono>
 #include <codecvt>
 #include <fmt/format.h>
@@ -566,6 +567,7 @@ void Utils::openInBrowser(const std::string& url)
     ShellExecuteEx(&ShExecInfo);
     // ShellExecute(NULL, L"open", url.c_str(), NULL, NULL, 0);
 #else
+#if BOOST_VERSION < 108700
     auto browser = boost::process::search_path("xdg-open");
     if (browser.empty())
     {
@@ -573,6 +575,15 @@ void Utils::openInBrowser(const std::string& url)
         return;
     }
     boost::process::spawn(browser, url);
+#else
+    auto browser = boost::process::v1::search_path("xdg-open");
+    if (browser.empty())
+    {
+        std::cerr << "Cannot find xdg-open in PATH" << std::endl;
+        return;
+    }
+    boost::process::v1::spawn(browser, url);
+#endif
 #endif
 }
 ImVec4 Utils::GetDownVoteColor()
