@@ -27,8 +27,15 @@
 #include <shlwapi.h>
 #include <windows.h>
 #else
+
+#if BOOST_VERSION <= 108100
+#include <boost/process/search_path.hpp>
+#include <boost/process/spawn.hpp>
+#else
 #include <boost/process/v1/search_path.hpp>
 #include <boost/process/v1/spawn.hpp>
+#endif
+
 #include <pwd.h>
 #include <sys/types.h>
 #include <unistd.h>
