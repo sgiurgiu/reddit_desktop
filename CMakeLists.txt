@@ -73,12 +73,11 @@ set(RD_LIBARIES ${CMAKE_DL_LIBS} Threads::Threads)
 set(RD_INCLUDES)
 
 set(Boost_USE_STATIC_LIBS    ON)
-# Boost doesn't provide a pkgconfig file, so we just have to have it installed
-# and discoverable by cmake
-find_package(Boost 1.74 REQUIRED system filesystem program_options)
-list(APPEND RD_LIBARIES Boost::boost Boost::system Boost::filesystem)
 
 if(VCPKG_TOOLCHAIN)
+    # Boost doesn't provide a pkgconfig file, so we just have to have it installed
+    # and discoverable by cmake
+    find_package(Boost 1.74 REQUIRED system filesystem program_options)
     set(Boost_USE_STATIC_RUNTIME ON)
     find_package(OpenGL COMPONENTS OpenGL REQUIRED)
     find_package(GLEW REQUIRED)
@@ -98,6 +97,7 @@ if(VCPKG_TOOLCHAIN)
         list(APPEND RD_LIBARIES PkgConfig::MPV)
     endif()
 
+    list(APPEND RD_LIBARIES Boost::boost Boost::system Boost::filesystem)
     list(APPEND RD_LIBARIES OpenGL::GL glfw GLEW::GLEW freetype)
     list(APPEND RD_LIBARIES OpenSSL::SSL)
     list(APPEND RD_LIBARIES spdlog::spdlog_header_only fmt::fmt-header-only)
@@ -106,6 +106,9 @@ if(VCPKG_TOOLCHAIN)
     list(APPEND RD_LIBARIES uriparser::uriparser)
 elseif(UNIX)
     # if no vcpkg, and on UNIX fallback on PkgConfig
+    set(Boost_NO_BOOST_CMAKE ON)
+    find_package(Boost 1.74 REQUIRED system filesystem program_options)
+
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
     pkg_check_modules(OpenGL REQUIRED IMPORTED_TARGET opengl)
@@ -127,6 +130,7 @@ elseif(UNIX)
     list(APPEND RD_LIBARIES PkgConfig::Sqlite)
     list(APPEND RD_LIBARIES PkgConfig::Uriparser)
     list(APPEND RD_LIBARIES PkgConfig::MPV)
+#    list(APPEND RD_LIBARIES ${Boost_LIBRARIES})
 
     # Package STB doesn't seem to include any pc files on Linux (Fedora) nor on FreeBSD
     # just add the include dir. Can be defined by STB_INCLUDE_DIR parameter to cmake
