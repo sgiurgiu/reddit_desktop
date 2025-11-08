@@ -130,7 +130,7 @@ elseif(UNIX)
     list(APPEND RD_LIBARIES PkgConfig::Sqlite)
     list(APPEND RD_LIBARIES PkgConfig::Uriparser)
     list(APPEND RD_LIBARIES PkgConfig::MPV)
-    list(APPEND RD_LIBARIES ${Boost_LIBRARIES})
+#    list(APPEND RD_LIBARIES ${Boost_LIBRARIES})
 
     # Package STB doesn't seem to include any pc files on Linux (Fedora) nor on FreeBSD
     # just add the include dir. Can be defined by STB_INCLUDE_DIR parameter to cmake
