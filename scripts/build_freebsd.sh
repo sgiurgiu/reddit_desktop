@@ -20,7 +20,9 @@ if [ -z $CONTAINER_REGISTRY ]; then
     exit 1
 fi
 
-
+export CC=clang19
+export CXX=clang++19
+export PATH="/usr/local/bin:$PATH"
 
 CMAKE_ARGS="-GNinja -DPACKAGING=ON -DCMAKE_BUILD_TYPE=Release \
             -DENABLE_TESTS=OFF -DENABLE_M4DC=ON -DENABLE_CMARK=OFF"
