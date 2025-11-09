@@ -14,13 +14,22 @@
 # For more information, see: https://docs.gitlab.com/ee/ci/yaml/index.html#stages
 
 variables:
-  REDDITDESKTOP_VERSION_MAJOR : "1"
-  REDDITDESKTOP_VERSION_MINOR : "0"
-  REDDITDESKTOP_VERSION_PATCH : "${CI_PIPELINE_IID}"
+  REDDITDESKTOP_VERSION : "1.0.${CI_PIPELINE_IID}"
   CONTAINER_REGISTRY : $CONTAINER_REGISTRY
 
 stages:          # List of stages for jobs, and their order of execution
+  - tagging
   - build
+
+Tagging from pipeline:
+  stage: tagging
+  timeout: 30m
+  tags:
+    - linux
+  script:
+    - scripts/bump_version.sh
+  only:
+    - master
 
 linux-job:       # This job runs in the build stage, which runs first.
   stage: build

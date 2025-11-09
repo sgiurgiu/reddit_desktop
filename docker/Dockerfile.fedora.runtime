@@ -1,11 +1,24 @@
-ARG BASE_CONTAINER=localhost/reddit_desktop_fedora:runtime
+FROM registry.fedoraproject.org/fedora-minimal:43
 
-FROM ${BASE_CONTAINER}
-
+LABEL Name="Reddit Desktop"
+LABEL VERSION=1
 LABEL maintainer="Sergiu Giurgiu <sgiurgiu11@gmail.com>"
+
+RUN dnf install -yq \
+    https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-43.noarch.rpm \
+    https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-43.noarch.rpm && \
+    rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-free-fedora-latest && \
+    rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-rpmfusion-nonfree-fedora-latest && \
+    dnf upgrade -y && \
+    dnf clean all
+
+RUN  dnf -y install libglvnd-opengl firefox xdg-utils libSM libICE \
+        mpv-libs youtube-dl mesa-libGL mesa-libGLU mesa-dri-drivers dbus dbus-x11 && \
+        dnf -y upgrade && \
+        dnf clean all
 
 ARG RDRPM=/tmp/reddit_desktop/packages/reddit_desktop-0.0.1-fedora.rpm
 
-RUN rpm -i ${RDRPM} &&  mkdir -p /root/.config/reddit_desktop
+RUN dnf -y install ${RDRPM} &&  mkdir -p /root/.config/reddit_desktop && dnf clean all
 
 ENTRYPOINT ["/usr/bin/reddit_desktop"]
