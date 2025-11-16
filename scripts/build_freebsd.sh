@@ -21,11 +21,12 @@ fi
 export CC=clang19
 export CXX=clang++19
 export PATH="/usr/local/bin:$PATH"
+export DISTRIBUTION=${distro}
 
 CMAKE_ARGS="-GNinja -DPACKAGING=ON -DCMAKE_BUILD_TYPE=Release \
             -DENABLE_TESTS=OFF -DENABLE_M4DC=ON -DENABLE_CMARK=OFF"
 distro=freebsd
-CMAKE_ARGS="${CMAKE_ARGS} -DCPACK_DISTRIBUTION=freebsd -DCPACK_GENERATOR=FREEBSD"
+CMAKE_ARGS="${CMAKE_ARGS} -DCPACK_GENERATOR=FREEBSD"
 
 rm -rf ${root}/build
 

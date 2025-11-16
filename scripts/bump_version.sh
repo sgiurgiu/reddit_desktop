@@ -16,3 +16,4 @@ next_version=$(semver bump patch ${cur_version})
 git tag -a ${next_version} -m "Release version ${next_version}"
 git push origin --tags
 
+echo "${next_version}" > version.txt

@@ -34,7 +34,9 @@
                 "CMAKE_BUILD_TYPE": "Release",
                 "ENABLE_TESTS": "OFF",
                 "PACKAGING": "ON",
-                "CMAKE_INSTALL_PREFIX": "/usr"
+                "CMAKE_INSTALL_PREFIX": "/usr",
+                "ENABLE_M4DC":"ON",
+                "ENABLE_CMARK":"OFF"
             }
         },
         {
@@ -48,7 +50,9 @@
                 "PACKAGING": "ON",
                 "LIBMPV_DIR": "$env{libMpvDir}",
                 "LIBMPV_INCLUDE": "$env{libMpvIncludeDir}",
-                "YOUTUBE_DL": "$env{youtubeDlExe}"
+                "YOUTUBE_DL": "$env{youtubeDlExe}",
+                "ENABLE_M4DC":"ON",
+                "ENABLE_CMARK":"OFF"
             },
             "condition": {
                 "type": "equals",

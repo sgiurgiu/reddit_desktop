@@ -1,81 +1,118 @@
-# This file is a template, and might need editing before it works on your project.
-# To contribute improvements to CI/CD templates, please follow the Development guide at:
-# https://docs.gitlab.com/ee/development/cicd/templates.html
-# This specific template is located at:
-# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Getting-Started.gitlab-ci.yml
-
-# This is a sample GitLab CI/CD configuration file that should run without any modifications.
-# It demonstrates a basic 3 stage CI/CD pipeline. Instead of real tests or scripts,
-# it uses echo commands to simulate the pipeline execution.
-#
-# A pipeline is composed of independent jobs that run scripts, grouped into stages.
-# Stages run in sequential order, but jobs within stages run in parallel.
-#
-# For more information, see: https://docs.gitlab.com/ee/ci/yaml/index.html#stages
-
 variables:
-  REDDITDESKTOP_VERSION : "1.0.${CI_PIPELINE_IID}"
+  REDDITDESKTOP_VERSION : "1.0.1"
   CONTAINER_REGISTRY : $CONTAINER_REGISTRY
 
-stages:          # List of stages for jobs, and their order of execution
-  - tagging
-  - build
+workflow:
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - when: always
 
-Tagging from pipeline:
-  stage: tagging
-  timeout: 30m
+stages:
+  - version
+  - build
+  - publish
+
+bump-version:
+  stage: version
   tags:
     - linux
-  script:
-    - scripts/bump_version.sh
   only:
     - master
+  script: |
+    #!/bin/bash
+    set -euo pipefail
+    scripts/bump_version.sh
+    echo "Version bumped to: $(cat version.txt)"
+  artifacts:
+    expire_in: 2 hours
+    paths:
+      - version.txt
 
-linux-job:       # This job runs in the build stage, which runs first.
+build-linux:
   stage: build
   tags:
     - linux
-  variables:
-    GIT_SUBMODULE_STRATEGY: recursive
   only:
     - master
+  needs:
+    - job: bump-version
+      artifacts: true
+  script:
+    - echo "Building Linux artifacts..."
+    - scripts/build_linux.sh
+    - echo "Build complete."
   artifacts:
+    expire_in: 6 hours
     paths:
       - packages/
+
+build-windows:
+  stage: build
+  tags:
+    - windows
+  only:
+    - master
+  needs:
+    - job: bump-version
+      artifacts: true
   script:
-    - echo "Compiling the code..."
-    - scripts/build_linux.sh
-    - echo "Compile complete."
+    - powershell -File scripts/build_windows.ps1
+  artifacts:
+    expire_in: 6 hours
+    paths:
+      - packages/
 
-
-windows-job:
-    stage: build
-    tags:
-        - windows
-    variables:
-        GIT_SUBMODULE_STRATEGY: recursive
-    only:
-        - master
-    artifacts:
-        paths:
-            - packages/
-    script:
-        - scripts/build_windows.ps1
-
-
-freebsd-job:
+build-freebsd:
   stage: build
   tags:
     - freebsd
-  variables:
-    GIT_SUBMODULE_STRATEGY: recursive
   only:
     - master
+  needs:
+    - job: bump-version
+      artifacts: true
   artifacts:
+    expire_in: 6 hours
     paths:
       - packages/
   script:
     - echo "Compiling the code..."
     - scripts/build_freebsd.sh
     - echo "Compile complete."
+
+publish:
+  stage: publish
+  tags:
+    - linux
+  only:
+    - master
+  needs:
+    - job: bump-version
+      artifacts: true
+    - job: build-linux
+      artifacts: true
+    - job: build-windows
+      artifacts: true
+    - job: build-freebsd
+      artifacts: true
+  script: |
+    set -x
+    VERSION=$(cat version.txt)
+    echo "Publishing RedditDesktop version $VERSION..."
+
+    for f in packages/*; do
+      if [ -f "$f" ]; then
+        filename=$(basename "$f")
+        full_path=$(realpath "$f")
+
+        echo "Uploading: $filename"
+
+        curl --location --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+          --upload-file "$full_path" \
+          "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/reddit-desktop/${VERSION}/${filename}"
+      fi
+    done
+
+    echo "Publish complete!"
 
