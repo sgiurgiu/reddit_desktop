@@ -51,5 +51,5 @@ then
     /opt/linuxdeployqt-continuous-x86_64.AppImage ./AppDir/usr/share/applications/reddit-desktop.desktop -appimage
     cp RedditDesktop*.AppImage /tmp/reddit_desktop/packages/
 else
-    cp /tmp/build-release/reddit_desktop-*-${distro}.* /tmp/reddit_desktop/packages/
+    cp /tmp/reddit_desktop/build-release/reddit_desktop-*-${distro}.* /tmp/reddit_desktop/packages/
 fi
