@@ -59,6 +59,13 @@
                 "lhs": "${hostSystemName}",
                 "rhs": "Windows"
             }
+        },
+        {
+            "name": "release-windows-build",
+            "inherits": "release-windows",
+            "cacheVariables": {
+                "CMAKE_MAKE_PROGRAM": "C:/ninja-win/ninja.exe"
+            }
         }
     ],
     "buildPresets": [
@@ -118,8 +125,19 @@
                 "lhs": "${hostSystemName}",
                 "rhs": "Windows"
             }
-        }
-    ],
+        },
+        {
+            "name": "release-windows-build",
+            "configurePreset": "release-windows-build",
+            "generators": [
+                "WIX"
+            ],
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        }    ],
     "workflowPresets": [
         {
             "name": "default",
@@ -203,6 +221,23 @@
                 {
                     "type": "package",
                     "name": "release-windows"
+                }
+            ]
+        },
+        {
+            "name": "release-windows-build",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "release-windows-build"
+                },
+                {
+                    "type": "build",
+                    "name": "release-windows-build"
+                },
+                {
+                    "type": "package",
+                    "name": "release-windows-build"
                 }
             ]
         }

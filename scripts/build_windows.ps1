@@ -42,7 +42,7 @@ echo "Using lib mpv include directory: $libMpvIncludeDir"
 echo "Using youtubeDlExe directory: $youtubeDlExe"
 
 try {
-  cmake --workflow --preset=release-windows
+  cmake --workflow --preset=release-windows-build
 
   Copy-Item "$buildDir\*.msi" -Destination $packagesDir
   exit 0
