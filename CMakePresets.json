@@ -83,6 +83,11 @@
             "name": "release-windows",
             "configurePreset": "release-windows",
             "jobs": 4
+        },
+        {
+            "name": "release-windows-build",
+            "configurePreset": "release-windows-build",
+            "jobs": 4
         }
     ],
     "packagePresets": [
@@ -137,7 +142,8 @@
                 "lhs": "${hostSystemName}",
                 "rhs": "Windows"
             }
-        }    ],
+        }    
+    ],
     "workflowPresets": [
         {
             "name": "default",
