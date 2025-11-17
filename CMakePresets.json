@@ -52,7 +52,8 @@
                 "LIBMPV_INCLUDE": "$env{libMpvIncludeDir}",
                 "YOUTUBE_DL": "$env{youtubeDlExe}",
                 "ENABLE_M4DC":"ON",
-                "ENABLE_CMARK":"OFF"
+                "ENABLE_CMARK":"OFF",
+                "VCPKG_TARGET_TRIPLET":"x64-windows-static"
             },
             "condition": {
                 "type": "equals",
