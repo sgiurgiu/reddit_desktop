@@ -41,9 +41,15 @@ echo "Using lib mpv directory: $libMpvDir"
 echo "Using lib mpv include directory: $libMpvIncludeDir"
 echo "Using youtubeDlExe directory: $youtubeDlExe"
 
-cmake --workflow --preset=release-windows
+try {
+  cmake --workflow --preset=release-windows
 
-Copy-Item "$buildDir\*.msi" -Destination $packagesDir
+  Copy-Item "$buildDir\*.msi" -Destination $packagesDir
+  exit 0
+}catch {
+  Write-Host "Error building: $($_.Exception.Message)"
+  exit 1
+}
 
 
 
