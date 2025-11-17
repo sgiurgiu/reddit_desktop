@@ -35,6 +35,8 @@ set-item Env:DISTRIBUTION "windows"
 set-item Env:libMpvDir "$libMpvDir"
 set-item Env:libMpvIncludeDir "$libMpvIncludeDir"
 set-item Env:youtubeDlExe "$youtubeDlExe"
+$version = git describe --tags
+set-item Env:REDDITDESKTOP_VERSION $version
 
 
 echo "Using lib mpv directory: $libMpvDir"

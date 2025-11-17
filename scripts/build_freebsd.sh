@@ -8,10 +8,10 @@ else
     root=${CI_PROJECT_DIR}
 fi
 
-if [ -z ${REDDITDESKTOP_VERSION+x} ]; then
+REDDITDESKTOP_VERSION=$(git describe --tags || true)
+if [ -z ${REDDITDESKTOP_VERSION} ]; then
     REDDITDESKTOP_VERSION="1.0.dev"
 fi
-
 
 if [ -z $CONTAINER_REGISTRY ]; then
     echo "FATAL: Please set the CONTAINER_REGISTRY environment variable to point to where the containers are located."

@@ -8,7 +8,8 @@ else
     root=${CI_PROJECT_DIR}
 fi
 
-if [ -z ${REDDITDESKTOP_VERSION+x} ]; then
+REDDITDESKTOP_VERSION=$(git describe --tags || true)
+if [ -z ${REDDITDESKTOP_VERSION} ]; then
     REDDITDESKTOP_VERSION="1.0.dev"
 fi
 
