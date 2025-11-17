@@ -5,7 +5,6 @@ param(
     $libMpvIncludeDir = "E:\projects\mpv\include",    
     [string]
     $youtubeDlExe = "E:\projects\mpv\youtube-dl.exe"
-    
 )
 
 
@@ -33,6 +32,9 @@ Remove-Item -LiteralPath $packagesDir -Force -Recurse -ErrorAction Ignore
 New-Item -ItemType Directory -Force -Path $buildDir
 New-Item -ItemType Directory -Force -Path $packagesDir
 set-item Env:DISTRIBUTION "windows"
+set-item Env:libMpvDir "$libMpvDir"
+set-item Env:libMpvIncludeDir "$libMpvIncludeDir"
+set-item Env:youtubeDlExe "$youtubeDlExe"
 
 
 echo "Using lib mpv directory: $libMpvDir"
