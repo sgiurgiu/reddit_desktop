@@ -75,7 +75,7 @@ private:
     void setIntProperty(int value, const std::string& propName);
     int getIntProperty(const std::string& propName, int defaultValue) const;
     void setFloatProperty(float value, const std::string& propName);
-    int getFloatProperty(const std::string& propName, float defaultValue) const;
+    float getFloatProperty(const std::string& propName, float defaultValue) const;
 
     void setStringProperty(const std::string& value, const std::string& propName);
     std::optional<std::string> getStringProperty(const std::string& propName) const;

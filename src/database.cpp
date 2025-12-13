@@ -301,7 +301,7 @@ void Database::setFloatProperty(float value, const std::string& propName)
     rc = sqlite3_step(stmt.get());
     DB_ERR_CHECK("Cannot insert "+propName);
 }
-int Database::getFloatProperty(const std::string& propName, float defaultValue) const
+float Database::getFloatProperty(const std::string& propName, float defaultValue) const
 {
     float value = defaultValue;
     std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;

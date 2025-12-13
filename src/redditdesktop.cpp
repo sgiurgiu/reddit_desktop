@@ -44,6 +44,7 @@ RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext)
     useYoutubeDl = db->getUseYoutubeDownloader();
     automaticallyLogIn = db->getAutomaticallyLogIn();
     fontScale = db->GetFontScale();
+    ImGui::GetIO().FontGlobalScale = fontScale;
     auto bCol = db->getColor(BACKGROUND_COLOR_NAME,
                              { backgroundColor.x, backgroundColor.y,
                                backgroundColor.z, backgroundColor.w });
