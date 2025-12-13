@@ -153,6 +153,7 @@ private:
     bool exportSubsDialog = false;
     bool importSubsFromFileDialog = false;
     std::string exportSubsFile;
+    float fontScale = 1.0f;
 };
 
 

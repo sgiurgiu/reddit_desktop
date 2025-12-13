@@ -1,6 +1,7 @@
 #include "redditdesktop.h"
 #include "database.h"
 #include "fonts/IconsFontAwesome4.h"
+#include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_stdlib.h"
 #include "utils.h"
@@ -42,6 +43,7 @@ RedditDesktop::RedditDesktop(boost::asio::io_context& uiContext)
     automaticallyArangeWindowsInGrid = db->getAutoArangeWindowsGrid();
     useYoutubeDl = db->getUseYoutubeDownloader();
     automaticallyLogIn = db->getAutomaticallyLogIn();
+    fontScale = db->GetFontScale();
     auto bCol = db->getColor(BACKGROUND_COLOR_NAME,
                              { backgroundColor.x, backgroundColor.y,
                                backgroundColor.z, backgroundColor.w });
@@ -705,6 +707,22 @@ void RedditDesktop::showMainMenuBar()
                     arrangeWindowsGrid();
                 }
             }
+            if (ImGui::InputFloat("Font scale", &fontScale,
+                                0.1f, 0.5f,"%.1f"))
+            {
+                if (fontScale <= 0.1f)
+                    fontScale = 0.1f;
+                Database::getInstance()->SetFontScale(fontScale);
+                ImGui::GetIO().FontGlobalScale = fontScale;
+            }
+            if (ImGui::IsItemHovered())
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted(
+                    "Subreddits refresh timeout, in seconds");
+                ImGui::EndTooltip();
+            }
+
             if (ImGui::MenuItem(MEDIA_DOMAINS_POPUP_TITLE))
             {
                 mediaDomainsManagementDialog = true;

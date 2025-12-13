@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "RDRect.h"
 #include <GLFW/glfw3.h>
+#include <sqlite3.h>
 
 #define DB_ERR_CHECK(msg) \
     if (rc != SQLITE_OK && rc != SQLITE_DONE) \
@@ -282,6 +283,47 @@ int Database::getIntProperty(const std::string& propName, int defaultValue) cons
     }
     return value;
 }
+void Database::setFloatProperty(float value, const std::string& propName)
+{
+    std::string sql("DELETE FROM PROPERTIES WHERE NAME='");
+    sql+=propName;
+    sql+="'";
+    sqlite3_exec(db.get(),sql.c_str(),nullptr,nullptr,nullptr);
+    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
+    sqlite3_stmt *stmt_ptr;
+    int rc = sqlite3_prepare_v2(db.get(),"INSERT INTO PROPERTIES(NAME,PROP_VAL) VALUES(?,?)",-1,&stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot insert "+propName);
+    rc = sqlite3_bind_text(stmt.get(),1,propName.c_str(),-1,nullptr);
+    DB_ERR_CHECK("Cannot bind values to "+propName)
+    rc = sqlite3_bind_double(stmt.get(),2,value);
+    DB_ERR_CHECK("Cannot bind values to "+propName);
+    rc = sqlite3_step(stmt.get());
+    DB_ERR_CHECK("Cannot insert "+propName);
+}
+int Database::getFloatProperty(const std::string& propName, float defaultValue) const
+{
+    float value = defaultValue;
+    std::unique_ptr<sqlite3_stmt,statement_finalizer> stmt;
+    sqlite3_stmt *stmt_ptr;
+    std::string sql="SELECT NAME,PROP_VAL FROM PROPERTIES WHERE NAME='";
+    sql+=propName;
+    sql+="'";
+    int rc = sqlite3_prepare_v2(db.get(),sql.c_str(),-1,&stmt_ptr, nullptr);
+    stmt.reset(stmt_ptr);
+    DB_ERR_CHECK("Cannot find "+propName);
+    if(sqlite3_step(stmt.get()) == SQLITE_ROW)
+    {
+        auto name = sqlite3_column_text(stmt.get(),0);
+        auto val = sqlite3_column_double(stmt.get(),1);
+        if(propName == std::string(reinterpret_cast<const char*>(name)))
+        {
+             value = val;
+        }
+    }
+    return value;
+}
+
 void Database::setStringProperty(const std::string& value, const std::string& propName)
 {
     std::string sql("DELETE FROM PROPERTIES WHERE NAME='");
@@ -388,6 +430,15 @@ std::optional<std::string> Database::getTwitterAuthBearer()
 {
     return getStringProperty("TWITTER_BEARER");
 }
+float Database::GetFontScale() const
+{
+    return getFloatProperty("FONT_SCALE", 1.0f);
+}
+void Database::SetFontScale(float scale)
+{
+    setFloatProperty(scale, "FONT_SCALE");
+}
+
 std::string Database::getLastExportedSubsFile() const
 {
     auto file = getStringProperty("LAST_EXPORT_SUBS_FILE");

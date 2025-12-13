@@ -67,11 +67,16 @@ public:
     std::optional<proxy::proxy_t> getProxy() const;
     std::string getLastExportedSubsFile() const;
     void setLastExportedSubsFile(const std::string& file);
+    float GetFontScale() const;
+    void SetFontScale(float scale);
 private:
     void setBoolProperty(bool flag, const std::string& propName);
     bool getBoolProperty(const std::string& propName, bool defaultValue) const;
     void setIntProperty(int value, const std::string& propName);
     int getIntProperty(const std::string& propName, int defaultValue) const;
+    void setFloatProperty(float value, const std::string& propName);
+    int getFloatProperty(const std::string& propName, float defaultValue) const;
+
     void setStringProperty(const std::string& value, const std::string& propName);
     std::optional<std::string> getStringProperty(const std::string& propName) const;
     int getSchemaVersion();
