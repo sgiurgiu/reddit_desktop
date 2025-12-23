@@ -38,8 +38,8 @@ done
 
 
 podman rmi -f reddit_desktop_runtime:latest || true
-
-buildah bud --build-arg RDRPM=/tmp/reddit_desktop/packages/reddit_desktop-${REDDITDESKTOP_VERSION}-fedora.rpm \
+rpm_package=$(ls packages/*.rpm|head -n1)
+buildah bud --build-arg RDRPM=/tmp/reddit_desktop/${rpm_package} \
             -v "${root}":/tmp/reddit_desktop/:Z \
             -f  ${root}/docker/Dockerfile.fedora.runtime -t reddit_desktop_runtime
 podman save reddit_desktop_runtime:latest | gzip -9 -n > ${root}/packages/reddit_desktop_runtime.tar.gz

@@ -41,5 +41,5 @@ cmake --build ${root}/build -- package
 
 rm -rf ${root}/packages
 mkdir -p ${root}/packages
-mv ${root}/build/reddit_desktop-*-${distro}.* ${root}/packages
+mv ${root}/build/reddit_desktop-*-FreeBSD.pkg ${root}/packages
 
