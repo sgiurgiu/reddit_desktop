@@ -24,6 +24,10 @@ export PATH="/usr/local/bin:$PATH"
 distro=freebsd
 export DISTRIBUTION=${distro}
 
+FREEBSD_VERSION=$(freebsd-version | cut -d. -f1)
+export FREEBSD_MAJOR="${FREEBSD_VERSION}"
+
+
 CMAKE_ARGS="-GNinja -DPACKAGING=ON -DCMAKE_BUILD_TYPE=Release \
             -DENABLE_TESTS=OFF -DENABLE_M4DC=ON -DENABLE_CMARK=OFF"
 
