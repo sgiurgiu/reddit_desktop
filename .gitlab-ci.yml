@@ -46,6 +46,8 @@ build-linux:
     expire_in: 6 hours
     paths:
       - packages/
+    reports:
+      dotenv: build.env
 
 build-windows:
   stage: build
@@ -116,3 +118,35 @@ publish:
 
     echo "Publish complete!"
 
+publish-fedora-repo:
+  stage: publish
+  tags:
+    - linux
+  needs:
+    - job: build-linux
+      artifacts: true
+  rules:
+    - if: '$OS_FAMILY == "fedora"'
+  before_script:
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H fedora-repo > ~/.ssh/known_hosts
+    - cp "$REPO_SSH_KEY" ~/.ssh/id_ed25519
+    - chmod 600 ~/.ssh/id_ed25519
+
+  script:
+    - echo "Publishing Fedora RPMs for Fedora ${OS_VERSION}"
+
+    - RPM_DIR="packages"
+    - REPO_PATH="/srv/rpmrepo/fedora/${OS_VERSION}/x86_64"
+
+    - ssh repo@fedora-repo "mkdir -p ${REPO_PATH}"
+
+    # Copy only RPMs
+    - rsync -av --ignore-existing ${RPM_DIR}/*.rpm repo@fedora-repo:${REPO_PATH}/
+
+    # Update repository metadata
+    - ssh repo@fedora-repo "
+        createrepo_c --update ${REPO_PATH} ||
+        createrepo_c ${REPO_PATH}
+      "

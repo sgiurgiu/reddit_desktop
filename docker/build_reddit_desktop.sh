@@ -30,7 +30,9 @@ then
         export OS_FAMILY=fedora
         export OS_VERSION=$(rpm --eval '%{fedora}')
         export OS_DIST_TAG="fc${OS_VERSION}"
-        echo "FEDORA_VERSION=${OS_VERSION}" > build.env
+        echo "OS_VERSION=${OS_VERSION}" > build.env
+        echo "OS_FAMILY=${OS_FAMILY}" >> build.env
+        echo "OS_DIST_TAG=${OS_DIST_TAG}" >> build.env
     fi
     if [[ "${distro}" == "appimage" ]]
     then
