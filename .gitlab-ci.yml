@@ -125,9 +125,6 @@ publish-fedora-repo:
   needs:
     - job: build-linux
       artifacts: true
-  rules:
-    - exists:
-      - packages/*.rpm
   before_script:
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
@@ -136,18 +133,25 @@ publish-fedora-repo:
     - chmod 600 ~/.ssh/id_ed25519
 
   script:
-    - echo "Publishing Fedora RPMs for Fedora ${OS_VERSION}"
+    - |
+      shopt -s nullglob
+      rpms=(packages/*.rpm)
 
-    - RPM_DIR="packages"
-    - REPO_PATH="/srv/rpmrepo/fedora/${OS_VERSION}/x86_64"
+      if [ ${#rpms[@]} -eq 0 ]; then
+        echo "No Fedora RPMs produced; skipping repo publish."
+        exit 0
+      fi
+      echo "Publishing Fedora RPMs for Fedora ${OS_VERSION}"
+      RPM_DIR="packages"
+      REPO_PATH="/srv/rpmrepo/fedora/${OS_VERSION}/x86_64"
 
-    - ssh repo@fedora-repo "mkdir -p ${REPO_PATH}"
+      ssh repo@fedora-repo "mkdir -p ${REPO_PATH}"
 
-    # Copy only RPMs
-    - rsync -av --ignore-existing ${RPM_DIR}/*.rpm repo@fedora-repo:${REPO_PATH}/
+      # Copy only RPMs
+      rsync -av "${rpms[@]}" repo@fedora-repo:${REPO_PATH}/
 
-    # Update repository metadata
-    - ssh repo@fedora-repo "
-        createrepo_c --update ${REPO_PATH} ||
-        createrepo_c ${REPO_PATH}
-      "
+      # Update repository metadata
+      ssh repo@fedora-repo "
+          createrepo_c --update ${REPO_PATH} ||
+          createrepo_c ${REPO_PATH}
+        "
