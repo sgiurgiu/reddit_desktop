@@ -126,7 +126,8 @@ publish-fedora-repo:
     - job: build-linux
       artifacts: true
   rules:
-    - if: '$OS_FAMILY == "fedora"'
+    - exists:
+      - packages/*.rpm
   before_script:
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
