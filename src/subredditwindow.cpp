@@ -1156,7 +1156,7 @@ void SubredditWindow::showWindow(int appFrameWidth, int appFrameHeight)
                  reinterpret_cast<const char*>("Next " ICON_FA_ARROW_RIGHT),
                  previousSize) ||
              (ImGui::IsMouseClicked(4) && ImGui::IsWindowFocused())) &&
-            nextEnabled)
+            after.has_value())
         {
             currentCount += posts.size();
             clearExistingPostsData();
